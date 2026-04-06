@@ -123,6 +123,20 @@
   .es-sub { font-size:10px; color:#3b82f6; margin-top:2px; }
   .es-divider { border-left:1px solid rgba(59,130,246,.3); }
 
+
+  /* MODE TABS */
+  .mode-tabs { display:flex; margin-bottom:14px; border:1px solid #334155; border-radius:12px; overflow:hidden; }
+  .mode-tab { flex:1; padding:11px 0; text-align:center; font-size:12.5px; font-weight:800; cursor:pointer; transition:all .2s; color:#64748b; background:#1e293b; letter-spacing:.5px; }
+  .mode-tab:hover:not(.active) { background:#263247; color:#94a3b8; }
+  .mode-tab.active.lease { background:linear-gradient(135deg,#1e1b4b,#312e81); color:#a5b4fc; }
+  .mode-tab.active.discount { background:linear-gradient(135deg,#14352a,#064e3b); color:#34d399; }
+  .mode-tab:first-child { border-right:1px solid #334155; }
+
+  .ext-summary.disc { background:linear-gradient(135deg,#14352a,#064e3b); border-color:#059669; }
+  .ext-summary.disc .es-label { color:#6ee7b7; }
+  .ext-summary.disc .es-val.big { color:#34d399; }
+  .ext-summary.disc .es-sub { color:#059669; }
+  .ext-summary.disc .es-divider { border-color:rgba(5,150,105,.3); }
   .note-bar { background:#1e293b; border:1px solid #334155; border-radius:8px; padding:9px 16px; font-size:10px; color:#475569; margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
   /* PNG 저장 버튼 */
   .png-btn-wrap { display:flex; justify-content:flex-end; margin-bottom:10px; }
@@ -137,13 +151,7 @@
   .png-btn:disabled { opacity:.5; cursor:not-allowed; }
 </style>
 </head>
-<body>    <div class="lock-title">DSE 내부 시스템</div>
-    <div class="lock-sub">피부미용 리스 견적 시뮬레이터</div>
-    <input class="lock-input" id="lockInput" type="password" placeholder="접근 코드 입력" maxlength="20">
-    <button class="lock-btn" onclick="checkPwd()">확인</button>
-    <div class="lock-error" id="lockError"></div>
-  </div>
-</div>
+<body>
 
 <div class="wrap">
 
@@ -159,8 +167,14 @@
     </div>
   </div>
 
+  <!-- MODE TABS -->
+  <div class="mode-tabs">
+    <div class="mode-tab active lease" id="tabLease" onclick="setMode('lease')">💳 리스 적용</div>
+    <div class="mode-tab discount" id="tabDiscount" onclick="setMode('discount')">🏷️ 할인 적용</div>
+  </div>
+
   <!-- PARAMS -->
-  <div class="params">
+  <div class="params" id="leaseParams">
     <div class="param-chip editable">
       리스요율 &nbsp;
       <input class="rate-input" id="rateInput" type="number" value="5" min="0" max="30" step="0.1">
@@ -169,6 +183,15 @@
     <div class="param-chip">기간 <b>24개월</b></div>
     <div class="param-chip">보증금 <b>10%</b></div>
     <div class="param-chip" id="monthlyDesc">월납입 <b>원리금균등</b></div>
+  </div>
+  <div class="params" id="discountParams" style="display:none">
+    <div class="param-chip editable">
+      추가 할인율 &nbsp;
+      <input class="rate-input" id="discountInput" type="number" value="0" min="0" max="50" step="0.5">
+      <b>%</b>
+    </div>
+    <div class="param-chip">적용 기준 <b>패키지 할인가</b></div>
+    <div class="param-chip">최종가 = 패키지할인가 × <b>(1 - 할인율)</b></div>
   </div>
 
   <!-- PRODUCT SELECTION -->
@@ -245,11 +268,11 @@
   <!-- 캡처 영역 시작 -->
   <div id="extExportArea">
   <div class="table-wrap">
-    <div class="table-header">
-      <b>선택 품목 리스 견적</b> &nbsp;·&nbsp; 패키지 할인가 기준 &nbsp;·&nbsp; 24개월 무이자
+    <div class="table-header" id="extTableHeader">
+      <b id="extTableTitle">선택 품목 리스 견적</b> &nbsp;·&nbsp; <span id="extTableSub">패키지 할인가 기준 &nbsp;·&nbsp; 24개월 무이자</span>
     </div>
     <table>
-      <thead>
+      <thead id="extHead">
         <tr>
           <th>품목</th>
           <th>패키지 할인가</th>
@@ -265,21 +288,21 @@
   </div>
 
   <!-- 외부용 요약 -->
-  <div class="ext-summary">
+  <div class="ext-summary" id="extSummaryDiv">
     <div class="es-item">
-      <div class="es-label">패키지 할인가 합계</div>
+      <div class="es-label" id="eLabelTotal">패키지 할인가 합계</div>
       <div class="es-val" id="eTotal">0원</div>
-      <div class="es-sub">선택 품목 기준</div>
+      <div class="es-sub" id="eSubTotal">선택 품목 기준</div>
     </div>
     <div class="es-item es-divider">
-      <div class="es-label">보증금</div>
+      <div class="es-label" id="eLabelDeposit">보증금</div>
       <div class="es-val" id="eDeposit">0원</div>
-      <div class="es-sub">계약 시 선납 (10%)</div>
+      <div class="es-sub" id="eSubDeposit">계약 시 선납 (10%)</div>
     </div>
     <div class="es-item es-divider">
-      <div class="es-label">월 납입금</div>
+      <div class="es-label" id="eLabelMonthly">월 납입금</div>
       <div class="es-val big" id="eMonthly">0원/월</div>
-      <div class="es-sub">24개월 무이자</div>
+      <div class="es-sub" id="eSubMonthly">24개월 무이자</div>
     </div>
   </div>
   </div><!-- 캡처 영역 끝 -->
@@ -307,6 +330,19 @@ const PRODUCTS = [
 const selected  = new Set();
 const promoPrices = {};  // 품목별 패키지 할인가 (기본값: 시트 H열)
 PRODUCTS.forEach(p => { promoPrices[p.id] = p.leasePrice; });
+
+let MODE = 'lease';
+
+function setMode(m) {
+  MODE = m;
+  const tl = document.getElementById('tabLease');
+  const td = document.getElementById('tabDiscount');
+  tl.className = 'mode-tab lease' + (m === 'lease' ? ' active' : '');
+  td.className = 'mode-tab discount' + (m === 'discount' ? ' active' : '');
+  document.getElementById('leaseParams').style.display   = m === 'lease'    ? 'flex' : 'none';
+  document.getElementById('discountParams').style.display = m === 'discount' ? 'flex' : 'none';
+  update();
+}
 
 function fmt(n)  { return n === 0 ? '0원' : n.toLocaleString('ko-KR') + '원'; }
 function pct(n)  { return (n * 100).toFixed(2) + '%'; }
@@ -416,46 +452,127 @@ function update() {
   // ── 외부용 테이블 ──
   const extBody = document.getElementById('extBody');
   const extFoot = document.getElementById('extFoot');
-  if (items.length === 0) {
-    extBody.innerHTML = `<tr><td class="empty-td" colspan="6">품목을 선택하면 견적이 표시됩니다</td></tr>`;
-    extFoot.innerHTML = '';
-    document.getElementById('eTotal').textContent   = '0원';
-    document.getElementById('eDeposit').textContent = '0원';
-    document.getElementById('eMonthly').textContent = '0원/월';
-    return;
-  }
-  let etTotal=0;
-  extBody.innerHTML = items.map(p => {
-    const lp      = promoPrices[p.id];
-    const deposit = Math.round(lp * 0.1);
-    const remain  = lp - deposit;
-    const monthly = calcMonthly(remain);
-    const totalPay= deposit + monthly * 24;
-    etTotal += lp;
-    return `<tr>
-      <td class="ec-name">${p.name}</td>
-      <td class="ec-sale">${fmt(lp)}</td>
-      <td class="ec-deposit">${fmt(deposit)}</td>
-      <td class="ec-deposit">${fmt(remain)}</td>
-      <td class="ec-monthly">${fmt(monthly)}/월</td>
-      <td class="ec-total">${fmt(totalPay)}</td>
+  const extSum  = document.getElementById('extSummaryDiv');
+
+  if (MODE === 'discount') {
+    // ── 할인 적용 모드 ──
+    document.getElementById('extTableTitle').textContent = '선택 품목 할인 견적';
+    document.getElementById('extTableSub').textContent  = '패키지 할인가 기준 · 추가 할인 적용';
+    document.getElementById('extHead').innerHTML = `<tr>
+      <th>품목</th>
+      <th>패키지 할인가</th>
+      <th>추가 할인율</th>
+      <th>최종 가격</th>
+      <th>할인 금액</th>
     </tr>`;
-  }).join('');
-  const etDeposit = Math.round(etTotal * 0.1);
-  const etRemain  = etTotal - etDeposit;
-  const etMonthly = calcMonthly(etRemain);
-  const etTotalPay= etDeposit + etMonthly * 24;
-  extFoot.innerHTML = `<tr>
-    <td style="color:#93c5fd">합계 (${items.length}종)</td>
-    <td style="color:#93c5fd">${fmt(etTotal)}</td>
-    <td style="color:#94a3b8">${fmt(etDeposit)}</td>
-    <td style="color:#94a3b8">${fmt(etRemain)}</td>
-    <td style="color:#60a5fa">${fmt(etMonthly)}/월</td>
-    <td style="color:#a5b4fc">${fmt(etTotalPay)}</td>
-  </tr>`;
-  document.getElementById('eTotal').textContent   = fmt(etTotal);
-  document.getElementById('eDeposit').textContent = fmt(etDeposit);
-  document.getElementById('eMonthly').textContent = fmt(etMonthly) + '/월';
+    extSum.className = 'ext-summary disc';
+    document.getElementById('eLabelTotal').textContent   = '패키지 할인가 합계';
+    document.getElementById('eSubTotal').textContent     = '선택 품목 기준';
+    document.getElementById('eLabelDeposit').textContent = '할인 금액';
+    document.getElementById('eSubDeposit').textContent   = '추가 할인 적용';
+    document.getElementById('eLabelMonthly').textContent = '최종 가격';
+    document.getElementById('eSubMonthly').textContent   = '할인 후 총액';
+    document.getElementById('eMonthly').className        = 'es-val big';
+
+    const discRate = (parseFloat(document.getElementById('discountInput').value) || 0) / 100;
+
+    if (items.length === 0) {
+      extBody.innerHTML = `<tr><td class="empty-td" colspan="5">품목을 선택하면 견적이 표시됩니다</td></tr>`;
+      extFoot.innerHTML = '';
+      document.getElementById('eTotal').textContent   = '0원';
+      document.getElementById('eDeposit').textContent = '0원';
+      document.getElementById('eMonthly').textContent = '0원';
+      return;
+    }
+    let etTotal = 0;
+    extBody.innerHTML = items.map(p => {
+      const lp       = promoPrices[p.id];
+      const finalAmt = Math.round(lp * (1 - discRate));
+      const discAmt  = lp - finalAmt;
+      etTotal += lp;
+      return `<tr>
+        <td class="ec-name">${p.name}</td>
+        <td class="ec-sale">${fmt(lp)}</td>
+        <td class="ec-deposit">${pct(discRate)}</td>
+        <td class="ec-monthly">${fmt(finalAmt)}</td>
+        <td style="color:#f87171">-${fmt(discAmt)}</td>
+      </tr>`;
+    }).join('');
+    const etFinal = Math.round(etTotal * (1 - discRate));
+    const etDisc  = etTotal - etFinal;
+    extFoot.innerHTML = `<tr>
+      <td style="color:#93c5fd">합계 (${items.length}종)</td>
+      <td style="color:#93c5fd">${fmt(etTotal)}</td>
+      <td style="color:#94a3b8">${pct(discRate)}</td>
+      <td style="color:#34d399">${fmt(etFinal)}</td>
+      <td style="color:#f87171">-${fmt(etDisc)}</td>
+    </tr>`;
+    document.getElementById('eTotal').textContent   = fmt(etTotal);
+    document.getElementById('eDeposit').textContent = fmt(etDisc);
+    document.getElementById('eMonthly').textContent = fmt(etFinal);
+
+  } else {
+    // ── 리스 적용 모드 ──
+    document.getElementById('extTableTitle').textContent = '선택 품목 리스 견적';
+    document.getElementById('extTableSub').textContent  = '패키지 할인가 기준 · 24개월 무이자';
+    document.getElementById('extHead').innerHTML = `<tr>
+      <th>품목</th>
+      <th>패키지 할인가</th>
+      <th>보증금 (10%)</th>
+      <th>잔액 (90%)</th>
+      <th>월 납입금</th>
+      <th>총 납부액</th>
+    </tr>`;
+    extSum.className = 'ext-summary';
+    document.getElementById('eLabelTotal').textContent   = '패키지 할인가 합계';
+    document.getElementById('eSubTotal').textContent     = '선택 품목 기준';
+    document.getElementById('eLabelDeposit').textContent = '보증금';
+    document.getElementById('eSubDeposit').textContent   = '계약 시 선납 (10%)';
+    document.getElementById('eLabelMonthly').textContent = '월 납입금';
+    document.getElementById('eSubMonthly').textContent   = '24개월 무이자';
+    document.getElementById('eMonthly').className        = 'es-val big';
+
+    if (items.length === 0) {
+      extBody.innerHTML = `<tr><td class="empty-td" colspan="6">품목을 선택하면 견적이 표시됩니다</td></tr>`;
+      extFoot.innerHTML = '';
+      document.getElementById('eTotal').textContent   = '0원';
+      document.getElementById('eDeposit').textContent = '0원';
+      document.getElementById('eMonthly').textContent = '0원/월';
+      return;
+    }
+    let etTotal = 0;
+    extBody.innerHTML = items.map(p => {
+      const lp      = promoPrices[p.id];
+      const deposit = Math.round(lp * 0.1);
+      const remain  = lp - deposit;
+      const monthly = calcMonthly(remain);
+      const totalPay= deposit + monthly * 24;
+      etTotal += lp;
+      return `<tr>
+        <td class="ec-name">${p.name}</td>
+        <td class="ec-sale">${fmt(lp)}</td>
+        <td class="ec-deposit">${fmt(deposit)}</td>
+        <td class="ec-deposit">${fmt(remain)}</td>
+        <td class="ec-monthly">${fmt(monthly)}/월</td>
+        <td class="ec-total">${fmt(totalPay)}</td>
+      </tr>`;
+    }).join('');
+    const etDeposit = Math.round(etTotal * 0.1);
+    const etRemain  = etTotal - etDeposit;
+    const etMonthly = calcMonthly(etRemain);
+    const etTotalPay= etDeposit + etMonthly * 24;
+    extFoot.innerHTML = `<tr>
+      <td style="color:#93c5fd">합계 (${items.length}종)</td>
+      <td style="color:#93c5fd">${fmt(etTotal)}</td>
+      <td style="color:#94a3b8">${fmt(etDeposit)}</td>
+      <td style="color:#94a3b8">${fmt(etRemain)}</td>
+      <td style="color:#60a5fa">${fmt(etMonthly)}/월</td>
+      <td style="color:#a5b4fc">${fmt(etTotalPay)}</td>
+    </tr>`;
+    document.getElementById('eTotal').textContent   = fmt(etTotal);
+    document.getElementById('eDeposit').textContent = fmt(etDeposit);
+    document.getElementById('eMonthly').textContent = fmt(etMonthly) + '/월';
+  }
 }
 
 function toggleSection(id) {
@@ -468,6 +585,9 @@ function toggleSection(id) {
 
 renderGrid();
 update();
+
+// 할인율 변경 시 즉시 재계산
+document.getElementById('discountInput').addEventListener('input', update);
 
 // 리스요율 변경 시 즉시 재계산
 document.getElementById('rateInput').addEventListener('input', () => {
