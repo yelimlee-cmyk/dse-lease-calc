@@ -186,12 +186,12 @@
   </div>
   <div class="params" id="discountParams" style="display:none">
     <div class="param-chip editable">
-      추가 할인율 &nbsp;
-      <input class="rate-input" id="discountInput" type="number" value="0" min="0" max="50" step="0.5">
-      <b>%</b>
+      할인 금액 &nbsp;
+      <input class="rate-input" id="discountInput" type="number" value="0" min="0" step="100" style="width:60px">
+      <b>만원</b>
     </div>
-    <div class="param-chip">적용 기준 <b>패키지 할인가</b></div>
-    <div class="param-chip">최종가 = 패키지할인가 × <b>(1 - 할인율)</b></div>
+    <div class="param-chip">적용 기준 <b>패키지 할인가 합계</b></div>
+    <div class="param-chip">최종가 = 합계 − <b>할인금액</b></div>
   </div>
 
   <!-- PRODUCT SELECTION -->
@@ -457,27 +457,24 @@ function update() {
   if (MODE === 'discount') {
     // ── 할인 적용 모드 ──
     document.getElementById('extTableTitle').textContent = '선택 품목 할인 견적';
-    document.getElementById('extTableSub').textContent  = '패키지 할인가 기준 · 추가 할인 적용';
+    document.getElementById('extTableSub').textContent  = '패키지 할인가 기준 · 할인 금액 차감';
     document.getElementById('extHead').innerHTML = `<tr>
       <th>품목</th>
       <th>패키지 할인가</th>
-      <th>추가 할인율</th>
-      <th>최종 가격</th>
-      <th>할인 금액</th>
     </tr>`;
     extSum.className = 'ext-summary disc';
     document.getElementById('eLabelTotal').textContent   = '패키지 할인가 합계';
     document.getElementById('eSubTotal').textContent     = '선택 품목 기준';
     document.getElementById('eLabelDeposit').textContent = '할인 금액';
-    document.getElementById('eSubDeposit').textContent   = '추가 할인 적용';
+    document.getElementById('eSubDeposit').textContent   = '직접 입력';
     document.getElementById('eLabelMonthly').textContent = '최종 가격';
     document.getElementById('eSubMonthly').textContent   = '할인 후 총액';
     document.getElementById('eMonthly').className        = 'es-val big';
 
-    const discRate = (parseFloat(document.getElementById('discountInput').value) || 0) / 100;
+    const discAmt = (parseFloat(document.getElementById('discountInput').value) || 0) * 10000;
 
     if (items.length === 0) {
-      extBody.innerHTML = `<tr><td class="empty-td" colspan="5">품목을 선택하면 견적이 표시됩니다</td></tr>`;
+      extBody.innerHTML = `<tr><td class="empty-td" colspan="2">품목을 선택하면 견적이 표시됩니다</td></tr>`;
       extFoot.innerHTML = '';
       document.getElementById('eTotal').textContent   = '0원';
       document.getElementById('eDeposit').textContent = '0원';
@@ -486,29 +483,28 @@ function update() {
     }
     let etTotal = 0;
     extBody.innerHTML = items.map(p => {
-      const lp       = promoPrices[p.id];
-      const finalAmt = Math.round(lp * (1 - discRate));
-      const discAmt  = lp - finalAmt;
+      const lp = promoPrices[p.id];
       etTotal += lp;
       return `<tr>
         <td class="ec-name">${p.name}</td>
         <td class="ec-sale">${fmt(lp)}</td>
-        <td class="ec-deposit">${pct(discRate)}</td>
-        <td class="ec-monthly">${fmt(finalAmt)}</td>
-        <td style="color:#f87171">-${fmt(discAmt)}</td>
       </tr>`;
     }).join('');
-    const etFinal = Math.round(etTotal * (1 - discRate));
-    const etDisc  = etTotal - etFinal;
+    const etFinal = Math.max(0, etTotal - discAmt);
     extFoot.innerHTML = `<tr>
       <td style="color:#93c5fd">합계 (${items.length}종)</td>
       <td style="color:#93c5fd">${fmt(etTotal)}</td>
-      <td style="color:#94a3b8">${pct(discRate)}</td>
-      <td style="color:#34d399">${fmt(etFinal)}</td>
-      <td style="color:#f87171">-${fmt(etDisc)}</td>
+    </tr>
+    <tr>
+      <td style="color:#f87171">할인 금액</td>
+      <td style="color:#f87171">-${fmt(discAmt)}</td>
+    </tr>
+    <tr>
+      <td style="color:#34d399;font-size:14px">최종 가격</td>
+      <td style="color:#34d399;font-size:14px">${fmt(etFinal)}</td>
     </tr>`;
     document.getElementById('eTotal').textContent   = fmt(etTotal);
-    document.getElementById('eDeposit').textContent = fmt(etDisc);
+    document.getElementById('eDeposit').textContent = fmt(discAmt);
     document.getElementById('eMonthly').textContent = fmt(etFinal);
 
   } else {
