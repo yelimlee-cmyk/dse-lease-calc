@@ -60,11 +60,16 @@
   .product-card:not(.selected) .promo-row { opacity:.4; pointer-events:none; }
 
   /* SECTION DIVIDER */
-  .sec-divider { display:flex; align-items:center; gap:12px; margin:22px 0 14px; }
-  .sec-divider .line { flex:1; height:1px; background:#1e293b; }
-  .sec-badge { font-size:10px; font-weight:800; padding:4px 14px; border-radius:20px; letter-spacing:1.5px; }
+  .sec-divider { display:flex; align-items:center; gap:12px; margin:22px 0 14px; cursor:pointer; user-select:none; }
+  .sec-divider .line { flex:1; height:1px; background:#1e293b; transition:background .2s; }
+  .sec-divider:hover .line { background:#334155; }
+  .sec-badge { font-size:10px; font-weight:800; padding:4px 14px; border-radius:20px; letter-spacing:1.5px; display:flex; align-items:center; gap:8px; transition:opacity .15s; }
+  .sec-badge:hover { opacity:.8; }
   .sec-badge.internal { background:rgba(220,38,38,.15); color:#f87171; border:1px solid rgba(220,38,38,.3); }
   .sec-badge.external { background:rgba(37,99,235,.15); color:#60a5fa; border:1px solid rgba(37,99,235,.3); }
+  .toggle-icon { font-size:14px; font-weight:900; line-height:1; }
+  .sec-collapse { overflow:hidden; transition:max-height .35s ease, opacity .3s ease; max-height:2000px; opacity:1; }
+  .sec-collapse.closed { max-height:0; opacity:0; margin-bottom:0; }
 
   /* TABLE COMMON */
   .table-wrap { background:#1e293b; border:1px solid #334155; border-radius:14px; overflow:hidden; margin-bottom:14px; }
@@ -171,12 +176,13 @@
   <div class="product-grid" id="productGrid"></div>
 
   <!-- ═══ 내부용 ═══ -->
-  <div class="sec-divider">
+  <div class="sec-divider" onclick="toggleSection('int')">
     <div class="line"></div>
-    <div class="sec-badge internal">🔒 내부용 · 마진 분석</div>
+    <div class="sec-badge internal"><span class="toggle-icon" id="intIcon">−</span> 🔒 내부용 · 마진 분석</div>
     <div class="line"></div>
   </div>
 
+  <div class="sec-collapse" id="intCollapse">
   <div class="table-wrap">
     <div class="table-header">
       <b>품목별 마진 분석</b> &nbsp;·&nbsp; 패키지 할인가 기준 &nbsp;·&nbsp; 선취수수료 5% 적용
@@ -200,7 +206,7 @@
   </div>
 
   <!-- 내부용 요약 -->
-  <div class="int-summary">
+  <div class="int-summary" style="margin-bottom:8px">
     <div class="sum-card">
       <div class="sum-label">패키지 할인가 합계</div>
       <div class="sum-val tc-promo" id="iPromo">0원</div>
@@ -222,13 +228,16 @@
       <div class="sum-sub" id="iMLeaseAmt">실수금 기준</div>
     </div>
   </div>
+  </div><!-- /intCollapse -->
 
   <!-- ═══ 외부용 ═══ -->
-  <div class="sec-divider">
+  <div class="sec-divider" onclick="toggleSection('ext')">
     <div class="line"></div>
-    <div class="sec-badge external">📋 외부용 · 고객 견적</div>
+    <div class="sec-badge external"><span class="toggle-icon" id="extIcon">−</span> 📋 외부용 · 고객 견적</div>
     <div class="line"></div>
   </div>
+
+  <div class="sec-collapse" id="extCollapse">
   <div class="png-btn-wrap">
     <button class="png-btn" id="pngBtn" onclick="exportPng()">📥 PNG로 저장</button>
   </div>
@@ -274,6 +283,7 @@
     </div>
   </div>
   </div><!-- 캡처 영역 끝 -->
+  </div><!-- /extCollapse -->
 
   <div class="note-bar">
     <span>🔒 내부: 패키지 할인가 기준 · 리스마진율 = (패키지 할인가 - 공급가) / 패키지 할인가 (시트 H열 기본값)</span>
@@ -446,6 +456,14 @@ function update() {
   document.getElementById('eTotal').textContent   = fmt(etTotal);
   document.getElementById('eDeposit').textContent = fmt(etDeposit);
   document.getElementById('eMonthly').textContent = fmt(etMonthly) + '/월';
+}
+
+function toggleSection(id) {
+  const el   = document.getElementById(id + 'Collapse');
+  const icon = document.getElementById(id + 'Icon');
+  const open = !el.classList.contains('closed');
+  el.classList.toggle('closed', open);
+  icon.textContent = open ? '+' : '−';
 }
 
 renderGrid();
