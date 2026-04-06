@@ -207,11 +207,11 @@
 
   <div class="sec-collapse" id="intCollapse">
   <div class="table-wrap">
-    <div class="table-header">
-      <b>품목별 마진 분석</b> &nbsp;·&nbsp; 패키지 할인가 기준 &nbsp;·&nbsp; 선취수수료 5% 적용
+    <div class="table-header" id="intTableHeader">
+      <b>품목별 마진 분석</b> &nbsp;·&nbsp; <span id="intTableSub">패키지 할인가 기준 &nbsp;·&nbsp; 선취수수료 5% 적용</span>
     </div>
     <table>
-      <thead>
+      <thead id="intHead">
         <tr>
           <th>품목</th>
           <th>공급가</th>
@@ -238,7 +238,7 @@
     <div class="sum-card">
       <div class="sum-label">판매가 대비 할인액</div>
       <div class="sum-val tc-fee" id="iFee">0원</div>
-      <div class="sum-sub">리스 조건 할인</div>
+      <div class="sum-sub" id="iFeeLabel">리스 조건 할인</div>
     </div>
     <div class="sum-card">
       <div class="sum-label">기존 마진율</div>
@@ -246,7 +246,7 @@
       <div class="sum-sub" id="iMOrigAmt">마진금액 0원</div>
     </div>
     <div class="sum-card hl">
-      <div class="sum-label">리스 마진율</div>
+      <div class="sum-label" id="iMLeaseLabel">리스 마진율</div>
       <div class="sum-val tc-mlease" id="iMLease">—</div>
       <div class="sum-sub" id="iMLeaseAmt">실수금 기준</div>
     </div>
@@ -403,51 +403,116 @@ function update() {
   // ── 내부용 테이블 ──
   const intBody = document.getElementById('intBody');
   const intFoot = document.getElementById('intFoot');
-  if (items.length === 0) {
-    intBody.innerHTML = `<tr><td class="empty-td" colspan="8">품목을 선택하면 분석이 표시됩니다</td></tr>`;
-    intFoot.innerHTML = '';
-  } else {
-    let tCost=0, tSale=0, tLease=0;
-    intBody.innerHTML = items.map(p => {
-      const lp     = promoPrices[p.id];
-      const disc   = p.price - lp;  // 판매가 대비 할인액
-      const mOrig  = (p.price - p.cost) / p.price;
-      const mLease = (lp - p.cost) / lp;
-      const diff   = mLease - mOrig;
-      tCost += p.cost; tSale += p.price; tLease += lp;
-      return `<tr>
-        <td>${p.name}</td>
-        <td class="tc-cost">${fmt(p.cost)}</td>
-        <td class="tc-sale">${fmt(p.price)}</td>
-        <td class="tc-promo">${fmt(lp)}</td>
-        <td class="tc-fee">${disc > 0 ? '-'+fmt(disc) : '—'}</td>
-        <td class="tc-margin">${pct(mOrig)}</td>
-        <td class="tc-mlease">${pct(mLease)}</td>
-        <td class="tc-diff ${diff>=0?'up':'down'}">${diff>=0?'+':''}${pct(diff)}</td>
-      </tr>`;
-    }).join('');
-    const tDisc   = tSale - tLease;
-    const tmOrig  = (tSale  - tCost) / tSale;
-    const tmLease = (tLease - tCost) / tLease;
-    const tmDiff  = tmLease - tmOrig;
-    intFoot.innerHTML = `<tr>
-      <td>합계 (${items.length}종)</td>
-      <td>${fmt(tCost)}</td>
-      <td>${fmt(tSale)}</td>
-      <td style="color:#a5b4fc">${fmt(tLease)}</td>
-      <td style="color:#f87171">${tDisc > 0 ? '-'+fmt(tDisc) : '—'}</td>
-      <td style="color:#fbbf24">${pct(tmOrig)}</td>
-      <td style="color:#34d399">${pct(tmLease)}</td>
-      <td class="${tmDiff>=0?'up':'down'}">${tmDiff>=0?'+':''}${pct(tmDiff)}</td>
+
+  if (MODE === 'discount') {
+    const dRate = (parseFloat(document.getElementById('discountInput').value) || 0) / 100;
+    document.getElementById('intTableSub').textContent  = '패키지 할인가 기준 · 할인율 적용';
+    document.getElementById('intHead').innerHTML = `<tr>
+      <th>품목</th><th>공급가</th><th>판매가</th><th>패키지 할인가</th>
+      <th>최종가 (할인후)</th><th>기존 마진율</th><th>할인 마진율</th><th>변화</th>
     </tr>`;
-    // 내부 요약
-    document.getElementById('iPromo').textContent    = fmt(tLease);
-    document.getElementById('iPromoSub').textContent = `판매가 대비 -${fmt(tDisc)} (${((1-tLease/tSale)*100).toFixed(1)}% 할인)`;
-    document.getElementById('iFee').textContent      = fmt(tDisc);
-    document.getElementById('iMOrig').textContent    = pct(tmOrig);
-    document.getElementById('iMOrigAmt').textContent = `마진금액 ${fmt(tSale-tCost)}`;
-    document.getElementById('iMLease').textContent   = pct(tmLease);
-    document.getElementById('iMLeaseAmt').textContent= `리스마진금액 ${fmt(tLease-tCost)}`;
+    document.getElementById('iFeeLabel').textContent    = '할인 조건 할인';
+    document.getElementById('iMLeaseLabel').textContent = '할인 마진율';
+
+    if (items.length === 0) {
+      intBody.innerHTML = `<tr><td class="empty-td" colspan="8">품목을 선택하면 분석이 표시됩니다</td></tr>`;
+      intFoot.innerHTML = '';
+    } else {
+      let tCost=0, tSale=0, tLease=0, tFinal=0;
+      intBody.innerHTML = items.map(p => {
+        const lp     = promoPrices[p.id];
+        const fin    = Math.round(lp * (1 - dRate));
+        const disc   = p.price - lp;
+        const mOrig  = (p.price - p.cost) / p.price;
+        const mDisc  = fin > 0 ? (fin - p.cost) / fin : 0;
+        const diff   = mDisc - mOrig;
+        tCost += p.cost; tSale += p.price; tLease += lp; tFinal += fin;
+        return `<tr>
+          <td>${p.name}</td>
+          <td class="tc-cost">${fmt(p.cost)}</td>
+          <td class="tc-sale">${fmt(p.price)}</td>
+          <td class="tc-promo">${fmt(lp)}</td>
+          <td class="tc-mlease">${fmt(fin)}</td>
+          <td class="tc-margin">${pct(mOrig)}</td>
+          <td class="tc-mlease">${pct(mDisc)}</td>
+          <td class="tc-diff ${diff>=0?'up':'down'}">${diff>=0?'+':''}${pct(diff)}</td>
+        </tr>`;
+      }).join('');
+      const tDisc   = tSale - tLease;
+      const tmOrig  = (tSale  - tCost) / tSale;
+      const tmDisc  = tFinal > 0 ? (tFinal - tCost) / tFinal : 0;
+      const tmDiff  = tmDisc - tmOrig;
+      intFoot.innerHTML = `<tr>
+        <td>합계 (${items.length}종)</td>
+        <td>${fmt(tCost)}</td><td>${fmt(tSale)}</td>
+        <td style="color:#a5b4fc">${fmt(tLease)}</td>
+        <td style="color:#34d399">${fmt(tFinal)}</td>
+        <td style="color:#fbbf24">${pct(tmOrig)}</td>
+        <td style="color:#34d399">${pct(tmDisc)}</td>
+        <td class="${tmDiff>=0?'up':'down'}">${tmDiff>=0?'+':''}${pct(tmDiff)}</td>
+      </tr>`;
+      document.getElementById('iPromo').textContent    = fmt(tLease);
+      document.getElementById('iPromoSub').textContent = `최종가 합계 ${fmt(tFinal)}`;
+      document.getElementById('iFee').textContent      = fmt(tSale - tLease);
+      document.getElementById('iMOrig').textContent    = pct(tmOrig);
+      document.getElementById('iMOrigAmt').textContent = `마진금액 ${fmt(tSale-tCost)}`;
+      document.getElementById('iMLease').textContent   = pct(tmDisc);
+      document.getElementById('iMLeaseAmt').textContent= `할인후마진 ${fmt(tFinal-tCost)}`;
+    }
+  } else {
+    // ── 리스 모드 내부 ──
+    document.getElementById('intTableSub').textContent  = '패키지 할인가 기준 &nbsp;·&nbsp; 선취수수료 5% 적용';
+    document.getElementById('intHead').innerHTML = `<tr>
+      <th>품목</th><th>공급가</th><th>판매가</th><th>패키지 할인가</th>
+      <th>판매가 대비 할인</th><th>기존 마진율</th><th>리스 마진율</th><th>변화</th>
+    </tr>`;
+    document.getElementById('iFeeLabel').textContent    = '리스 조건 할인';
+    document.getElementById('iMLeaseLabel').textContent = '리스 마진율';
+
+    if (items.length === 0) {
+      intBody.innerHTML = `<tr><td class="empty-td" colspan="8">품목을 선택하면 분석이 표시됩니다</td></tr>`;
+      intFoot.innerHTML = '';
+    } else {
+      let tCost=0, tSale=0, tLease=0;
+      intBody.innerHTML = items.map(p => {
+        const lp     = promoPrices[p.id];
+        const disc   = p.price - lp;
+        const mOrig  = (p.price - p.cost) / p.price;
+        const mLease = (lp - p.cost) / lp;
+        const diff   = mLease - mOrig;
+        tCost += p.cost; tSale += p.price; tLease += lp;
+        return `<tr>
+          <td>${p.name}</td>
+          <td class="tc-cost">${fmt(p.cost)}</td>
+          <td class="tc-sale">${fmt(p.price)}</td>
+          <td class="tc-promo">${fmt(lp)}</td>
+          <td class="tc-fee">${disc > 0 ? '-'+fmt(disc) : '—'}</td>
+          <td class="tc-margin">${pct(mOrig)}</td>
+          <td class="tc-mlease">${pct(mLease)}</td>
+          <td class="tc-diff ${diff>=0?'up':'down'}">${diff>=0?'+':''}${pct(diff)}</td>
+        </tr>`;
+      }).join('');
+      const tDisc   = tSale - tLease;
+      const tmOrig  = (tSale  - tCost) / tSale;
+      const tmLease = (tLease - tCost) / tLease;
+      const tmDiff  = tmLease - tmOrig;
+      intFoot.innerHTML = `<tr>
+        <td>합계 (${items.length}종)</td>
+        <td>${fmt(tCost)}</td><td>${fmt(tSale)}</td>
+        <td style="color:#a5b4fc">${fmt(tLease)}</td>
+        <td style="color:#f87171">${tDisc > 0 ? '-'+fmt(tDisc) : '—'}</td>
+        <td style="color:#fbbf24">${pct(tmOrig)}</td>
+        <td style="color:#34d399">${pct(tmLease)}</td>
+        <td class="${tmDiff>=0?'up':'down'}">${tmDiff>=0?'+':''}${pct(tmDiff)}</td>
+      </tr>`;
+      document.getElementById('iPromo').textContent    = fmt(tLease);
+      document.getElementById('iPromoSub').textContent = `판매가 대비 -${fmt(tDisc)} (${((1-tLease/tSale)*100).toFixed(1)}% 할인)`;
+      document.getElementById('iFee').textContent      = fmt(tDisc);
+      document.getElementById('iMOrig').textContent    = pct(tmOrig);
+      document.getElementById('iMOrigAmt').textContent = `마진금액 ${fmt(tSale-tCost)}`;
+      document.getElementById('iMLease').textContent   = pct(tmLease);
+      document.getElementById('iMLeaseAmt').textContent= `리스마진금액 ${fmt(tLease-tCost)}`;
+    }
   }
 
   // ── 외부용 테이블 ──
