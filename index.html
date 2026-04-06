@@ -337,8 +337,9 @@ const PRODUCTS = [
   { id:'ssb',      name:'SSB-EVA',            desc:'의료용 석션기',              cost:880000,   price:1250000,  leasePrice:1000000  },
 ];
 
-const selected  = new Set();
-const promoPrices = {};  // 품목별 패키지 할인가 (기본값: 시트 H열)
+const selected     = new Set();
+const promoPrices  = {};  // 품목별 패키지 할인가 (시트 H열 실시간 동기화)
+const manualEdited = new Set(); // 사용자가 직접 수정한 항목 (시트 재로드 시 보존)
 PRODUCTS.forEach(p => { promoPrices[p.id] = p.leasePrice; });
 
 let MODE = 'lease';
@@ -386,6 +387,7 @@ function renderGrid() {
     input.addEventListener('input', () => {
       const raw = input.value.replace(/[^0-9]/g,'');
       promoPrices[p.id] = raw ? parseInt(raw) : p.price;
+      manualEdited.add(p.id);  // 수동 수정 표시 → 시트 재로드 시 보존
       input.value = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
       update();
     });
@@ -686,7 +688,8 @@ function parseCSV(text) {
 }
 
 function sheetNum(s) {
-  return parseInt((s || '').replace(/[^0-9]/g, '')) || 0;
+  const raw = (s || '').trim().replace(/[^0-9]/g, '');
+  return raw === '' ? null : parseInt(raw);  // 빈 셀 → null, 숫자(0 포함) → 그대로
 }
 
 function makeId(name) {
@@ -717,22 +720,24 @@ async function loadFromSheet() {
       const raw  = (r[1] || '').trim();           // 품목명 (괄호 포함)
       const cost = sheetNum(r[2]);
       const price= sheetNum(r[3]);
-      const lp   = sheetNum(r[6]);
-      if (!raw || cost === 0 || price === 0) continue; // 빈 행 스킵
+      const lp   = sheetNum(r[6]);                        // null=빈셀, 0=명시적 0원
+      if (!raw || !cost || !price || price < 1000) continue; // 빈 행·테스트 행 스킵
 
       const pi   = raw.indexOf('(');
       const name = pi > -1 ? raw.slice(0, pi).trim() : raw;
       const desc = pi > -1 ? raw.slice(pi + 1).replace(')', '').trim() : '';
-      fresh.push({ id: makeId(name), name, desc, cost, price, leasePrice: lp || price });
+      // 빈 셀(null)이면 판매가 사용, 0이 명시된 경우 0원 그대로 반영
+      fresh.push({ id: makeId(name), name, desc, cost, price, leasePrice: lp !== null ? lp : price });
     }
 
     if (fresh.length === 0) throw new Error('품목 없음');
 
-    // PRODUCTS 배열 갱신 (선택 상태 유지)
+    // PRODUCTS 배열 갱신
     PRODUCTS.length = 0;
     fresh.forEach(p => {
       PRODUCTS.push(p);
-      if (!(p.id in promoPrices)) promoPrices[p.id] = p.leasePrice;
+      // 수동 수정하지 않은 항목만 시트 값으로 업데이트
+      if (!manualEdited.has(p.id)) promoPrices[p.id] = p.leasePrice;
     });
     renderGrid();
     update();
