@@ -659,76 +659,39 @@ function toggleSection(id) {
 }
 
 // ── Google Sheets 자동 연동 ──────────────────────────────────────────
-function getSheetUrl() {
-  return 'https://docs.google.com/spreadsheets/d/1idczWMJcARbP1D0TpxvNGXx5StW5WFHRGCHk951vUds' +
-    '/gviz/tq?tqx=out:csv' +
-    '&sheet=dse%20%ED%94%84%EB%A1%9C%EB%AA%A8%EC%85%98%EA%B8%B0%ED%9A%8D' +
-    '&range=B89:I123' +
-    '&_t=' + Date.now();  // 캐시 버스팅
-}
-
-function parseCSV(text) {
-  const rows = [];
-  let row = [], field = '', inQ = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQ) {
-      if (c === '"' && text[i+1] === '"') { field += '"'; i++; }
-      else if (c === '"') inQ = false;
-      else field += c;
-    } else {
-      if (c === '"') inQ = true;
-      else if (c === ',') { row.push(field); field = ''; }
-      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
-      else if (c !== '\r') field += c;
-    }
-  }
-  if (row.length || field) { row.push(field); rows.push(row); }
-  return rows;
-}
-
-function sheetNum(s) {
-  const raw = (s || '').trim().replace(/[^0-9]/g, '');
-  return raw === '' ? null : parseInt(raw);  // 빈 셀 → null, 숫자(0 포함) → 그대로
-}
+// ▼ Apps Script 웹 앱 URL (배포 후 여기에 붙여넣기)
+const APPS_SCRIPT_URL = '';
 
 function makeId(name) {
   return name.toLowerCase().replace(/[^a-z0-9\uAC00-\uD7A3]/g, '').slice(0, 12);
 }
 
 async function loadFromSheet() {
-  const status  = document.getElementById('sheetStatus');
-  const btn     = document.getElementById('refreshBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ 동기화 중...'; }
+  const status = document.getElementById('sheetStatus');
+  const btn    = document.getElementById('refreshBtn');
+  if (btn)    { btn.disabled = true; btn.textContent = '⏳ 동기화 중...'; }
   if (status) { status.style.color = '#6366f1'; status.textContent = '⏳ 시트 동기화 중...'; }
+
+  if (!APPS_SCRIPT_URL) {
+    if (status) { status.style.color = '#f87171'; status.textContent = '⚠ Apps Script URL 미설정'; }
+    if (btn)    { btn.disabled = false; btn.textContent = '🔄 새로고침'; }
+    return;
+  }
+
   try {
-    const res = await fetch(getSheetUrl());
+    const res  = await fetch(APPS_SCRIPT_URL + '&_t=' + Date.now());
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    const rows = parseCSV(text);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || '서버 오류');
 
-    // 헤더행(품목 / 공급가 / ...) 찾기
-    let dataStart = -1;
-    for (let i = 0; i < rows.length; i++) {
-      if ((rows[i][1] || '').trim() === '품목') { dataStart = i + 1; break; }
-    }
-    if (dataStart === -1) throw new Error('헤더 없음');
-
-    const fresh = [];
-    for (let i = dataStart; i < rows.length; i++) {
-      const r    = rows[i];
-      const raw  = (r[1] || '').trim();           // 품목명 (괄호 포함)
-      const cost = sheetNum(r[2]);
-      const price= sheetNum(r[3]);
-      const lp   = sheetNum(r[6]);                        // null=빈셀, 0=명시적 0원
-      if (!raw || !cost || !price || price < 1000) continue; // 빈 행·테스트 행 스킵
-
-      const pi   = raw.indexOf('(');
-      const name = pi > -1 ? raw.slice(0, pi).trim() : raw;
-      const desc = pi > -1 ? raw.slice(pi + 1).replace(')', '').trim() : '';
-      // 빈 셀(null)이면 판매가 사용, 0이 명시된 경우 0원 그대로 반영
-      fresh.push({ id: makeId(name), name, desc, cost, price, leasePrice: lp !== null ? lp : price });
-    }
+    const fresh = json.products.map(p => {
+      const pi   = p.name.indexOf('(');
+      const name = pi > -1 ? p.name.slice(0, pi).trim() : p.name;
+      const desc = pi > -1 ? p.name.slice(pi + 1).replace(')', '').trim() : '';
+      const lp   = p.leasePrice;   // null=빈셀→판매가, 0=0원 그대로
+      return { id: makeId(name), name, desc, cost: p.cost, price: p.price,
+               leasePrice: lp !== null ? lp : p.price };
+    });
 
     if (fresh.length === 0) throw new Error('품목 없음');
 
