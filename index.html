@@ -27,6 +27,14 @@
   .params { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
   .param-chip { background:#1e293b; border:1px solid #334155; border-radius:8px; padding:7px 14px; font-size:11px; color:#94a3b8; display:flex; align-items:center; gap:5px; }
   .param-chip b { color:#e2e8f0; }
+  .param-chip.editable { border-color:#4f46e5; cursor:default; }
+  .rate-input {
+    width:40px; background:#0f172a; border:1px solid #4f46e5;
+    border-radius:5px; color:#a5b4fc; font-size:13px; font-weight:800;
+    padding:1px 5px; font-family:inherit; text-align:center; outline:none;
+    transition:border-color .15s;
+  }
+  .rate-input:focus { border-color:#818cf8; }
 
   /* PRODUCT GRID */
   .section-label { font-size:10px; letter-spacing:3px; color:#6366f1; text-transform:uppercase; margin-bottom:8px; font-weight:700; }
@@ -148,10 +156,14 @@
 
   <!-- PARAMS -->
   <div class="params">
-    <div class="param-chip">리스요율 <b>연 5% (선취수수료)</b></div>
+    <div class="param-chip editable">
+      리스요율 &nbsp;
+      <input class="rate-input" id="rateInput" type="number" value="5" min="0" max="30" step="0.1">
+      <b>% 연이율</b>
+    </div>
     <div class="param-chip">기간 <b>24개월</b></div>
-    <div class="param-chip">보증금 <b>판매가 10%</b></div>
-    <div class="param-chip">월납입 <b>잔액 ÷ 24 (무이자)</b></div>
+    <div class="param-chip">보증금 <b>10%</b></div>
+    <div class="param-chip" id="monthlyDesc">월납입 <b>원리금균등</b></div>
   </div>
 
   <!-- PRODUCT SELECTION -->
@@ -326,6 +338,18 @@ function renderGrid() {
   });
 }
 
+function getRate() {
+  const v = parseFloat(document.getElementById('rateInput').value);
+  return (isNaN(v) || v < 0) ? 0 : v / 100;
+}
+
+function calcMonthly(principal) {
+  const r = getRate() / 12;
+  if (r === 0) return Math.round(principal / 24);
+  const n = 24;
+  return Math.round(principal * r * Math.pow(1+r,n) / (Math.pow(1+r,n)-1));
+}
+
 function update() {
   const items = PRODUCTS.filter(p => selected.has(p.id));
 
@@ -395,7 +419,7 @@ function update() {
     const lp      = promoPrices[p.id];
     const deposit = Math.round(lp * 0.1);
     const remain  = lp - deposit;
-    const monthly = Math.round(remain / 24);
+    const monthly = calcMonthly(remain);
     const totalPay= deposit + monthly * 24;
     etTotal += lp;
     return `<tr>
@@ -409,7 +433,7 @@ function update() {
   }).join('');
   const etDeposit = Math.round(etTotal * 0.1);
   const etRemain  = etTotal - etDeposit;
-  const etMonthly = Math.round(etRemain / 24);
+  const etMonthly = calcMonthly(etRemain);
   const etTotalPay= etDeposit + etMonthly * 24;
   extFoot.innerHTML = `<tr>
     <td style="color:#93c5fd">합계 (${items.length}종)</td>
@@ -426,6 +450,19 @@ function update() {
 
 renderGrid();
 update();
+
+// 리스요율 변경 시 즉시 재계산
+document.getElementById('rateInput').addEventListener('input', () => {
+  const r = parseFloat(document.getElementById('rateInput').value);
+  const desc = document.getElementById('monthlyDesc');
+  desc.innerHTML = r === 0
+    ? '월납입 <b>잔액 ÷ 24</b>'
+    : `월납입 <b>원리금균등 ${r}%</b>`;
+  // 내부용 헤더 업데이트
+  const hdr = document.querySelector('.table-header b + span') ||
+              document.querySelector('[data-rate-label]');
+  update();
+});
 
 function exportPng() {
   const area = document.getElementById('extExportArea');
