@@ -122,72 +122,16 @@
   }
   .png-btn:hover { opacity:.85; }
   .png-btn:disabled { opacity:.5; cursor:not-allowed; }
-  /* ── 잠금 오버레이 ── */
-  #lockOverlay {
-    position:fixed; inset:0; background:#0a0c14;
-    display:flex; align-items:center; justify-content:center;
-    z-index:9999; flex-direction:column; gap:0;
-  }
-  .lock-box {
-    background:#1e293b; border:1px solid #334155; border-radius:20px;
-    padding:40px 48px; text-align:center; min-width:320px;
-  }
-  .lock-icon { font-size:40px; margin-bottom:14px; }
-  .lock-title { font-size:18px; font-weight:900; color:#e2e8f0; margin-bottom:4px; }
-  .lock-sub { font-size:12px; color:#64748b; margin-bottom:24px; }
-  .lock-input {
-    width:100%; background:#0f172a; border:1.5px solid #334155;
-    border-radius:10px; color:#e2e8f0; font-size:15px; font-weight:700;
-    padding:12px 16px; font-family:inherit; outline:none;
-    text-align:center; letter-spacing:3px; transition:border-color .15s;
-  }
-  .lock-input:focus { border-color:#6366f1; }
-  .lock-btn {
-    width:100%; margin-top:12px; background:linear-gradient(135deg,#4f46e5,#2563eb);
-    color:#fff; border:none; border-radius:10px; padding:12px;
-    font-size:14px; font-weight:800; cursor:pointer; font-family:inherit;
-    transition:opacity .15s;
-  }
-  .lock-btn:hover { opacity:.88; }
-  .lock-error { color:#f87171; font-size:12px; margin-top:10px; min-height:18px; }
 </style>
 </head>
-<body>
-<!-- 잠금 오버레이 -->
-<div id="lockOverlay">
-  <div class="lock-box">
-    <div class="lock-icon">🔒</div>
-    <div class="lock-title">DSE 내부 시스템</div>
+<body>    <div class="lock-title">DSE 내부 시스템</div>
     <div class="lock-sub">피부미용 리스 견적 시뮬레이터</div>
     <input class="lock-input" id="lockInput" type="password" placeholder="접근 코드 입력" maxlength="20">
     <button class="lock-btn" onclick="checkPwd()">확인</button>
     <div class="lock-error" id="lockError"></div>
   </div>
 </div>
-<script>
-(function(){
-  if(sessionStorage.getItem('dse_ok')==='1'){
-    document.getElementById('lockOverlay').style.display='none';
-  }
-})();
-function checkPwd(){
-  const v = document.getElementById('lockInput').value;
-  if(v==='DSE2026'){
-    sessionStorage.setItem('dse_ok','1');
-    document.getElementById('lockOverlay').style.display='none';
-  } else {
-    document.getElementById('lockError').textContent='접근 코드가 올바르지 않습니다.';
-    document.getElementById('lockInput').value='';
-    document.getElementById('lockInput').focus();
-  }
-}
-document.addEventListener('DOMContentLoaded',()=>{
-  document.getElementById('lockInput').addEventListener('keydown', e=>{
-    if(e.key==='Enter') checkPwd();
-  });
-  document.getElementById('lockInput').focus();
-});
-</script>
+
 <div class="wrap">
 
   <!-- HEADER -->
