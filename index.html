@@ -311,6 +311,7 @@
   <div class="note-bar">
     <span>🔒 내부: 패키지 할인가 기준 · 리스마진율 = (패키지 할인가 - 공급가) / 패키지 할인가 (시트 H열 기본값)</span>
     <span>📋 외부: 패키지 할인가 기준 · 보증금 10% · 월납입 = 잔액÷24 (무이자)</span>
+    <span id="sheetStatus" style="color:#6366f1">⏳ 시트 연동 중...</span>
   </div>
 
 </div>
@@ -490,14 +491,15 @@ function update() {
         <td class="ec-sale">${fmt(lp)}</td>
       </tr>`;
     }).join('');
-    const etFinal = Math.max(0, etTotal - discAmt);
+    const etFinal   = Math.max(0, etTotal - discAmt);
+    const discRate  = etTotal > 0 ? (discAmt / etTotal * 100).toFixed(1) : '0.0';
     extFoot.innerHTML = `<tr>
       <td style="color:#93c5fd">합계 (${items.length}종)</td>
       <td style="color:#93c5fd">${fmt(etTotal)}</td>
     </tr>
     <tr>
       <td style="color:#f87171">할인 금액</td>
-      <td style="color:#f87171">-${fmt(discAmt)}</td>
+      <td style="color:#f87171">-${fmt(discAmt)} <span style="font-size:10.5px;opacity:.75">(${discRate}%)</span></td>
     </tr>
     <tr>
       <td style="color:#34d399;font-size:14px">최종 가격</td>
@@ -505,6 +507,7 @@ function update() {
     </tr>`;
     document.getElementById('eTotal').textContent   = fmt(etTotal);
     document.getElementById('eDeposit').textContent = fmt(discAmt);
+    document.getElementById('eSubDeposit').textContent = `할인율 ${discRate}%`;
     document.getElementById('eMonthly').textContent = fmt(etFinal);
 
   } else {
@@ -579,8 +582,98 @@ function toggleSection(id) {
   icon.textContent = open ? '+' : '−';
 }
 
+// ── Google Sheets 자동 연동 ──────────────────────────────────────────
+const SHEET_CSV_URL =
+  'https://docs.google.com/spreadsheets/d/1idczWMJcARbP1D0TpxvNGXx5StW5WFHRGCHk951vUds' +
+  '/gviz/tq?tqx=out:csv' +
+  '&sheet=dse%20%ED%94%84%EB%A1%9C%EB%AA%A8%EC%85%98%EA%B8%B0%ED%9A%8D' +
+  '&range=B89:I123';
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"' && text[i+1] === '"') { field += '"'; i++; }
+      else if (c === '"') inQ = false;
+      else field += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c !== '\r') field += c;
+    }
+  }
+  if (row.length || field) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function sheetNum(s) {
+  return parseInt((s || '').replace(/[^0-9]/g, '')) || 0;
+}
+
+function makeId(name) {
+  return name.toLowerCase().replace(/[^a-z0-9\uAC00-\uD7A3]/g, '').slice(0, 12);
+}
+
+async function loadFromSheet() {
+  const status = document.getElementById('sheetStatus');
+  try {
+    const res = await fetch(SHEET_CSV_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const rows = parseCSV(text);
+
+    // 헤더행(품목 / 공급가 / ...) 찾기
+    let dataStart = -1;
+    for (let i = 0; i < rows.length; i++) {
+      if ((rows[i][1] || '').trim() === '품목') { dataStart = i + 1; break; }
+    }
+    if (dataStart === -1) throw new Error('헤더 없음');
+
+    const fresh = [];
+    for (let i = dataStart; i < rows.length; i++) {
+      const r    = rows[i];
+      const raw  = (r[1] || '').trim();           // 품목명 (괄호 포함)
+      const cost = sheetNum(r[2]);
+      const price= sheetNum(r[3]);
+      const lp   = sheetNum(r[6]);
+      if (!raw || cost === 0 || price === 0) continue; // 빈 행 스킵
+
+      const pi   = raw.indexOf('(');
+      const name = pi > -1 ? raw.slice(0, pi).trim() : raw;
+      const desc = pi > -1 ? raw.slice(pi + 1).replace(')', '').trim() : '';
+      fresh.push({ id: makeId(name), name, desc, cost, price, leasePrice: lp || price });
+    }
+
+    if (fresh.length === 0) throw new Error('품목 없음');
+
+    // PRODUCTS 배열 갱신 (선택 상태 유지)
+    PRODUCTS.length = 0;
+    fresh.forEach(p => {
+      PRODUCTS.push(p);
+      if (!(p.id in promoPrices)) promoPrices[p.id] = p.leasePrice;
+    });
+    renderGrid();
+    update();
+    if (status) {
+      status.style.color = '#34d399';
+      status.textContent = `✓ 시트 연동 완료 · ${fresh.length}개 품목`;
+    }
+  } catch(e) {
+    if (status) {
+      status.style.color = '#f87171';
+      status.textContent = '⚠ 시트 연동 실패 (하드코딩 데이터 사용 중)';
+    }
+    console.warn('Sheet load error:', e);
+  }
+}
+// ─────────────────────────────────────────────────────────────────────
+
 renderGrid();
 update();
+loadFromSheet();   // 비동기 · 완료 시 자동 갱신
 
 // 할인율 변경 시 즉시 재계산
 document.getElementById('discountInput').addEventListener('input', update);
