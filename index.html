@@ -40,7 +40,7 @@
   .product-card.selected .check-box::after { content:'✓'; }
   .p-name { font-size:12.5px; font-weight:700; color:#e2e8f0; flex:1; }
   .p-sale { font-size:11.5px; font-weight:800; color:#818cf8; }
-  /* 리스적용단가 입력 */
+  /* 패키지 할인가 입력 */
   .promo-row { display:flex; align-items:center; gap:6px; }
   .promo-label { font-size:9px; color:#64748b; letter-spacing:.5px; white-space:nowrap; }
   .promo-input {
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   </div>
 
   <!-- PRODUCT SELECTION -->
-  <div class="section-label">품목 선택 · 리스적용단가 입력</div>
+  <div class="section-label">품목 선택 · 패키지 할인가 입력</div>
   <div class="product-grid" id="productGrid"></div>
 
   <!-- ═══ 내부용 ═══ -->
@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   <div class="table-wrap">
     <div class="table-header">
-      <b>품목별 마진 분석</b> &nbsp;·&nbsp; 리스적용단가 기준 &nbsp;·&nbsp; 선취수수료 5% 적용
+      <b>품목별 마진 분석</b> &nbsp;·&nbsp; 패키지 할인가 기준 &nbsp;·&nbsp; 선취수수료 5% 적용
     </div>
     <table>
       <thead>
@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           <th>품목</th>
           <th>공급가</th>
           <th>판매가</th>
-          <th>리스적용단가</th>
+          <th>패키지 할인가</th>
           <th>판매가 대비 할인</th>
           <th>기존 마진율</th>
           <th>리스 마진율</th>
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   <!-- 내부용 요약 -->
   <div class="int-summary">
     <div class="sum-card">
-      <div class="sum-label">리스적용단가 합계</div>
+      <div class="sum-label">패키지 할인가 합계</div>
       <div class="sum-val tc-promo" id="iPromo">0원</div>
       <div class="sum-sub" id="iPromoSub">—</div>
     </div>
@@ -281,13 +281,13 @@ document.addEventListener('DOMContentLoaded',()=>{
   <div id="extExportArea">
   <div class="table-wrap">
     <div class="table-header">
-      <b>선택 품목 리스 견적</b> &nbsp;·&nbsp; 리스적용단가 기준 &nbsp;·&nbsp; 24개월 무이자
+      <b>선택 품목 리스 견적</b> &nbsp;·&nbsp; 패키지 할인가 기준 &nbsp;·&nbsp; 24개월 무이자
     </div>
     <table>
       <thead>
         <tr>
           <th>품목</th>
-          <th>리스적용단가</th>
+          <th>패키지 할인가</th>
           <th>보증금 (10%)</th>
           <th>잔액 (90%)</th>
           <th>월 납입금</th>
@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   <!-- 외부용 요약 -->
   <div class="ext-summary">
     <div class="es-item">
-      <div class="es-label">리스적용단가 합계</div>
+      <div class="es-label">패키지 할인가 합계</div>
       <div class="es-val" id="eTotal">0원</div>
       <div class="es-sub">선택 품목 기준</div>
     </div>
@@ -320,8 +320,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   </div><!-- 캡처 영역 끝 -->
 
   <div class="note-bar">
-    <span>🔒 내부: 리스적용단가 기준 · 리스마진율 = (리스적용단가 - 공급가) / 리스적용단가 (시트 H열 기본값)</span>
-    <span>📋 외부: 리스적용단가 기준 · 보증금 10% · 월납입 = 잔액÷24 (무이자)</span>
+    <span>🔒 내부: 패키지 할인가 기준 · 리스마진율 = (패키지 할인가 - 공급가) / 패키지 할인가 (시트 H열 기본값)</span>
+    <span>📋 외부: 패키지 할인가 기준 · 보증금 10% · 월납입 = 잔액÷24 (무이자)</span>
   </div>
 
 </div>
@@ -339,7 +339,7 @@ const PRODUCTS = [
 ];
 
 const selected  = new Set();
-const promoPrices = {};  // 품목별 리스적용단가 (기본값: 시트 H열)
+const promoPrices = {};  // 품목별 패키지 할인가 (기본값: 시트 H열)
 PRODUCTS.forEach(p => { promoPrices[p.id] = p.leasePrice; });
 
 function fmt(n)  { return n === 0 ? '0원' : n.toLocaleString('ko-KR') + '원'; }
@@ -360,7 +360,7 @@ function renderGrid() {
         <div class="p-sale">${wan(p.price)}</div>
       </div>
       <div class="promo-row">
-        <span class="promo-label">리스적용단가</span>
+        <span class="promo-label">패키지 할인가</span>
         <input class="promo-input" data-id="${p.id}" type="text" value="${promoPrices[p.id].toLocaleString('ko-KR')}" placeholder="판매가와 동일">
       </div>`;
     // 카드 클릭 (입력창 제외)
