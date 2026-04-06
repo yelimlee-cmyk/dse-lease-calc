@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>[DSE] 피부미용 리스 시뮬레이터</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+// 접근 제어 (내부용)
+(function(){
+  const KEY = 'dse_auth';
+  const PWD = 'DSE2026!';
+  if(sessionStorage.getItem(KEY) !== '1') {
+    const input = prompt('🔒 DSE 내부 시스템\n\n접근 코드를 입력하세요:');
+    if(input !== PWD) {
+      document.documentElement.innerHTML = '<body style="background:#0f1117;color:#f87171;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;font-size:18px;">접근이 거부되었습니다. 담당 MD에게 문의하세요.</body>';
+      return;
+    }
+    sessionStorage.setItem(KEY, '1');
+  }
+})();
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans KR','Malgun Gothic',sans-serif; background:#0f1117; color:#e2e8f0; min-height:100vh; padding:28px 20px; }
+  .wrap { max-width:1040px; margin:0 auto; }
+
+  /* HEADER */
+  .header { background:linear-gradient(120deg,#1e1b4b,#312e81); border:1px solid #3730a3; border-radius:16px; padding:22px 32px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; }
+  .header h1 { font-size:21px; font-weight:900; color:#fff; }
+  .header h1 span { color:#a5b4fc; }
+  .header .sub { font-size:11px; color:#6366f1; margin-top:3px; letter-spacing:.3px; }
+  .badge-wrap { display:flex; gap:8px; align-items:center; }
+  .badge { font-size:10px; font-weight:800; padding:5px 13px; border-radius:20px; letter-spacing:1.5px; }
+  .badge.red { background:#dc2626; color:#fff; }
+  .badge.blue { background:#2563eb; color:#fff; }
+
+  /* PARAMS */
+  .params { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .param-chip { background:#1e293b; border:1px solid #334155; border-radius:8px; padding:7px 14px; font-size:11px; color:#94a3b8; display:flex; align-items:center; gap:5px; }
+  .param-chip b { color:#e2e8f0; }
+
+  /* PRODUCT GRID */
+  .section-label { font-size:10px; letter-spacing:3px; color:#6366f1; text-transform:uppercase; margin-bottom:8px; font-weight:700; }
+  .product-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:18px; }
+  .product-card { background:#1e293b; border:1.5px solid #334155; border-radius:12px; padding:11px 13px; cursor:pointer; transition:all .15s; user-select:none; }
+  .product-card:hover { border-color:#6366f1; }
+  .product-card.selected { border-color:#6366f1; background:#1e1b4b; }
+  .pc-top { display:flex; align-items:center; gap:9px; margin-bottom:7px; }
+  .check-box { width:17px; height:17px; border-radius:4px; border:2px solid #475569; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:10px; color:#fff; transition:all .15s; }
+  .product-card.selected .check-box { background:#6366f1; border-color:#6366f1; }
+  .product-card.selected .check-box::after { content:'✓'; }
+  .p-name { font-size:12.5px; font-weight:700; color:#e2e8f0; flex:1; }
+  .p-sale { font-size:11.5px; font-weight:800; color:#818cf8; }
+  /* 리스적용단가 입력 */
+  .promo-row { display:flex; align-items:center; gap:6px; }
+  .promo-label { font-size:9px; color:#64748b; letter-spacing:.5px; white-space:nowrap; }
+  .promo-input {
+    flex:1; background:#0f172a; border:1px solid #334155; border-radius:6px;
+    color:#a5b4fc; font-size:11.5px; font-weight:700; padding:4px 8px;
+    font-family:inherit; text-align:right; outline:none; transition:border-color .15s;
+  }
+  .promo-input:focus { border-color:#6366f1; }
+  .product-card:not(.selected) .promo-row { opacity:.4; pointer-events:none; }
+
+  /* SECTION DIVIDER */
+  .sec-divider { display:flex; align-items:center; gap:12px; margin:22px 0 14px; }
+  .sec-divider .line { flex:1; height:1px; background:#1e293b; }
+  .sec-badge { font-size:10px; font-weight:800; padding:4px 14px; border-radius:20px; letter-spacing:1.5px; }
+  .sec-badge.internal { background:rgba(220,38,38,.15); color:#f87171; border:1px solid rgba(220,38,38,.3); }
+  .sec-badge.external { background:rgba(37,99,235,.15); color:#60a5fa; border:1px solid rgba(37,99,235,.3); }
+
+  /* TABLE COMMON */
+  .table-wrap { background:#1e293b; border:1px solid #334155; border-radius:14px; overflow:hidden; margin-bottom:14px; }
+  .table-header { padding:12px 20px; border-bottom:1px solid #334155; font-size:11px; color:#94a3b8; }
+  .table-header b { color:#e2e8f0; }
+  table { width:100%; border-collapse:collapse; }
+  thead th { padding:9px 13px; font-size:10px; color:#64748b; font-weight:700; text-align:right; border-bottom:1px solid #334155; letter-spacing:.4px; white-space:nowrap; }
+  thead th:first-child { text-align:left; }
+  tbody tr { border-bottom:1px solid #0f1117; transition:background .1s; }
+  tbody tr:last-child { border-bottom:none; }
+  tbody tr:hover { background:#263247; }
+  td { padding:10px 13px; font-size:12px; text-align:right; white-space:nowrap; }
+  td:first-child { text-align:left; font-weight:700; color:#e2e8f0; }
+  tfoot td { padding:11px 13px; font-weight:900; font-size:12.5px; border-top:1px solid #4f46e5; background:#0f172a; white-space:nowrap; }
+  tfoot td:first-child { color:#818cf8; text-align:left; }
+  .empty-td { text-align:center !important; color:#475569; font-style:italic; padding:22px !important; font-weight:400 !important; }
+
+  /* INTERNAL TABLE COLORS */
+  .tc-cost   { color:#94a3b8; }
+  .tc-sale   { color:#e2e8f0; }
+  .tc-promo  { color:#a5b4fc; font-weight:700; }
+  .tc-fee    { color:#f87171; }
+  .tc-net    { color:#fb923c; font-weight:700; }
+  .tc-margin { color:#fbbf24; }
+  .tc-mlease { color:#34d399; font-weight:700; }
+  .tc-diff   { font-size:10.5px; }
+  .up   { color:#34d399; }
+  .down { color:#f87171; }
+
+  /* INTERNAL SUMMARY */
+  .int-summary { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px; }
+  .sum-card { background:#1e293b; border:1px solid #334155; border-radius:11px; padding:14px 16px; }
+  .sum-card.hl { background:linear-gradient(135deg,#1e1b4b,#1e3a2f); border-color:#4f46e5; }
+  .sum-label { font-size:9.5px; color:#64748b; letter-spacing:.8px; text-transform:uppercase; margin-bottom:5px; }
+  .sum-val { font-size:17px; font-weight:900; }
+  .sum-sub { font-size:10px; color:#475569; margin-top:2px; }
+
+  /* EXTERNAL TABLE COLORS */
+  .ec-name   { color:#e2e8f0; }
+  .ec-sale   { color:#93c5fd; }
+  .ec-deposit{ color:#94a3b8; }
+  .ec-monthly{ color:#60a5fa; font-weight:700; }
+  .ec-total  { color:#a5b4fc; font-weight:700; }
+
+  /* EXTERNAL SUMMARY */
+  .ext-summary { background:linear-gradient(135deg,#1e2d5a,#1e3a5f); border:1px solid #3b82f6; border-radius:12px; padding:18px 24px; display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:8px; }
+  .es-item { text-align:center; }
+  .es-label { font-size:10px; color:#93c5fd; letter-spacing:1px; margin-bottom:5px; }
+  .es-val { font-size:19px; font-weight:900; color:#fff; }
+  .es-val.big { font-size:22px; color:#60a5fa; }
+  .es-sub { font-size:10px; color:#3b82f6; margin-top:2px; }
+  .es-divider { border-left:1px solid rgba(59,130,246,.3); }
+
+  .note-bar { background:#1e293b; border:1px solid #334155; border-radius:8px; padding:9px 16px; font-size:10px; color:#475569; margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
+  /* PNG 저장 버튼 */
+  .png-btn-wrap { display:flex; justify-content:flex-end; margin-bottom:10px; }
+  .png-btn {
+    background:linear-gradient(135deg,#1d4ed8,#2563eb); color:#fff;
+    border:none; border-radius:10px; padding:10px 22px;
+    font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;
+    display:flex; align-items:center; gap:8px; transition:opacity .15s;
+    letter-spacing:.3px;
+  }
+  .png-btn:hover { opacity:.85; }
+  .png-btn:disabled { opacity:.5; cursor:not-allowed; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <div class="sub">DSE Medical Solution · 피부미용 장비</div>
+      <h1>리스 <span>견적 시뮬레이터</span></h1>
+    </div>
+    <div class="badge-wrap">
+      <div class="badge red">🔒 내부용</div>
+      <div class="badge blue">📋 외부용 포함</div>
+    </div>
+  </div>
+
+  <!-- PARAMS -->
+  <div class="params">
+    <div class="param-chip">리스요율 <b>연 5% (선취수수료)</b></div>
+    <div class="param-chip">기간 <b>24개월</b></div>
+    <div class="param-chip">보증금 <b>판매가 10%</b></div>
+    <div class="param-chip">월납입 <b>잔액 ÷ 24 (무이자)</b></div>
+  </div>
+
+  <!-- PRODUCT SELECTION -->
+  <div class="section-label">품목 선택 · 리스적용단가 입력</div>
+  <div class="product-grid" id="productGrid"></div>
+
+  <!-- ═══ 내부용 ═══ -->
+  <div class="sec-divider">
+    <div class="line"></div>
+    <div class="sec-badge internal">🔒 내부용 · 마진 분석</div>
+    <div class="line"></div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-header">
+      <b>품목별 마진 분석</b> &nbsp;·&nbsp; 리스적용단가 기준 &nbsp;·&nbsp; 선취수수료 5% 적용
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>품목</th>
+          <th>공급가</th>
+          <th>판매가</th>
+          <th>리스적용단가</th>
+          <th>판매가 대비 할인</th>
+          <th>기존 마진율</th>
+          <th>리스 마진율</th>
+          <th>변화</th>
+        </tr>
+      </thead>
+      <tbody id="intBody"></tbody>
+      <tfoot id="intFoot"></tfoot>
+    </table>
+  </div>
+
+  <!-- 내부용 요약 -->
+  <div class="int-summary">
+    <div class="sum-card">
+      <div class="sum-label">리스적용단가 합계</div>
+      <div class="sum-val tc-promo" id="iPromo">0원</div>
+      <div class="sum-sub" id="iPromoSub">—</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-label">판매가 대비 할인액</div>
+      <div class="sum-val tc-fee" id="iFee">0원</div>
+      <div class="sum-sub">리스 조건 할인</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-label">기존 마진율</div>
+      <div class="sum-val tc-margin" id="iMOrig">—</div>
+      <div class="sum-sub" id="iMOrigAmt">마진금액 0원</div>
+    </div>
+    <div class="sum-card hl">
+      <div class="sum-label">리스 마진율</div>
+      <div class="sum-val tc-mlease" id="iMLease">—</div>
+      <div class="sum-sub" id="iMLeaseAmt">실수금 기준</div>
+    </div>
+  </div>
+
+  <!-- ═══ 외부용 ═══ -->
+  <div class="sec-divider">
+    <div class="line"></div>
+    <div class="sec-badge external">📋 외부용 · 고객 견적</div>
+    <div class="line"></div>
+  </div>
+  <div class="png-btn-wrap">
+    <button class="png-btn" id="pngBtn" onclick="exportPng()">📥 PNG로 저장</button>
+  </div>
+
+  <!-- 캡처 영역 시작 -->
+  <div id="extExportArea">
+  <div class="table-wrap">
+    <div class="table-header">
+      <b>선택 품목 리스 견적</b> &nbsp;·&nbsp; 리스적용단가 기준 &nbsp;·&nbsp; 24개월 무이자
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>품목</th>
+          <th>리스적용단가</th>
+          <th>보증금 (10%)</th>
+          <th>잔액 (90%)</th>
+          <th>월 납입금</th>
+          <th>총 납부액</th>
+        </tr>
+      </thead>
+      <tbody id="extBody"></tbody>
+      <tfoot id="extFoot"></tfoot>
+    </table>
+  </div>
+
+  <!-- 외부용 요약 -->
+  <div class="ext-summary">
+    <div class="es-item">
+      <div class="es-label">리스적용단가 합계</div>
+      <div class="es-val" id="eTotal">0원</div>
+      <div class="es-sub">선택 품목 기준</div>
+    </div>
+    <div class="es-item es-divider">
+      <div class="es-label">보증금</div>
+      <div class="es-val" id="eDeposit">0원</div>
+      <div class="es-sub">계약 시 선납 (10%)</div>
+    </div>
+    <div class="es-item es-divider">
+      <div class="es-label">월 납입금</div>
+      <div class="es-val big" id="eMonthly">0원/월</div>
+      <div class="es-sub">24개월 무이자</div>
+    </div>
+  </div>
+  </div><!-- 캡처 영역 끝 -->
+
+  <div class="note-bar">
+    <span>🔒 내부: 리스적용단가 기준 · 리스마진율 = (리스적용단가 - 공급가) / 리스적용단가 (시트 H열 기본값)</span>
+    <span>📋 외부: 리스적용단가 기준 · 보증금 10% · 월납입 = 잔액÷24 (무이자)</span>
+  </div>
+
+</div>
+<script>
+const PRODUCTS = [
+  { id:'impacq',   name:'ImpacQ Plus',       desc:'큐스위치 엔디야그',         cost:22600000, price:32000000, leasePrice:29500000 },
+  { id:'janus',    name:'JANUS Pro sunlike',  desc:'안면진단기기',               cost:6820000,  price:8580000,  leasePrice:8300000  },
+  { id:'multixel', name:'Multixel',           desc:'프락셔널 CO2 (듀얼타입)',    cost:7000000,  price:9900000,  leasePrice:8900000  },
+  { id:'ds40',     name:'DS-40UB',            desc:'보급형 CO2 레이저',          cost:3900000,  price:4950000,  leasePrice:4500000  },
+  { id:'cotra',    name:'COTRA PLUS',         desc:'CO2 프락셔널 (프리미엄)',    cost:11500000, price:18500000, leasePrice:17200000 },
+  { id:'neoject',  name:'NEOJECT',            desc:'인젝터 (니들 3bx 포함)',     cost:3800000,  price:5500000,  leasePrice:4300000  },
+  { id:'ulkin',    name:'울킨',               desc:'(전용 겔 포함)',             cost:4400000,  price:7700000,  leasePrice:6900000  },
+  { id:'aquafill', name:'아쿠아필',           desc:'(솔루션 포함)',              cost:1800000,  price:2500000,  leasePrice:2300000  },
+  { id:'ssb',      name:'SSB-EVA',            desc:'의료용 석션기',              cost:880000,   price:1250000,  leasePrice:1000000  },
+];
+
+const selected  = new Set();
+const promoPrices = {};  // 품목별 리스적용단가 (기본값: 시트 H열)
+PRODUCTS.forEach(p => { promoPrices[p.id] = p.leasePrice; });
+
+function fmt(n)  { return n === 0 ? '0원' : n.toLocaleString('ko-KR') + '원'; }
+function pct(n)  { return (n * 100).toFixed(2) + '%'; }
+function wan(n)  { return (n / 10000).toLocaleString('ko-KR') + '만'; }
+
+function renderGrid() {
+  const grid = document.getElementById('productGrid');
+  grid.innerHTML = '';
+  PRODUCTS.forEach(p => {
+    const isSel = selected.has(p.id);
+    const card = document.createElement('div');
+    card.className = 'product-card' + (isSel ? ' selected' : '');
+    card.innerHTML = `
+      <div class="pc-top">
+        <div class="check-box"></div>
+        <div class="p-name">${p.name}<br><span style="font-size:10px;color:#64748b;font-weight:400">${p.desc}</span></div>
+        <div class="p-sale">${wan(p.price)}</div>
+      </div>
+      <div class="promo-row">
+        <span class="promo-label">리스적용단가</span>
+        <input class="promo-input" data-id="${p.id}" type="text" value="${promoPrices[p.id].toLocaleString('ko-KR')}" placeholder="판매가와 동일">
+      </div>`;
+    // 카드 클릭 (입력창 제외)
+    card.addEventListener('click', e => {
+      if (e.target.classList.contains('promo-input')) return;
+      selected.has(p.id) ? selected.delete(p.id) : selected.add(p.id);
+      renderGrid(); update();
+    });
+    // 프로모션단가 입력
+    const input = card.querySelector('.promo-input');
+    input.addEventListener('input', () => {
+      const raw = input.value.replace(/[^0-9]/g,'');
+      promoPrices[p.id] = raw ? parseInt(raw) : p.price;
+      input.value = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
+      update();
+    });
+    input.addEventListener('focus', () => { if (!selected.has(p.id)) { selected.add(p.id); renderGrid(); } });
+    grid.appendChild(card);
+  });
+}
+
+function update() {
+  const items = PRODUCTS.filter(p => selected.has(p.id));
+
+  // ── 내부용 테이블 ──
+  const intBody = document.getElementById('intBody');
+  const intFoot = document.getElementById('intFoot');
+  if (items.length === 0) {
+    intBody.innerHTML = `<tr><td class="empty-td" colspan="8">품목을 선택하면 분석이 표시됩니다</td></tr>`;
+    intFoot.innerHTML = '';
+  } else {
+    let tCost=0, tSale=0, tLease=0;
+    intBody.innerHTML = items.map(p => {
+      const lp     = promoPrices[p.id];
+      const disc   = p.price - lp;  // 판매가 대비 할인액
+      const mOrig  = (p.price - p.cost) / p.price;
+      const mLease = (lp - p.cost) / lp;
+      const diff   = mLease - mOrig;
+      tCost += p.cost; tSale += p.price; tLease += lp;
+      return `<tr>
+        <td>${p.name}</td>
+        <td class="tc-cost">${fmt(p.cost)}</td>
+        <td class="tc-sale">${fmt(p.price)}</td>
+        <td class="tc-promo">${fmt(lp)}</td>
+        <td class="tc-fee">${disc > 0 ? '-'+fmt(disc) : '—'}</td>
+        <td class="tc-margin">${pct(mOrig)}</td>
+        <td class="tc-mlease">${pct(mLease)}</td>
+        <td class="tc-diff ${diff>=0?'up':'down'}">${diff>=0?'+':''}${pct(diff)}</td>
+      </tr>`;
+    }).join('');
+    const tDisc   = tSale - tLease;
+    const tmOrig  = (tSale  - tCost) / tSale;
+    const tmLease = (tLease - tCost) / tLease;
+    const tmDiff  = tmLease - tmOrig;
+    intFoot.innerHTML = `<tr>
+      <td>합계 (${items.length}종)</td>
+      <td>${fmt(tCost)}</td>
+      <td>${fmt(tSale)}</td>
+      <td style="color:#a5b4fc">${fmt(tLease)}</td>
+      <td style="color:#f87171">${tDisc > 0 ? '-'+fmt(tDisc) : '—'}</td>
+      <td style="color:#fbbf24">${pct(tmOrig)}</td>
+      <td style="color:#34d399">${pct(tmLease)}</td>
+      <td class="${tmDiff>=0?'up':'down'}">${tmDiff>=0?'+':''}${pct(tmDiff)}</td>
+    </tr>`;
+    // 내부 요약
+    document.getElementById('iPromo').textContent    = fmt(tLease);
+    document.getElementById('iPromoSub').textContent = `판매가 대비 -${fmt(tDisc)} (${((1-tLease/tSale)*100).toFixed(1)}% 할인)`;
+    document.getElementById('iFee').textContent      = fmt(tDisc);
+    document.getElementById('iMOrig').textContent    = pct(tmOrig);
+    document.getElementById('iMOrigAmt').textContent = `마진금액 ${fmt(tSale-tCost)}`;
+    document.getElementById('iMLease').textContent   = pct(tmLease);
+    document.getElementById('iMLeaseAmt').textContent= `리스마진금액 ${fmt(tLease-tCost)}`;
+  }
+
+  // ── 외부용 테이블 ──
+  const extBody = document.getElementById('extBody');
+  const extFoot = document.getElementById('extFoot');
+  if (items.length === 0) {
+    extBody.innerHTML = `<tr><td class="empty-td" colspan="6">품목을 선택하면 견적이 표시됩니다</td></tr>`;
+    extFoot.innerHTML = '';
+    document.getElementById('eTotal').textContent   = '0원';
+    document.getElementById('eDeposit').textContent = '0원';
+    document.getElementById('eMonthly').textContent = '0원/월';
+    return;
+  }
+  let etTotal=0;
+  extBody.innerHTML = items.map(p => {
+    const lp      = promoPrices[p.id];
+    const deposit = Math.round(lp * 0.1);
+    const remain  = lp - deposit;
+    const monthly = Math.round(remain / 24);
+    const totalPay= deposit + monthly * 24;
+    etTotal += lp;
+    return `<tr>
+      <td class="ec-name">${p.name}</td>
+      <td class="ec-sale">${fmt(lp)}</td>
+      <td class="ec-deposit">${fmt(deposit)}</td>
+      <td class="ec-deposit">${fmt(remain)}</td>
+      <td class="ec-monthly">${fmt(monthly)}/월</td>
+      <td class="ec-total">${fmt(totalPay)}</td>
+    </tr>`;
+  }).join('');
+  const etDeposit = Math.round(etTotal * 0.1);
+  const etRemain  = etTotal - etDeposit;
+  const etMonthly = Math.round(etRemain / 24);
+  const etTotalPay= etDeposit + etMonthly * 24;
+  extFoot.innerHTML = `<tr>
+    <td style="color:#93c5fd">합계 (${items.length}종)</td>
+    <td style="color:#93c5fd">${fmt(etTotal)}</td>
+    <td style="color:#94a3b8">${fmt(etDeposit)}</td>
+    <td style="color:#94a3b8">${fmt(etRemain)}</td>
+    <td style="color:#60a5fa">${fmt(etMonthly)}/월</td>
+    <td style="color:#a5b4fc">${fmt(etTotalPay)}</td>
+  </tr>`;
+  document.getElementById('eTotal').textContent   = fmt(etTotal);
+  document.getElementById('eDeposit').textContent = fmt(etDeposit);
+  document.getElementById('eMonthly').textContent = fmt(etMonthly) + '/월';
+}
+
+renderGrid();
+update();
+
+function exportPng() {
+  const area = document.getElementById('extExportArea');
+  const btn  = document.getElementById('pngBtn');
+  if (!area || area.children.length === 0) {
+    alert('먼저 품목을 선택해주세요.');
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '⏳ 저장 중...';
+
+  // 캡처용 임시 래퍼 (흰 배경, 패딩)
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'background:#0f1117;padding:24px;border-radius:16px;display:inline-block;';
+  const clone = area.cloneNode(true);
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  html2canvas(wrapper, {
+    backgroundColor: '#0f1117',
+    scale: 2,
+    useCORS: true,
+    logging: false,
+  }).then(canvas => {
+    const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const items = [...selected].map(id => PRODUCTS.find(p=>p.id===id)?.name.split(' ')[0]).filter(Boolean).join('+');
+    const link = document.createElement('a');
+    link.download = `DSE_리스견적_${items}_${today}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    document.body.removeChild(wrapper);
+    btn.disabled = false;
+    btn.textContent = '📥 PNG로 저장';
+  });
+}
+</script>
+</body>
+</html>
