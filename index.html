@@ -138,8 +138,8 @@
   .ext-summary.disc .es-sub { color:#059669; }
   .ext-summary.disc .es-divider { border-color:rgba(5,150,105,.3); }
   .note-bar { background:#1e293b; border:1px solid #334155; border-radius:8px; padding:9px 16px; font-size:10px; color:#475569; margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
-  /* PNG 저장 버튼 */
-  .png-btn-wrap { display:flex; justify-content:flex-end; margin-bottom:10px; }
+  /* PNG 저장 / 공유 버튼 */
+  .png-btn-wrap { display:flex; justify-content:flex-end; gap:8px; margin-bottom:10px; }
   .png-btn {
     background:linear-gradient(135deg,#1d4ed8,#2563eb); color:#fff;
     border:none; border-radius:10px; padding:10px 22px;
@@ -149,6 +149,17 @@
   }
   .png-btn:hover { opacity:.85; }
   .png-btn:disabled { opacity:.5; cursor:not-allowed; }
+  .share-btn {
+    background:linear-gradient(135deg,#065f46,#059669); color:#fff;
+    border:none; border-radius:10px; padding:10px 22px;
+    font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;
+    display:flex; align-items:center; gap:8px; transition:opacity .15s;
+    letter-spacing:.3px;
+  }
+  .share-btn:hover { opacity:.85; }
+  /* 공유 링크로 열릴 때 내부용 섹션 자동 숨김 */
+  body.shared-view .sec-badge.internal { display:none; }
+  body.shared-view #intCollapse { display:none; }
 </style>
 </head>
 <body>
@@ -262,6 +273,7 @@
 
   <div class="sec-collapse" id="extCollapse">
   <div class="png-btn-wrap">
+    <button class="share-btn" onclick="shareQuote()">🔗 외부 공유 링크 복사</button>
     <button class="png-btn" id="pngBtn" onclick="exportPng()">📥 PNG로 저장</button>
   </div>
 
@@ -726,7 +738,8 @@ setInterval(loadFromSheet, 60000);
 
 renderGrid();
 update();
-loadFromSheet();   // 비동기 · 완료 시 자동 갱신
+loadStateFromUrl();  // URL 공유 상태 복원 (공유 링크로 접속 시)
+loadFromSheet();     // 비동기 · 완료 시 자동 갱신
 
 // 할인율 변경 시 즉시 재계산
 document.getElementById('discountInput').addEventListener('input', update);
@@ -743,6 +756,52 @@ document.getElementById('rateInput').addEventListener('input', () => {
               document.querySelector('[data-rate-label]');
   update();
 });
+
+// ── 공유 링크 생성 / 복원 ────────────────────────────────────────────
+function shareQuote() {
+  if (selected.size === 0) {
+    alert('먼저 품목을 선택해 주세요.');
+    return;
+  }
+  const state = {
+    mode:   MODE,
+    sel:    [...selected],
+    prices: Object.fromEntries([...selected].map(id => [id, promoPrices[id]])),
+    rate:   document.getElementById('rateInput').value,
+    disc:   document.getElementById('discountInput').value,
+    ext:    1,   // 외부 공유 플래그 → 내부용 자동 숨김
+  };
+  const hash = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+  const url  = location.origin + location.pathname + '#' + hash;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = event.currentTarget;
+    const orig = btn.textContent;
+    btn.textContent = '✓ 링크 복사 완료!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  }).catch(() => { prompt('아래 링크를 복사하세요:', url); });
+}
+
+function loadStateFromUrl() {
+  const hash = location.hash.slice(1);
+  if (!hash) return;
+  try {
+    const state = JSON.parse(decodeURIComponent(escape(atob(hash))));
+    // 외부 공유 링크: 내부용 섹션 숨김
+    if (state.ext) {
+      document.body.classList.add('shared-view');
+      // 내부용 헤더 배지도 숨김
+      document.getElementById('intCollapse').classList.add('closed');
+    }
+    if (state.mode) setMode(state.mode);
+    if (state.rate) document.getElementById('rateInput').value = state.rate;
+    if (state.disc) document.getElementById('discountInput').value = state.disc;
+    if (state.prices) Object.assign(promoPrices, state.prices);
+    if (state.sel) state.sel.forEach(id => selected.add(id));
+    renderGrid();
+    update();
+  } catch(e) { /* 잘못된 hash, 무시 */ }
+}
+// ─────────────────────────────────────────────────────────────────────
 
 function exportPng() {
   const area = document.getElementById('extExportArea');
