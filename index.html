@@ -347,6 +347,7 @@ const PRODUCTS = [
   { id:'ulkin',    name:'울킨',               desc:'전용 겔 포함',               cost:4400000,  price:7700000,  leasePrice:0 },
   { id:'aquafill', name:'아쿠아필',           desc:'솔루션 포함',                cost:1800000,  price:2500000,  leasePrice:0 },
   { id:'ssb',      name:'SSB-EVA',            desc:'의료용 석션기',              cost:880000,   price:1250000,  leasePrice:0 },
+  { id:'wellcomet', name:'웰코멧 LDM',        desc:'',                           cost:17000000, price:22000000, leasePrice:0 },
 ];
 
 const selected     = new Set();
@@ -672,7 +673,7 @@ function toggleSection(id) {
 
 // ── Google Sheets 자동 연동 ──────────────────────────────────────────
 // ▼ Apps Script 웹 앱 URL (배포 후 여기에 붙여넣기)
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz0nArdWjp8KM0A74HVvMN2RutMZIqDM9O35TWjtiwUq0-B0_G7Iins9_0O5m4dPcs/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/a/macros/medistream.co.kr/s/AKfycbx7TmJGHc3MA3SijVa2iMkp1gnW7z9rrjG5CSdgt9KOr5XPR5B9qWYI-4lxBTqjANH3vQ/exec';
 
 function makeId(name) {
   return name.toLowerCase().replace(/[^a-z0-9\uAC00-\uD7A3]/g, '').slice(0, 12);
