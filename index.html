@@ -126,11 +126,45 @@
 
   /* MODE TABS */
   .mode-tabs { display:flex; margin-bottom:14px; border:1px solid #334155; border-radius:12px; overflow:hidden; }
-  .mode-tab { flex:1; padding:11px 0; text-align:center; font-size:12.5px; font-weight:800; cursor:pointer; transition:all .2s; color:#64748b; background:#1e293b; letter-spacing:.5px; }
+  .mode-tab { flex:1; padding:11px 0; text-align:center; font-size:12.5px; font-weight:800; cursor:pointer; transition:all .2s; color:#64748b; background:#1e293b; letter-spacing:.5px; border-right:1px solid #334155; }
+  .mode-tab:last-child { border-right:none; }
   .mode-tab:hover:not(.active) { background:#263247; color:#94a3b8; }
   .mode-tab.active.lease { background:linear-gradient(135deg,#1e1b4b,#312e81); color:#a5b4fc; }
   .mode-tab.active.discount { background:linear-gradient(135deg,#14352a,#064e3b); color:#34d399; }
-  .mode-tab:first-child { border-right:1px solid #334155; }
+  .mode-tab.active.roi { background:linear-gradient(135deg,#3b1a0a,#7c2d12); color:#fb923c; }
+
+  /* ROI TAB */
+  .roi-section { display:none; }
+  .roi-section.visible { display:block; }
+  .roi-inputs { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:18px; }
+  .roi-field { background:#1e293b; border:1px solid #334155; border-radius:10px; padding:14px 16px; }
+  .roi-field label { display:block; font-size:10px; color:#64748b; letter-spacing:.8px; text-transform:uppercase; margin-bottom:6px; font-weight:700; }
+  .roi-field input {
+    width:100%; background:#0f172a; border:1px solid #334155; border-radius:6px;
+    color:#fb923c; font-size:15px; font-weight:800; padding:8px 12px;
+    font-family:inherit; text-align:right; outline:none; transition:border-color .15s;
+  }
+  .roi-field input:focus { border-color:#f97316; }
+  .roi-field .unit { font-size:10px; color:#64748b; margin-top:4px; text-align:right; }
+  .roi-result-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+  .roi-card { background:#1e293b; border:1px solid #334155; border-radius:12px; padding:18px 16px; text-align:center; }
+  .roi-card.primary { background:linear-gradient(135deg,#3b1a0a,#7c2d12); border-color:#f97316; }
+  .roi-card .rc-label { font-size:10px; color:#64748b; letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; }
+  .roi-card .rc-val { font-size:22px; font-weight:900; color:#e2e8f0; }
+  .roi-card.primary .rc-val { color:#fb923c; }
+  .roi-card .rc-sub { font-size:10px; color:#475569; margin-top:4px; }
+  .roi-bar-wrap { background:#1e293b; border:1px solid #334155; border-radius:12px; padding:18px 20px; margin-bottom:14px; }
+  .roi-bar-label { font-size:11px; color:#94a3b8; margin-bottom:8px; font-weight:700; }
+  .roi-bar-track { background:#0f172a; border-radius:8px; height:28px; position:relative; overflow:hidden; }
+  .roi-bar-fill { height:100%; border-radius:8px; background:linear-gradient(90deg,#f97316,#fb923c); transition:width .4s ease; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; font-size:11px; font-weight:800; color:#fff; min-width:60px; }
+  .roi-bar-mark { position:absolute; top:0; bottom:0; width:2px; background:#e2e8f0; }
+  .roi-bar-mark-label { position:absolute; top:-16px; font-size:9px; color:#94a3b8; white-space:nowrap; transform:translateX(-50%); }
+  .roi-monthly-table { margin-bottom:14px; }
+  .roi-monthly-table table { width:100%; }
+  .roi-monthly-table thead th { padding:8px 10px; font-size:10px; }
+  .roi-monthly-table tbody td { padding:8px 10px; font-size:11.5px; }
+  .roi-monthly-table .breakeven-row { background:rgba(249,115,22,.12); }
+  .roi-monthly-table .breakeven-row td { color:#fb923c; font-weight:700; }
 
   .ext-summary.disc { background:linear-gradient(135deg,#14352a,#064e3b); border-color:#059669; }
   .ext-summary.disc .es-label { color:#6ee7b7; }
@@ -182,6 +216,7 @@
   <div class="mode-tabs">
     <div class="mode-tab active lease" id="tabLease" onclick="setMode('lease')">💳 리스 적용</div>
     <div class="mode-tab discount" id="tabDiscount" onclick="setMode('discount')">🏷️ 할인 적용</div>
+    <div class="mode-tab roi" id="tabRoi" onclick="setMode('roi')">📊 ROI 계산</div>
   </div>
 
   <!-- PARAMS -->
@@ -320,6 +355,97 @@
   </div><!-- 캡처 영역 끝 -->
   </div><!-- /extCollapse -->
 
+  <!-- ═══ ROI 계산기 ═══ -->
+  <div class="roi-section" id="roiSection">
+    <div class="section-label" style="margin-top:4px">투자 수익률 (ROI) 계산</div>
+    <div class="roi-inputs">
+      <div class="roi-field">
+        <label>제품 단가 (장비 투자금액)</label>
+        <input type="text" id="roiCost" placeholder="0" value="">
+        <div class="unit">원 (VAT 포함)</div>
+      </div>
+      <div class="roi-field">
+        <label>환자당 시술 금액</label>
+        <input type="text" id="roiChargePerPatient" placeholder="0" value="">
+        <div class="unit">원 / 1회 시술</div>
+      </div>
+      <div class="roi-field">
+        <label>월 신환 수</label>
+        <input type="number" id="roiNewPatients" placeholder="0" value="" min="0" step="1">
+        <div class="unit">명 / 월</div>
+      </div>
+      <div class="roi-field">
+        <label>월 재환 수</label>
+        <input type="number" id="roiReturnPatients" placeholder="0" value="" min="0" step="1">
+        <div class="unit">명 / 월</div>
+      </div>
+    </div>
+
+    <!-- ROI 결과 카드 -->
+    <div class="roi-result-grid" id="roiResults">
+      <div class="roi-card">
+        <div class="rc-label">월 총 환자 수</div>
+        <div class="rc-val" id="roiTotalPatients">0명</div>
+        <div class="rc-sub">신환 + 재환</div>
+      </div>
+      <div class="roi-card">
+        <div class="rc-label">월 매출</div>
+        <div class="rc-val" id="roiMonthlyRevenue">0원</div>
+        <div class="rc-sub">환자 수 × 시술 금액</div>
+      </div>
+      <div class="roi-card primary">
+        <div class="rc-label">투자 회수 기간</div>
+        <div class="rc-val" id="roiBreakeven">—</div>
+        <div class="rc-sub" id="roiBreakevenSub">제품 단가 ÷ 월 매출</div>
+      </div>
+    </div>
+
+    <!-- ROI 비주얼 바 -->
+    <div class="roi-bar-wrap">
+      <div class="roi-bar-label">12개월 기준 투자 회수 진행률</div>
+      <div class="roi-bar-track">
+        <div class="roi-bar-fill" id="roiBarFill" style="width:0%">0%</div>
+        <div class="roi-bar-mark" id="roiBarMark" style="left:100%;display:none">
+          <div class="roi-bar-mark-label">손익분기</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 추가 지표 -->
+    <div class="roi-result-grid">
+      <div class="roi-card">
+        <div class="rc-label">연간 매출 (12개월)</div>
+        <div class="rc-val" id="roiAnnualRevenue">0원</div>
+        <div class="rc-sub" id="roiAnnualSub">월 매출 × 12</div>
+      </div>
+      <div class="roi-card">
+        <div class="rc-label">연간 순수익</div>
+        <div class="rc-val" id="roiAnnualProfit">0원</div>
+        <div class="rc-sub">연 매출 − 제품 단가</div>
+      </div>
+      <div class="roi-card primary">
+        <div class="rc-label">연간 ROI</div>
+        <div class="rc-val" id="roiAnnualPct">—</div>
+        <div class="rc-sub">순수익 ÷ 투자금 × 100</div>
+      </div>
+    </div>
+
+    <!-- 월별 누적 테이블 -->
+    <div class="table-wrap roi-monthly-table">
+      <div class="table-header"><b>월별 누적 매출 vs 투자금</b></div>
+      <table>
+        <thead><tr>
+          <th style="text-align:left">월</th>
+          <th>월 매출</th>
+          <th>누적 매출</th>
+          <th>잔여 투자금</th>
+          <th>회수율</th>
+        </tr></thead>
+        <tbody id="roiTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="note-bar">
     <span>🔒 내부: 패키지 할인가 기준 · 리스마진율 = (패키지 할인가 - 공급가) / 패키지 할인가 (시트 H열 기본값)</span>
     <span>📋 외부: 패키지 할인가 기준 · 보증금 10% · 월납입 = 잔액÷24 (무이자)</span>
@@ -361,11 +487,23 @@ function setMode(m) {
   MODE = m;
   const tl = document.getElementById('tabLease');
   const td = document.getElementById('tabDiscount');
+  const tr = document.getElementById('tabRoi');
   tl.className = 'mode-tab lease' + (m === 'lease' ? ' active' : '');
   td.className = 'mode-tab discount' + (m === 'discount' ? ' active' : '');
-  document.getElementById('leaseParams').style.display   = m === 'lease'    ? 'flex' : 'none';
-  document.getElementById('discountParams').style.display = m === 'discount' ? 'flex' : 'none';
-  update();
+  tr.className = 'mode-tab roi' + (m === 'roi' ? ' active' : '');
+  document.getElementById('leaseParams').style.display    = m === 'lease'    ? 'flex' : 'none';
+  document.getElementById('discountParams').style.display  = m === 'discount' ? 'flex' : 'none';
+
+  // ROI 모드: 품목선택/내부/외부 숨기고 ROI 섹션만 표시
+  const roiMode = m === 'roi';
+  document.getElementById('roiSection').className = 'roi-section' + (roiMode ? ' visible' : '');
+  document.getElementById('productGrid').parentElement.querySelectorAll('.section-label')[0].style.display = roiMode ? 'none' : '';
+  document.getElementById('productGrid').style.display = roiMode ? 'none' : '';
+  document.querySelectorAll('.sec-divider').forEach(el => el.style.display = roiMode ? 'none' : '');
+  document.getElementById('intCollapse').style.display = roiMode ? 'none' : '';
+  document.getElementById('extCollapse').style.display = roiMode ? 'none' : '';
+
+  if (roiMode) { updateRoi(); } else { update(); }
 }
 
 function fmt(n)  { return n === 0 ? '0원' : n.toLocaleString('ko-KR') + '원'; }
@@ -802,6 +940,110 @@ function loadStateFromUrl() {
     update();
   } catch(e) { /* 잘못된 hash, 무시 */ }
 }
+// ─────────────────────────────────────────────────────────────────────
+
+// ── ROI 계산 ─────────────────────────────────────────────────────────
+function parseRoiInput(id) {
+  const el = document.getElementById(id);
+  if (!el) return 0;
+  const raw = el.value.replace(/[^0-9]/g, '');
+  return raw ? parseInt(raw) : 0;
+}
+
+function formatRoiInputs() {
+  ['roiCost','roiChargePerPatient'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => {
+      const raw = el.value.replace(/[^0-9]/g, '');
+      el.value = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
+      updateRoi();
+    });
+  });
+  ['roiNewPatients','roiReturnPatients'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateRoi);
+  });
+}
+
+function updateRoi() {
+  const cost        = parseRoiInput('roiCost');
+  const chargePerPt = parseRoiInput('roiChargePerPatient');
+  const newPt       = parseInt(document.getElementById('roiNewPatients').value) || 0;
+  const retPt       = parseInt(document.getElementById('roiReturnPatients').value) || 0;
+
+  const totalPt      = newPt + retPt;
+  const monthlyRev   = totalPt * chargePerPt;
+  const annualRev    = monthlyRev * 12;
+  const annualProfit = annualRev - cost;
+  const roiPct       = cost > 0 ? (annualProfit / cost * 100) : 0;
+  const breakeven    = monthlyRev > 0 ? (cost / monthlyRev) : 0;
+
+  document.getElementById('roiTotalPatients').textContent   = totalPt.toLocaleString('ko-KR') + '명';
+  document.getElementById('roiMonthlyRevenue').textContent  = fmt(monthlyRev);
+  document.getElementById('roiAnnualRevenue').textContent   = fmt(annualRev);
+  document.getElementById('roiAnnualProfit').textContent    = fmt(annualProfit);
+  document.getElementById('roiAnnualProfit').style.color    = annualProfit >= 0 ? '#34d399' : '#f87171';
+
+  // 투자 회수 기간
+  if (monthlyRev <= 0 || cost <= 0) {
+    document.getElementById('roiBreakeven').textContent    = '—';
+    document.getElementById('roiBreakevenSub').textContent = '값을 입력하세요';
+    document.getElementById('roiAnnualPct').textContent    = '—';
+  } else {
+    const months = Math.ceil(breakeven);
+    document.getElementById('roiBreakeven').textContent    = months + '개월';
+    document.getElementById('roiBreakevenSub').textContent = `약 ${(breakeven).toFixed(1)}개월 · ${months <= 12 ? '1년 이내 회수' : '1년 초과'}`;
+    document.getElementById('roiAnnualPct').textContent    = roiPct.toFixed(1) + '%';
+    document.getElementById('roiAnnualPct').style.color    = roiPct >= 0 ? '#fb923c' : '#f87171';
+  }
+
+  // 프로그레스 바 (12개월 기준)
+  const fill = document.getElementById('roiBarFill');
+  if (cost > 0 && monthlyRev > 0) {
+    const ratio12 = Math.min((annualRev / cost) * 100, 300);
+    fill.style.width = Math.min(ratio12, 100) + '%';
+    fill.textContent = ratio12.toFixed(0) + '%';
+    // 손익분기 마크
+    const mark = document.getElementById('roiBarMark');
+    const bePos = (breakeven / 12) * 100;
+    if (bePos <= 100) {
+      mark.style.display = 'block';
+      mark.style.left = bePos + '%';
+    } else {
+      mark.style.display = 'none';
+    }
+  } else {
+    fill.style.width = '0%';
+    fill.textContent = '0%';
+    document.getElementById('roiBarMark').style.display = 'none';
+  }
+
+  // 월별 테이블
+  const tbody = document.getElementById('roiTableBody');
+  if (cost <= 0 || monthlyRev <= 0) {
+    tbody.innerHTML = '<tr><td class="empty-td" colspan="5">제품 단가와 환자 정보를 입력하면 계산됩니다</td></tr>';
+    return;
+  }
+  let cumul = 0;
+  const beMonth = Math.ceil(breakeven);
+  const maxMonth = Math.max(beMonth + 3, 12);
+  let rows = '';
+  for (let m = 1; m <= maxMonth; m++) {
+    cumul += monthlyRev;
+    const remain = cost - cumul;
+    const ratio  = (cumul / cost * 100);
+    const isBe   = m === beMonth;
+    rows += `<tr class="${isBe ? 'breakeven-row' : ''}">
+      <td style="text-align:left">${m}개월${isBe ? ' ← 손익분기' : ''}</td>
+      <td style="color:#94a3b8">${fmt(monthlyRev)}</td>
+      <td style="color:#60a5fa">${fmt(cumul)}</td>
+      <td style="color:${remain > 0 ? '#f87171' : '#34d399'}">${remain > 0 ? '-' + fmt(remain) : '+' + fmt(Math.abs(remain))}</td>
+      <td style="color:${ratio >= 100 ? '#34d399' : '#fb923c'}">${ratio.toFixed(1)}%</td>
+    </tr>`;
+  }
+  tbody.innerHTML = rows;
+}
+
+formatRoiInputs();
 // ─────────────────────────────────────────────────────────────────────
 
 function exportPng() {
