@@ -149,10 +149,13 @@
   .roi-result-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
   .roi-card { background:#1e293b; border:1px solid #334155; border-radius:12px; padding:18px 16px; text-align:center; }
   .roi-card.primary { background:linear-gradient(135deg,#3b1a0a,#7c2d12); border-color:#f97316; }
-  .roi-card .rc-label { font-size:10px; color:#64748b; letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; }
-  .roi-card .rc-val { font-size:22px; font-weight:900; color:#e2e8f0; }
+  .roi-card .rc-label { font-size:11px; color:#64748b; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; font-weight:700; }
+  .roi-card .rc-val { font-size:22px; font-weight:900; color:#e2e8f0; line-height:1.25; }
   .roi-card.primary .rc-val { color:#fb923c; }
-  .roi-card .rc-sub { font-size:10px; color:#475569; margin-top:4px; }
+  .roi-card .rc-sub { font-size:12.5px; color:#94a3b8; margin-top:8px; line-height:1.55; font-weight:500; }
+  .roi-card .rc-sub b { color:#fb923c; font-weight:800; font-size:13.5px; }
+  .roi-card .rc-sub .muted { color:#64748b; }
+  .roi-card .rc-sub .pos { color:#34d399; font-weight:800; font-size:13.5px; }
   .roi-bar-wrap { background:#1e293b; border:1px solid #334155; border-radius:12px; padding:18px 20px; margin-bottom:14px; }
   .roi-bar-label { font-size:11px; color:#94a3b8; margin-bottom:8px; font-weight:700; }
   .roi-bar-track { background:#0f172a; border-radius:8px; height:28px; position:relative; overflow:hidden; }
@@ -1056,12 +1059,15 @@ function updateRoi() {
     `월 ${totalPt.toLocaleString('ko-KR')}명 ` +
     `<span style="color:#fb923c">/ 연 ${(totalPt * 12).toLocaleString('ko-KR')}명</span>`;
   document.getElementById('roiTotalPatientsSub').innerHTML  =
-    `신환 월 ${newPt.toLocaleString('ko-KR')}명 <span style="color:#fb923c">(연 ${(newPt*12).toLocaleString('ko-KR')}명)</span>` +
-    ` + 재환 월 ${retPt.toLocaleString('ko-KR')}명 <span style="color:#fb923c">(연 ${(retPt*12).toLocaleString('ko-KR')}명)</span>`;
+    `🆕 신환 월 <b>${newPt.toLocaleString('ko-KR')}</b>명 → 연 <b>${(newPt*12).toLocaleString('ko-KR')}</b>명<br>` +
+    `🔁 재환 월 <b>${retPt.toLocaleString('ko-KR')}</b>명 → 연 <b>${(retPt*12).toLocaleString('ko-KR')}</b>명`;
   document.getElementById('roiNewPatientsAnnual').textContent    = `연 ${(newPt * 12).toLocaleString('ko-KR')}명`;
   document.getElementById('roiReturnPatientsAnnual').textContent = `연 ${(retPt * 12).toLocaleString('ko-KR')}명`;
   document.getElementById('roiMonthlyRevenue').textContent  = fmt(monthlyRev);
   document.getElementById('roiAnnualRevenue').textContent   = fmt(annualRev);
+  // 연간매출 카드 sub: 연 환자수 × 시술단가 분해 표시
+  document.getElementById('roiAnnualSub').innerHTML =
+    `연 환자 <b>${(totalPt*12).toLocaleString('ko-KR')}</b>명 × ${chargePerPt.toLocaleString('ko-KR')}원`;
   document.getElementById('roiAnnualProfit').textContent    = fmt(annualProfit);
   document.getElementById('roiAnnualProfit').style.color    = annualProfit >= 0 ? '#34d399' : '#f87171';
 
@@ -1078,8 +1084,8 @@ function updateRoi() {
     const beTotal = Math.ceil(breakeven * totalPt);
     document.getElementById('roiBreakeven').textContent    = months + '개월';
     document.getElementById('roiBreakevenSub').innerHTML   =
-      `약 ${(breakeven).toFixed(1)}개월 · ${months <= 12 ? '1년 이내 회수' : '1년 초과'}` +
-      `<br><span style="color:#fb923c;font-weight:700">회수까지 신환 ${beNew.toLocaleString('ko-KR')}명 · 총 ${beTotal.toLocaleString('ko-KR')}명</span>`;
+      `약 ${(breakeven).toFixed(1)}개월 · ${months <= 12 ? '1년 이내 회수' : '1년 초과'}<br>` +
+      `회수까지 신환 <b>${beNew.toLocaleString('ko-KR')}</b>명 · 총 <b>${beTotal.toLocaleString('ko-KR')}</b>명`;
     document.getElementById('roiAnnualPct').textContent    = roiPct.toFixed(1) + '%';
     document.getElementById('roiAnnualPct').style.color    = roiPct >= 0 ? '#fb923c' : '#f87171';
   }
