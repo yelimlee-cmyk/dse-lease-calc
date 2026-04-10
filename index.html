@@ -372,21 +372,21 @@
       <div class="roi-field">
         <label>월 신환 수</label>
         <input type="number" id="roiNewPatients" placeholder="0" value="" min="0" step="1">
-        <div class="unit">명 / 월</div>
+        <div class="unit">명 / 월 · <span id="roiNewPatientsAnnual" style="color:#fb923c;font-weight:700;">연 0명</span></div>
       </div>
       <div class="roi-field">
         <label>월 재환 수</label>
         <input type="number" id="roiReturnPatients" placeholder="0" value="" min="0" step="1">
-        <div class="unit">명 / 월</div>
+        <div class="unit">명 / 월 · <span id="roiReturnPatientsAnnual" style="color:#fb923c;font-weight:700;">연 0명</span></div>
       </div>
     </div>
 
     <!-- ROI 결과 카드 -->
     <div class="roi-result-grid" id="roiResults">
       <div class="roi-card">
-        <div class="rc-label">월 총 환자 수</div>
+        <div class="rc-label">월 / 연 총 환자 수</div>
         <div class="rc-val" id="roiTotalPatients">0명</div>
-        <div class="rc-sub">신환 + 재환</div>
+        <div class="rc-sub" id="roiTotalPatientsSub">신환 + 재환 · 연 0명</div>
       </div>
       <div class="roi-card">
         <div class="rc-label">월 매출</div>
@@ -978,6 +978,9 @@ function updateRoi() {
   const breakeven    = monthlyRev > 0 ? (cost / monthlyRev) : 0;
 
   document.getElementById('roiTotalPatients').textContent   = totalPt.toLocaleString('ko-KR') + '명';
+  document.getElementById('roiTotalPatientsSub').textContent = `신환 + 재환 · 연 ${(totalPt * 12).toLocaleString('ko-KR')}명`;
+  document.getElementById('roiNewPatientsAnnual').textContent    = `연 ${(newPt * 12).toLocaleString('ko-KR')}명`;
+  document.getElementById('roiReturnPatientsAnnual').textContent = `연 ${(retPt * 12).toLocaleString('ko-KR')}명`;
   document.getElementById('roiMonthlyRevenue').textContent  = fmt(monthlyRev);
   document.getElementById('roiAnnualRevenue').textContent   = fmt(annualRev);
   document.getElementById('roiAnnualProfit').textContent    = fmt(annualProfit);
