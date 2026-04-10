@@ -38,7 +38,16 @@
 
   /* PRODUCT GRID */
   .section-label { font-size:10px; letter-spacing:3px; color:#6366f1; text-transform:uppercase; margin-bottom:8px; font-weight:700; }
-  .product-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:18px; }
+  .product-grid { margin-bottom:18px; }
+  .cat-group { margin-bottom:14px; }
+  .cat-title {
+    font-size:11px; font-weight:800; color:#a5b4fc; letter-spacing:.5px;
+    padding:6px 12px; margin-bottom:7px;
+    background:linear-gradient(90deg,rgba(99,102,241,.18),transparent);
+    border-left:3px solid #6366f1; border-radius:4px;
+  }
+  .cat-title .cat-count { color:#64748b; font-weight:600; font-size:10px; margin-left:6px; }
+  .cat-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
   .product-card { background:#1e293b; border:1.5px solid #334155; border-radius:12px; padding:11px 13px; cursor:pointer; transition:all .15s; user-select:none; }
   .product-card:hover { border-color:#6366f1; }
   .product-card.selected { border-color:#6366f1; background:#1e1b4b; }
@@ -165,6 +174,12 @@
   }
   .manage-table input.num { text-align:right; color:#a5b4fc; }
   .manage-table input:focus { border-color:#f472b6; }
+  .manage-table select {
+    width:100%; background:#0f172a; border:1px solid #334155; border-radius:6px;
+    color:#a5b4fc; font-size:11.5px; font-weight:600; padding:5px 8px;
+    font-family:inherit; outline:none; cursor:pointer; transition:border-color .15s;
+  }
+  .manage-table select:focus { border-color:#f472b6; }
   .manage-table .row-actions { display:flex; gap:4px; justify-content:flex-end; }
   .manage-table .ic-btn {
     background:#0f172a; border:1px solid #334155; color:#94a3b8;
@@ -535,10 +550,11 @@
       <table class="manage-table">
         <thead>
           <tr>
-            <th style="width:20%">품목명</th>
-            <th style="width:26%">설명</th>
-            <th style="width:16%;text-align:right">공급가</th>
-            <th style="width:16%;text-align:right">판매가</th>
+            <th style="width:16%">품목명</th>
+            <th style="width:20%">설명</th>
+            <th style="width:16%">카테고리</th>
+            <th style="width:13%;text-align:right">공급가</th>
+            <th style="width:13%;text-align:right">판매가</th>
             <th style="width:22%;text-align:right">순서/삭제</th>
           </tr>
         </thead>
@@ -561,18 +577,28 @@
 
 </div>
 <script>
-const DEFAULT_PRODUCTS = [
-  { id:'impacq',   name:'ImpacQ Plus',       desc:'큐스위치 엔디야그',         cost:22600000, price:32000000, leasePrice:0 },
-  { id:'janus',    name:'JANUS Pro sunlike',  desc:'안면진단기기',               cost:6820000,  price:8580000,  leasePrice:0 },
-  { id:'multixel', name:'Multixel',           desc:'프락셔널 CO2 (듀얼타입)',    cost:7000000,  price:9900000,  leasePrice:0 },
-  { id:'ds40',     name:'DS-40UB',            desc:'보급형 CO2 레이저',          cost:3900000,  price:4950000,  leasePrice:0 },
-  { id:'cotra',    name:'COTRA PLUS',         desc:'CO2 프락셔널 (프리미엄)',    cost:11500000, price:18500000, leasePrice:0 },
-  { id:'neoject',  name:'NEOJECT',            desc:'인젝터 (니들 3bx 포함)',     cost:3800000,  price:5500000,  leasePrice:0 },
-  { id:'ulkin',    name:'울킨',               desc:'전용 겔 포함',               cost:4400000,  price:7700000,  leasePrice:0 },
-  { id:'aquafill', name:'아쿠아필',           desc:'솔루션 포함',                cost:1800000,  price:2500000,  leasePrice:0 },
-  { id:'ssb',      name:'SSB-EVA',            desc:'의료용 석션기',              cost:880000,   price:1250000,  leasePrice:0 },
-  { id:'wellcomet', name:'웰코멧 LDM',        desc:'',                           cost:17000000, price:22000000, leasePrice:0 },
+// 카테고리 (순서대로 표시됨)
+const CATEGORIES = [
+  'CO2 레이저/엔디야그',
+  '안면 진단기',
+  '인젝터',
+  '바디 관리기기',
+  '기타 관리기기'
 ];
+const DEFAULT_CATEGORY = '기타 관리기기';
+const DEFAULT_PRODUCTS = [
+  { id:'impacq',   name:'ImpacQ Plus',       desc:'큐스위치 엔디야그',         category:'CO2 레이저/엔디야그', cost:22600000, price:32000000, leasePrice:0 },
+  { id:'janus',    name:'JANUS Pro sunlike', desc:'안면진단기기',               category:'안면 진단기',         cost:6820000,  price:8580000,  leasePrice:0 },
+  { id:'multixel', name:'Multixel',          desc:'프락셔널 CO2 (듀얼타입)',    category:'CO2 레이저/엔디야그', cost:7000000,  price:9900000,  leasePrice:0 },
+  { id:'ds40',     name:'DS-40UB',           desc:'보급형 CO2 레이저',          category:'CO2 레이저/엔디야그', cost:3900000,  price:4950000,  leasePrice:0 },
+  { id:'cotra',    name:'COTRA PLUS',        desc:'CO2 프락셔널 (프리미엄)',    category:'CO2 레이저/엔디야그', cost:11500000, price:18500000, leasePrice:0 },
+  { id:'neoject',  name:'NEOJECT',           desc:'인젝터 (니들 3bx 포함)',     category:'인젝터',              cost:3800000,  price:5500000,  leasePrice:0 },
+  { id:'ulkin',    name:'울킨',              desc:'전용 겔 포함',               category:'바디 관리기기',       cost:4400000,  price:7700000,  leasePrice:0 },
+  { id:'aquafill', name:'아쿠아필',          desc:'솔루션 포함',                category:'기타 관리기기',       cost:1800000,  price:2500000,  leasePrice:0 },
+  { id:'ssb',      name:'SSB-EVA',           desc:'의료용 석션기',              category:'기타 관리기기',       cost:880000,   price:1250000,  leasePrice:0 },
+  { id:'wellcomet', name:'웰코멧 LDM',       desc:'',                           category:'바디 관리기기',       cost:17000000, price:22000000, leasePrice:0 },
+];
+function productCategory(p) { return CATEGORIES.includes(p.category) ? p.category : DEFAULT_CATEGORY; }
 const PRODUCTS_STORAGE_KEY = 'dseProducts_v1';
 // localStorage에서 품목 불러오기 (없으면 기본값)
 let PRODUCTS = (function() {
@@ -657,36 +683,79 @@ function wan(n)  { return (n / 10000).toLocaleString('ko-KR') + '만'; }
 function renderGrid() {
   const grid = document.getElementById('productGrid');
   grid.innerHTML = '';
+
+  // 카테고리별로 묶되, CATEGORIES 순서를 유지하고 PRODUCTS 내부 순서도 보존
+  const grouped = {};
+  CATEGORIES.forEach(c => { grouped[c] = []; });
   PRODUCTS.forEach(p => {
+    const c = productCategory(p);
+    if (!grouped[c]) grouped[c] = [];
+    grouped[c].push(p);
+  });
+
+  const makeCard = (p) => {
     const isSel = selected.has(p.id);
     const card = document.createElement('div');
     card.className = 'product-card' + (isSel ? ' selected' : '');
     card.innerHTML = `
       <div class="pc-top">
         <div class="check-box"></div>
-        <div class="p-name">${p.name}<br><span style="font-size:10px;color:#64748b;font-weight:400">${p.desc}</span></div>
+        <div class="p-name">${p.name}<br><span style="font-size:10px;color:#64748b;font-weight:400">${p.desc || ''}</span></div>
         <div class="p-sale">${wan(p.price)}</div>
       </div>
       <div class="promo-row">
         <span class="promo-label">패키지 할인가</span>
         <input class="promo-input" data-id="${p.id}" type="text" value="${getPromo(p.id).toLocaleString('ko-KR')}" placeholder="판매가와 동일">
       </div>`;
-    // 카드 클릭 (입력창 제외)
     card.addEventListener('click', e => {
       if (e.target.classList.contains('promo-input')) return;
       selected.has(p.id) ? selected.delete(p.id) : selected.add(p.id);
       renderGrid(); update();
     });
-    // 프로모션단가 입력
     const input = card.querySelector('.promo-input');
     input.addEventListener('input', () => {
       const raw = input.value.replace(/[^0-9]/g,'');
-      setPromo(p.id, raw ? parseInt(raw) : p.price);  // 현재 모드(리스/할인)에만 저장
+      setPromo(p.id, raw ? parseInt(raw) : p.price);
       input.value = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
       update();
     });
     input.addEventListener('focus', () => { if (!selected.has(p.id)) { selected.add(p.id); renderGrid(); } });
-    grid.appendChild(card);
+    return card;
+  };
+
+  // CATEGORIES 순서대로 렌더 (비어있는 카테고리는 생략)
+  CATEGORIES.forEach((cat, i) => {
+    const items = grouped[cat] || [];
+    if (items.length === 0) return;
+    const group = document.createElement('div');
+    group.className = 'cat-group';
+    const title = document.createElement('div');
+    title.className = 'cat-title';
+    title.innerHTML = `${i+1}. ${cat} <span class="cat-count">(${items.length}종)</span>`;
+    const cards = document.createElement('div');
+    cards.className = 'cat-cards';
+    items.forEach(p => cards.appendChild(makeCard(p)));
+    group.appendChild(title);
+    group.appendChild(cards);
+    grid.appendChild(group);
+  });
+
+  // 등록되지 않은 카테고리에 속한 품목도 표시 (호환성)
+  const unknownCats = Object.keys(grouped).filter(c => !CATEGORIES.includes(c));
+  unknownCats.forEach(cat => {
+    const items = grouped[cat];
+    if (!items || items.length === 0) return;
+    const group = document.createElement('div');
+    group.className = 'cat-group';
+    const title = document.createElement('div');
+    title.className = 'cat-title';
+    title.innerHTML = `${cat} <span class="cat-count">(${items.length}종)</span>`;
+    const cards = document.createElement('div');
+    cards.className = 'cat-cards';
+    items.forEach(p => cards.appendChild(makeCard(p)));
+    group.appendChild(title);
+    group.appendChild(cards);
+    grid.appendChild(group);
   });
 }
 
@@ -1001,10 +1070,14 @@ function renderManageTable() {
   const body = document.getElementById('manageBody');
   document.getElementById('manageCount').textContent = PRODUCTS.length;
   const last = PRODUCTS.length - 1;
+  const catOptions = (selCat) => CATEGORIES.map(c =>
+    `<option value="${c}"${c === selCat ? ' selected' : ''}>${c}</option>`
+  ).join('');
   body.innerHTML = PRODUCTS.map((p, idx) => `
     <tr data-idx="${idx}">
       <td><input type="text" class="mg-name" value="${(p.name || '').replace(/"/g,'&quot;')}" placeholder="품목명"></td>
       <td><input type="text" class="mg-desc" value="${(p.desc || '').replace(/"/g,'&quot;')}" placeholder="설명(선택)"></td>
+      <td><select class="mg-cat">${catOptions(productCategory(p))}</select></td>
       <td><input type="text" class="mg-cost num" value="${(p.cost || 0).toLocaleString('ko-KR')}" placeholder="0"></td>
       <td><input type="text" class="mg-price num" value="${(p.price || 0).toLocaleString('ko-KR')}" placeholder="0"></td>
       <td>
@@ -1019,12 +1092,14 @@ function renderManageTable() {
   // 각 셀 변경 시 PRODUCTS 업데이트 + 저장
   body.querySelectorAll('tr').forEach(tr => {
     const idx = parseInt(tr.dataset.idx);
-    const n = tr.querySelector('.mg-name');
-    const d = tr.querySelector('.mg-desc');
-    const c = tr.querySelector('.mg-cost');
-    const pr= tr.querySelector('.mg-price');
+    const n  = tr.querySelector('.mg-name');
+    const d  = tr.querySelector('.mg-desc');
+    const ct = tr.querySelector('.mg-cat');
+    const c  = tr.querySelector('.mg-cost');
+    const pr = tr.querySelector('.mg-price');
     n.addEventListener('input',  () => { PRODUCTS[idx].name = n.value; saveProducts(); });
     d.addEventListener('input',  () => { PRODUCTS[idx].desc = d.value; saveProducts(); });
+    ct.addEventListener('change',() => { PRODUCTS[idx].category = ct.value; saveProducts(); });
     [c, pr].forEach(el => {
       el.addEventListener('input', () => {
         const raw = (el.value || '').replace(/[^0-9]/g,'');
@@ -1044,7 +1119,7 @@ function renderManageTable() {
 }
 function addProduct() {
   const newId = 'new' + Date.now().toString(36);
-  PRODUCTS.push({ id:newId, name:'새 품목', desc:'', cost:0, price:0, leasePrice:0 });
+  PRODUCTS.push({ id:newId, name:'새 품목', desc:'', category:DEFAULT_CATEGORY, cost:0, price:0, leasePrice:0 });
   promoByMode.lease[newId]    = 0;
   promoByMode.discount[newId] = 0;
   saveProducts();
@@ -1094,6 +1169,7 @@ function exportProducts() {
     exportedAt: new Date().toISOString(),
     products: PRODUCTS.map(p => ({
       id: p.id, name: p.name, desc: p.desc || '',
+      category: productCategory(p),
       cost: p.cost || 0, price: p.price || 0, leasePrice: p.leasePrice || 0
     }))
   };
@@ -1117,11 +1193,12 @@ function importProducts(event) {
       if (!Array.isArray(list) || list.length === 0) throw new Error('품목 리스트가 비어있거나 잘못된 형식입니다');
       // 최소 필드 검증
       const cleaned = list.map(p => ({
-        id:    p.id || makeId(p.name || '') || ('p'+Date.now().toString(36)),
-        name:  String(p.name || '새 품목'),
-        desc:  String(p.desc || ''),
-        cost:  parseInt(p.cost)  || 0,
-        price: parseInt(p.price) || 0,
+        id:       p.id || makeId(p.name || '') || ('p'+Date.now().toString(36)),
+        name:     String(p.name || '새 품목'),
+        desc:     String(p.desc || ''),
+        category: CATEGORIES.includes(p.category) ? p.category : DEFAULT_CATEGORY,
+        cost:     parseInt(p.cost)  || 0,
+        price:    parseInt(p.price) || 0,
         leasePrice: parseInt(p.leasePrice) || 0,
       }));
       if (!confirm(`${cleaned.length}개 품목을 가져옵니다. 현재 리스트는 대체됩니다. 계속할까요?`)) {
@@ -1188,7 +1265,7 @@ function shareQuote() {
   // 선택된 품목의 정의까지 포함 → 고객이 링크 열어도 맞춤 품목 그대로 표시됨
   const selProducts = [...selected].map(id => {
     const p = PRODUCTS.find(x => x.id === id);
-    return p ? { id:p.id, name:p.name, desc:p.desc||'', cost:p.cost||0, price:p.price||0 } : null;
+    return p ? { id:p.id, name:p.name, desc:p.desc||'', category:productCategory(p), cost:p.cost||0, price:p.price||0 } : null;
   }).filter(Boolean);
   const state = {
     mode:     MODE,
