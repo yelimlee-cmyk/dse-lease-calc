@@ -1055,8 +1055,9 @@ function updateRoi() {
   document.getElementById('roiTotalPatients').innerHTML     =
     `월 ${totalPt.toLocaleString('ko-KR')}명 ` +
     `<span style="color:#fb923c">/ 연 ${(totalPt * 12).toLocaleString('ko-KR')}명</span>`;
-  document.getElementById('roiTotalPatientsSub').textContent =
-    `신환 ${newPt.toLocaleString('ko-KR')}명 + 재환 ${retPt.toLocaleString('ko-KR')}명 (월 기준)`;
+  document.getElementById('roiTotalPatientsSub').innerHTML  =
+    `신환 월 ${newPt.toLocaleString('ko-KR')}명 <span style="color:#fb923c">(연 ${(newPt*12).toLocaleString('ko-KR')}명)</span>` +
+    ` + 재환 월 ${retPt.toLocaleString('ko-KR')}명 <span style="color:#fb923c">(연 ${(retPt*12).toLocaleString('ko-KR')}명)</span>`;
   document.getElementById('roiNewPatientsAnnual').textContent    = `연 ${(newPt * 12).toLocaleString('ko-KR')}명`;
   document.getElementById('roiReturnPatientsAnnual').textContent = `연 ${(retPt * 12).toLocaleString('ko-KR')}명`;
   document.getElementById('roiMonthlyRevenue').textContent  = fmt(monthlyRev);
