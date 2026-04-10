@@ -843,7 +843,9 @@ function update() {
       const lp      = getPromo(p.id);
       const deposit = Math.round(lp * depRate);
       const monthly = calcMonthly(lp);              // 무이자: lp / period
-      const totalPay= monthly * period;             // 보증금은 환급 → 총 납부에서 제외
+      // 총 납부액 = 패키지 할인가 그대로 (보증금은 환급되므로 실부담 = 원금)
+      // monthly × period로 계산하면 반올림 오차 발생 → lp 직접 사용
+      const totalPay= lp;
       etTotal += lp;
       return `<tr>
         <td class="ec-name">${p.name}</td>
@@ -855,7 +857,7 @@ function update() {
     }).join('');
     const etDeposit  = Math.round(etTotal * depRate);
     const etMonthly  = calcMonthly(etTotal);
-    const etTotalPay = etMonthly * period;          // 보증금 환급분 제외
+    const etTotalPay = etTotal;                     // 합계도 패키지 할인가 합계 그대로
     extFoot.innerHTML = `<tr>
       <td style="color:#93c5fd">합계 (${items.length}종)</td>
       <td style="color:#93c5fd">${fmt(etTotal)}</td>
