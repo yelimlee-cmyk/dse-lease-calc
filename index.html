@@ -165,12 +165,22 @@
   }
   .manage-table input.num { text-align:right; color:#a5b4fc; }
   .manage-table input:focus { border-color:#f472b6; }
+  .manage-table .row-actions { display:flex; gap:4px; justify-content:flex-end; }
+  .manage-table .ic-btn {
+    background:#0f172a; border:1px solid #334155; color:#94a3b8;
+    border-radius:6px; padding:5px 8px; font-size:11px; font-weight:700;
+    cursor:pointer; font-family:inherit; transition:all .15s; min-width:28px;
+  }
+  .manage-table .ic-btn:hover:not(:disabled) { border-color:#f472b6; color:#f472b6; }
+  .manage-table .ic-btn:disabled { opacity:.3; cursor:not-allowed; }
   .manage-table .del-btn {
     background:#3f1221; border:1px solid #7f1d1d; color:#f87171;
     border-radius:6px; padding:5px 10px; font-size:11px; font-weight:700;
     cursor:pointer; font-family:inherit; transition:all .15s;
   }
   .manage-table .del-btn:hover { background:#7f1d1d; color:#fff; }
+  .manage-btn.export { background:linear-gradient(135deg,#065f46,#059669); color:#fff; }
+  .manage-btn.import { background:linear-gradient(135deg,#1d4ed8,#2563eb); color:#fff; }
   .manage-note { font-size:11px; color:#64748b; line-height:1.6; padding:10px 14px; background:#0f172a; border:1px solid #1e293b; border-radius:8px; }
   .manage-note b { color:#94a3b8; }
 
@@ -514,19 +524,22 @@
     <div class="manage-bar">
       <div class="mb-title">품목 리스트 · <span class="mb-count" id="manageCount">0</span>종</div>
       <div class="mb-actions">
-        <button class="manage-btn add"   onclick="addProduct()">+ 품목 추가</button>
-        <button class="manage-btn reset" onclick="resetProducts()">↺ 기본값 복원</button>
+        <button class="manage-btn add"    onclick="addProduct()">+ 품목 추가</button>
+        <button class="manage-btn export" onclick="exportProducts()">📤 내보내기</button>
+        <button class="manage-btn import" onclick="document.getElementById('importFile').click()">📥 가져오기</button>
+        <button class="manage-btn reset"  onclick="resetProducts()">↺ 기본값</button>
+        <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importProducts(event)">
       </div>
     </div>
     <div class="manage-table-wrap">
       <table class="manage-table">
         <thead>
           <tr>
-            <th style="width:22%">품목명</th>
-            <th style="width:30%">설명</th>
-            <th style="width:18%;text-align:right">공급가</th>
-            <th style="width:18%;text-align:right">판매가</th>
-            <th style="width:12%"></th>
+            <th style="width:20%">품목명</th>
+            <th style="width:26%">설명</th>
+            <th style="width:16%;text-align:right">공급가</th>
+            <th style="width:16%;text-align:right">판매가</th>
+            <th style="width:22%;text-align:right">순서/삭제</th>
           </tr>
         </thead>
         <tbody id="manageBody"></tbody>
@@ -534,8 +547,9 @@
     </div>
     <div class="manage-note">
       💡 품목 정보는 <b>이 브라우저</b>에 자동 저장됩니다 (localStorage).<br>
-      📤 공유링크(🔗)로 전달하면 고객에게도 추가한 품목이 그대로 표시됩니다.<br>
-      ↺ "기본값 복원"을 누르면 초기 10종 DSE 품목 리스트로 되돌아갑니다.
+      📤 <b>내보내기</b>: JSON 파일로 저장 → 다른 PC의 <b>📥 가져오기</b>로 복원 가능<br>
+      📋 공유링크(🔗)로 전달하면 고객에게도 추가한 품목이 그대로 표시됩니다.<br>
+      ↺ "기본값"을 누르면 초기 10종 DSE 품목 리스트로 되돌아갑니다.
     </div>
   </div>
 
@@ -986,13 +1000,20 @@ function parseIntInput(el) {
 function renderManageTable() {
   const body = document.getElementById('manageBody');
   document.getElementById('manageCount').textContent = PRODUCTS.length;
+  const last = PRODUCTS.length - 1;
   body.innerHTML = PRODUCTS.map((p, idx) => `
     <tr data-idx="${idx}">
       <td><input type="text" class="mg-name" value="${(p.name || '').replace(/"/g,'&quot;')}" placeholder="품목명"></td>
       <td><input type="text" class="mg-desc" value="${(p.desc || '').replace(/"/g,'&quot;')}" placeholder="설명(선택)"></td>
       <td><input type="text" class="mg-cost num" value="${(p.cost || 0).toLocaleString('ko-KR')}" placeholder="0"></td>
       <td><input type="text" class="mg-price num" value="${(p.price || 0).toLocaleString('ko-KR')}" placeholder="0"></td>
-      <td style="text-align:right"><button class="del-btn" onclick="deleteProduct(${idx})">삭제</button></td>
+      <td>
+        <div class="row-actions">
+          <button class="ic-btn" onclick="moveProduct(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="위로">▲</button>
+          <button class="ic-btn" onclick="moveProduct(${idx}, 1)"  ${idx === last ? 'disabled' : ''} title="아래로">▼</button>
+          <button class="del-btn" onclick="deleteProduct(${idx})">삭제</button>
+        </div>
+      </td>
     </tr>`).join('');
 
   // 각 셀 변경 시 PRODUCTS 업데이트 + 저장
@@ -1058,6 +1079,81 @@ function resetProducts() {
   selected.clear();
   saveProducts();
   renderManageTable();
+}
+function moveProduct(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= PRODUCTS.length) return;
+  const [moved] = PRODUCTS.splice(idx, 1);
+  PRODUCTS.splice(newIdx, 0, moved);
+  saveProducts();
+  renderManageTable();
+}
+function exportProducts() {
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    products: PRODUCTS.map(p => ({
+      id: p.id, name: p.name, desc: p.desc || '',
+      cost: p.cost || 0, price: p.price || 0, leasePrice: p.leasePrice || 0
+    }))
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `DSE_품목리스트_${today}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importProducts(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      const list = Array.isArray(parsed) ? parsed : parsed.products;
+      if (!Array.isArray(list) || list.length === 0) throw new Error('품목 리스트가 비어있거나 잘못된 형식입니다');
+      // 최소 필드 검증
+      const cleaned = list.map(p => ({
+        id:    p.id || makeId(p.name || '') || ('p'+Date.now().toString(36)),
+        name:  String(p.name || '새 품목'),
+        desc:  String(p.desc || ''),
+        cost:  parseInt(p.cost)  || 0,
+        price: parseInt(p.price) || 0,
+        leasePrice: parseInt(p.leasePrice) || 0,
+      }));
+      if (!confirm(`${cleaned.length}개 품목을 가져옵니다. 현재 리스트는 대체됩니다. 계속할까요?`)) {
+        event.target.value = '';
+        return;
+      }
+      PRODUCTS.length = 0;
+      cleaned.forEach(p => PRODUCTS.push(p));
+      // 맵 리셋 + 재시드
+      Object.keys(promoByMode.lease).forEach(k => delete promoByMode.lease[k]);
+      Object.keys(promoByMode.discount).forEach(k => delete promoByMode.discount[k]);
+      manualByMode.lease.clear();
+      manualByMode.discount.clear();
+      PRODUCTS.forEach(p => {
+        promoByMode.lease[p.id]    = leaseSeed(p);
+        promoByMode.discount[p.id] = discountSeed(p);
+      });
+      selected.clear();
+      saveProducts();
+      renderManageTable();
+      alert(`✓ ${cleaned.length}개 품목을 불러왔습니다.`);
+    } catch(e) {
+      alert('⚠ JSON 파일을 읽을 수 없습니다: ' + e.message);
+      console.error(e);
+    }
+    event.target.value = '';  // 같은 파일 재선택 허용
+  };
+  reader.onerror = () => {
+    alert('⚠ 파일 읽기 실패');
+    event.target.value = '';
+  };
+  reader.readAsText(file);
 }
 
 // (기존 Google Sheets 자동 동기화는 localStorage 기반 품목 관리로 대체됨)
