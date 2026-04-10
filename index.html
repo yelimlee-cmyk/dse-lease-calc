@@ -1052,8 +1052,11 @@ function updateRoi() {
   const roiPct       = cost > 0 ? (annualProfit / cost * 100) : 0;
   const breakeven    = monthlyRev > 0 ? (cost / monthlyRev) : 0;
 
-  document.getElementById('roiTotalPatients').textContent   = totalPt.toLocaleString('ko-KR') + '명';
-  document.getElementById('roiTotalPatientsSub').textContent = `신환 + 재환 · 연 ${(totalPt * 12).toLocaleString('ko-KR')}명`;
+  document.getElementById('roiTotalPatients').innerHTML     =
+    `월 ${totalPt.toLocaleString('ko-KR')}명 ` +
+    `<span style="color:#fb923c">/ 연 ${(totalPt * 12).toLocaleString('ko-KR')}명</span>`;
+  document.getElementById('roiTotalPatientsSub').textContent =
+    `신환 ${newPt.toLocaleString('ko-KR')}명 + 재환 ${retPt.toLocaleString('ko-KR')}명 (월 기준)`;
   document.getElementById('roiNewPatientsAnnual').textContent    = `연 ${(newPt * 12).toLocaleString('ko-KR')}명`;
   document.getElementById('roiReturnPatientsAnnual').textContent = `연 ${(retPt * 12).toLocaleString('ko-KR')}명`;
   document.getElementById('roiMonthlyRevenue').textContent  = fmt(monthlyRev);
