@@ -251,7 +251,7 @@
   <div class="params" id="discountParams" style="display:none">
     <div class="param-chip editable">
       할인율 &nbsp;
-      <input class="rate-input" id="discountInput" type="number" value="0" min="0" max="100" step="0.1">
+      <input class="rate-input" id="discountInput" type="number" value="0" min="0" max="100" step="0.1" style="width:70px">
       <b>%</b>
     </div>
     <div class="param-chip">적용 기준 <b>패키지 할인가 합계</b></div>
@@ -495,9 +495,16 @@ const PRODUCTS = [
 ];
 
 const selected     = new Set();
-const promoPrices  = {};  // 품목별 패키지 할인가 (시트 H열 실시간 동기화)
-const manualEdited = new Set(); // 사용자가 직접 수정한 항목 (시트 재로드 시 보존)
-PRODUCTS.forEach(p => { promoPrices[p.id] = p.leasePrice; });
+// 품목별 패키지 할인가 — 모드별로 분리 (리스 탭 / 할인 탭이 서로 영향 없음)
+const promoByMode  = { lease: {}, discount: {} };
+const manualByMode = { lease: new Set(), discount: new Set() };
+PRODUCTS.forEach(p => {
+  promoByMode.lease[p.id]    = p.leasePrice;
+  promoByMode.discount[p.id] = p.leasePrice;
+});
+function curPriceMode() { return MODE === 'discount' ? 'discount' : 'lease'; }
+function getPromo(id)   { return promoByMode[curPriceMode()][id]; }
+function setPromo(id, v){ promoByMode[curPriceMode()][id] = v; manualByMode[curPriceMode()].add(id); }
 
 let MODE = 'lease';
 
@@ -521,7 +528,7 @@ function setMode(m) {
   document.getElementById('intCollapse').style.display = roiMode ? 'none' : '';
   document.getElementById('extCollapse').style.display = roiMode ? 'none' : '';
 
-  if (roiMode) { updateRoi(); } else { update(); }
+  if (roiMode) { updateRoi(); } else { renderGrid(); update(); }
 }
 
 function fmt(n)  { return n === 0 ? '0원' : n.toLocaleString('ko-KR') + '원'; }
@@ -543,7 +550,7 @@ function renderGrid() {
       </div>
       <div class="promo-row">
         <span class="promo-label">패키지 할인가</span>
-        <input class="promo-input" data-id="${p.id}" type="text" value="${promoPrices[p.id].toLocaleString('ko-KR')}" placeholder="판매가와 동일">
+        <input class="promo-input" data-id="${p.id}" type="text" value="${getPromo(p.id).toLocaleString('ko-KR')}" placeholder="판매가와 동일">
       </div>`;
     // 카드 클릭 (입력창 제외)
     card.addEventListener('click', e => {
@@ -555,8 +562,7 @@ function renderGrid() {
     const input = card.querySelector('.promo-input');
     input.addEventListener('input', () => {
       const raw = input.value.replace(/[^0-9]/g,'');
-      promoPrices[p.id] = raw ? parseInt(raw) : p.price;
-      manualEdited.add(p.id);  // 수동 수정 표시 → 시트 재로드 시 보존
+      setPromo(p.id, raw ? parseInt(raw) : p.price);  // 현재 모드(리스/할인)에만 저장
       input.value = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
       update();
     });
@@ -619,7 +625,7 @@ function update() {
     } else {
       let tCost=0, tSale=0, tLease=0, tFinal=0;
       intBody.innerHTML = items.map(p => {
-        const lp     = promoPrices[p.id];
+        const lp     = getPromo(p.id);
         const fin    = Math.round(lp * (1 - dRate));
         const disc   = p.price - lp;
         const mOrig  = (p.price - p.cost) / p.price;
@@ -685,7 +691,7 @@ function update() {
     } else {
       let tCost=0, tSale=0, tLease=0, tFee=0, tNet=0;
       intBody.innerHTML = items.map(p => {
-        const lp     = promoPrices[p.id];
+        const lp     = getPromo(p.id);
         const fee    = Math.round(lp * feeRate);
         const net    = lp - fee;
         const mOrig  = (p.price - p.cost) / p.price;
@@ -763,7 +769,7 @@ function update() {
     }
     let etTotal = 0;
     extBody.innerHTML = items.map(p => {
-      const lp       = promoPrices[p.id];
+      const lp       = getPromo(p.id);
       const itemDisc = Math.round(lp * discRate);
       const itemFinal= lp - itemDisc;
       etTotal += lp;
@@ -821,7 +827,7 @@ function update() {
     }
     let etTotal = 0;
     extBody.innerHTML = items.map(p => {
-      const lp      = promoPrices[p.id];
+      const lp      = getPromo(p.id);
       const deposit = Math.round(lp * depRate);
       const monthly = calcMonthly(lp);              // 무이자: lp / period
       const totalPay= deposit + monthly * period;
@@ -899,8 +905,10 @@ async function loadFromSheet() {
     PRODUCTS.length = 0;
     fresh.forEach(p => {
       PRODUCTS.push(p);
-      // 수동 수정하지 않은 항목만 시트 값으로 업데이트
-      if (!manualEdited.has(p.id)) promoPrices[p.id] = p.leasePrice;
+      // 수동 수정하지 않은 항목만 시트 값으로 업데이트 (모드별 독립)
+      ['lease','discount'].forEach(mode => {
+        if (!manualByMode[mode].has(p.id)) promoByMode[mode][p.id] = p.leasePrice;
+      });
     });
     renderGrid();
     update();
@@ -952,10 +960,11 @@ function shareQuote() {
     return;
   }
   const state = {
-    mode:   MODE,
-    sel:    [...selected],
-    prices: Object.fromEntries([...selected].map(id => [id, promoPrices[id]])),
-    period: document.getElementById('periodSelect').value,
+    mode:    MODE,
+    sel:     [...selected],
+    pricesL: Object.fromEntries([...selected].map(id => [id, promoByMode.lease[id]])),
+    pricesD: Object.fromEntries([...selected].map(id => [id, promoByMode.discount[id]])),
+    period:  document.getElementById('periodSelect').value,
     dep:    document.getElementById('depositSelect').value,
     fee:    document.getElementById('feeRateInput').value,
     rate:   document.getElementById('rateInput').value,
@@ -994,7 +1003,13 @@ function loadStateFromUrl() {
     } else {
       autoFillFeeRate();
     }
-    if (state.prices) Object.assign(promoPrices, state.prices);
+    if (state.pricesL) Object.assign(promoByMode.lease,    state.pricesL);
+    if (state.pricesD) Object.assign(promoByMode.discount, state.pricesD);
+    // 구버전 공유링크 호환 (단일 prices)
+    if (state.prices) {
+      Object.assign(promoByMode.lease,    state.prices);
+      Object.assign(promoByMode.discount, state.prices);
+    }
     if (state.sel) state.sel.forEach(id => selected.add(id));
     renderGrid();
     update();
@@ -1052,9 +1067,15 @@ function updateRoi() {
     document.getElementById('roiBreakevenSub').textContent = '값을 입력하세요';
     document.getElementById('roiAnnualPct').textContent    = '—';
   } else {
-    const months = Math.ceil(breakeven);
+    const months  = Math.ceil(breakeven);
+    // 회수기간 동안 누적될 환자 수 (월 입력값 × 회수개월)
+    const beNew   = Math.ceil(breakeven * newPt);
+    const beRet   = Math.ceil(breakeven * retPt);
+    const beTotal = Math.ceil(breakeven * totalPt);
     document.getElementById('roiBreakeven').textContent    = months + '개월';
-    document.getElementById('roiBreakevenSub').textContent = `약 ${(breakeven).toFixed(1)}개월 · ${months <= 12 ? '1년 이내 회수' : '1년 초과'}`;
+    document.getElementById('roiBreakevenSub').innerHTML   =
+      `약 ${(breakeven).toFixed(1)}개월 · ${months <= 12 ? '1년 이내 회수' : '1년 초과'}` +
+      `<br><span style="color:#fb923c;font-weight:700">회수까지 신환 ${beNew.toLocaleString('ko-KR')}명 · 총 ${beTotal.toLocaleString('ko-KR')}명</span>`;
     document.getElementById('roiAnnualPct').textContent    = roiPct.toFixed(1) + '%';
     document.getElementById('roiAnnualPct').style.color    = roiPct >= 0 ? '#fb923c' : '#f87171';
   }
