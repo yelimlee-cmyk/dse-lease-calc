@@ -132,6 +132,47 @@
   .mode-tab.active.lease { background:linear-gradient(135deg,#1e1b4b,#312e81); color:#a5b4fc; }
   .mode-tab.active.discount { background:linear-gradient(135deg,#14352a,#064e3b); color:#34d399; }
   .mode-tab.active.roi { background:linear-gradient(135deg,#3b1a0a,#7c2d12); color:#fb923c; }
+  .mode-tab.active.manage { background:linear-gradient(135deg,#0f172a,#1e293b); color:#f472b6; border-color:#be185d; }
+
+  /* MANAGE TAB */
+  .manage-section { display:none; }
+  .manage-section.visible { display:block; }
+  .manage-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:10px; flex-wrap:wrap; }
+  .manage-bar .mb-title { font-size:13px; color:#e2e8f0; font-weight:800; }
+  .manage-bar .mb-count { color:#f472b6; font-weight:900; }
+  .manage-bar .mb-actions { display:flex; gap:8px; }
+  .manage-btn {
+    border:none; border-radius:8px; padding:9px 16px;
+    font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;
+    display:flex; align-items:center; gap:6px; transition:opacity .15s;
+  }
+  .manage-btn:hover { opacity:.85; }
+  .manage-btn.add   { background:linear-gradient(135deg,#be185d,#db2777); color:#fff; }
+  .manage-btn.reset { background:#1e293b; color:#94a3b8; border:1px solid #334155; }
+  .manage-table-wrap { background:#1e293b; border:1px solid #334155; border-radius:14px; overflow:hidden; margin-bottom:12px; }
+  .manage-table { width:100%; border-collapse:collapse; }
+  .manage-table thead th {
+    padding:10px 12px; font-size:10px; color:#64748b; font-weight:700;
+    text-align:left; border-bottom:1px solid #334155; letter-spacing:.4px;
+    background:#0f172a;
+  }
+  .manage-table tbody td { padding:7px 10px; border-bottom:1px solid #0f1117; }
+  .manage-table tbody tr:last-child td { border-bottom:none; }
+  .manage-table input {
+    width:100%; background:#0f172a; border:1px solid #334155; border-radius:6px;
+    color:#e2e8f0; font-size:12px; font-weight:600; padding:6px 9px;
+    font-family:inherit; outline:none; transition:border-color .15s;
+  }
+  .manage-table input.num { text-align:right; color:#a5b4fc; }
+  .manage-table input:focus { border-color:#f472b6; }
+  .manage-table .del-btn {
+    background:#3f1221; border:1px solid #7f1d1d; color:#f87171;
+    border-radius:6px; padding:5px 10px; font-size:11px; font-weight:700;
+    cursor:pointer; font-family:inherit; transition:all .15s;
+  }
+  .manage-table .del-btn:hover { background:#7f1d1d; color:#fff; }
+  .manage-note { font-size:11px; color:#64748b; line-height:1.6; padding:10px 14px; background:#0f172a; border:1px solid #1e293b; border-radius:8px; }
+  .manage-note b { color:#94a3b8; }
 
   /* ROI TAB */
   .roi-section { display:none; }
@@ -220,6 +261,7 @@
     <div class="mode-tab active lease" id="tabLease" onclick="setMode('lease')">💳 리스 적용</div>
     <div class="mode-tab discount" id="tabDiscount" onclick="setMode('discount')">🏷️ 할인 적용</div>
     <div class="mode-tab roi" id="tabRoi" onclick="setMode('roi')">📊 ROI 계산</div>
+    <div class="mode-tab manage" id="tabManage" onclick="setMode('manage')">📦 품목 관리</div>
   </div>
 
   <!-- PARAMS -->
@@ -467,24 +509,45 @@
     </div>
   </div>
 
+  <!-- ═══ 품목 관리 ═══ -->
+  <div class="manage-section" id="manageSection">
+    <div class="manage-bar">
+      <div class="mb-title">품목 리스트 · <span class="mb-count" id="manageCount">0</span>종</div>
+      <div class="mb-actions">
+        <button class="manage-btn add"   onclick="addProduct()">+ 품목 추가</button>
+        <button class="manage-btn reset" onclick="resetProducts()">↺ 기본값 복원</button>
+      </div>
+    </div>
+    <div class="manage-table-wrap">
+      <table class="manage-table">
+        <thead>
+          <tr>
+            <th style="width:22%">품목명</th>
+            <th style="width:30%">설명</th>
+            <th style="width:18%;text-align:right">공급가</th>
+            <th style="width:18%;text-align:right">판매가</th>
+            <th style="width:12%"></th>
+          </tr>
+        </thead>
+        <tbody id="manageBody"></tbody>
+      </table>
+    </div>
+    <div class="manage-note">
+      💡 품목 정보는 <b>이 브라우저</b>에 자동 저장됩니다 (localStorage).<br>
+      📤 공유링크(🔗)로 전달하면 고객에게도 추가한 품목이 그대로 표시됩니다.<br>
+      ↺ "기본값 복원"을 누르면 초기 10종 DSE 품목 리스트로 되돌아갑니다.
+    </div>
+  </div>
+
   <div class="note-bar">
-    <span>🔒 내부: 패키지 할인가 기준 · 리스마진율 = (패키지 할인가 - 공급가) / 패키지 할인가 (시트 H열 기본값)</span>
-    <span>📋 외부: 패키지 할인가 기준 · 보증금 10% · 월납입 = 잔액÷24 (무이자)</span>
-    <span id="sheetStatus" style="color:#6366f1">⏳ 시트 연동 중...</span>
-    <button id="refreshBtn" onclick="loadFromSheet()" title="시트에서 즉시 새로고침" style="
-      background:#1e293b; border:1px solid #334155; border-radius:6px;
-      color:#94a3b8; font-size:11px; padding:3px 10px; cursor:pointer;
-      font-family:inherit; display:inline-flex; align-items:center; gap:4px;
-      transition:all .15s;
-    " onmouseover="this.style.borderColor='#6366f1';this.style.color='#a5b4fc'"
-       onmouseout="this.style.borderColor='#334155';this.style.color='#94a3b8'">
-      🔄 새로고침
-    </button>
+    <span>🔒 내부: 패키지 할인가 기준 · 리스마진율 = (패키지 할인가 - 공급가) / 패키지 할인가</span>
+    <span>📋 외부: 패키지 할인가 기준 · 보증금 10% (만기 환급) · 무이자 분납</span>
+    <span id="sheetStatus" style="color:#475569">💾 품목은 브라우저에 자동 저장됩니다</span>
   </div>
 
 </div>
 <script>
-const PRODUCTS = [
+const DEFAULT_PRODUCTS = [
   { id:'impacq',   name:'ImpacQ Plus',       desc:'큐스위치 엔디야그',         cost:22600000, price:32000000, leasePrice:0 },
   { id:'janus',    name:'JANUS Pro sunlike',  desc:'안면진단기기',               cost:6820000,  price:8580000,  leasePrice:0 },
   { id:'multixel', name:'Multixel',           desc:'프락셔널 CO2 (듀얼타입)',    cost:7000000,  price:9900000,  leasePrice:0 },
@@ -496,6 +559,22 @@ const PRODUCTS = [
   { id:'ssb',      name:'SSB-EVA',            desc:'의료용 석션기',              cost:880000,   price:1250000,  leasePrice:0 },
   { id:'wellcomet', name:'웰코멧 LDM',        desc:'',                           cost:17000000, price:22000000, leasePrice:0 },
 ];
+const PRODUCTS_STORAGE_KEY = 'dseProducts_v1';
+// localStorage에서 품목 불러오기 (없으면 기본값)
+let PRODUCTS = (function() {
+  try {
+    const raw = localStorage.getItem(PRODUCTS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch(e) { console.warn('PRODUCTS load failed', e); }
+  return DEFAULT_PRODUCTS.map(p => ({...p}));
+})();
+function saveProducts() {
+  try { localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(PRODUCTS)); }
+  catch(e) { console.warn('PRODUCTS save failed', e); }
+}
 
 const selected     = new Set();
 // 품목별 패키지 할인가 — 모드별로 분리 (리스 탭 / 할인 탭이 서로 영향 없음)
@@ -532,22 +611,29 @@ function setMode(m) {
   const tl = document.getElementById('tabLease');
   const td = document.getElementById('tabDiscount');
   const tr = document.getElementById('tabRoi');
-  tl.className = 'mode-tab lease' + (m === 'lease' ? ' active' : '');
+  const tm = document.getElementById('tabManage');
+  tl.className = 'mode-tab lease'    + (m === 'lease'    ? ' active' : '');
   td.className = 'mode-tab discount' + (m === 'discount' ? ' active' : '');
-  tr.className = 'mode-tab roi' + (m === 'roi' ? ' active' : '');
+  tr.className = 'mode-tab roi'      + (m === 'roi'      ? ' active' : '');
+  tm.className = 'mode-tab manage'   + (m === 'manage'   ? ' active' : '');
   document.getElementById('leaseParams').style.display    = m === 'lease'    ? 'flex' : 'none';
-  document.getElementById('discountParams').style.display  = m === 'discount' ? 'flex' : 'none';
+  document.getElementById('discountParams').style.display = m === 'discount' ? 'flex' : 'none';
 
-  // ROI 모드: 품목선택/내부/외부 숨기고 ROI 섹션만 표시
-  const roiMode = m === 'roi';
-  document.getElementById('roiSection').className = 'roi-section' + (roiMode ? ' visible' : '');
-  document.getElementById('productGrid').parentElement.querySelectorAll('.section-label')[0].style.display = roiMode ? 'none' : '';
-  document.getElementById('productGrid').style.display = roiMode ? 'none' : '';
-  document.querySelectorAll('.sec-divider').forEach(el => el.style.display = roiMode ? 'none' : '');
-  document.getElementById('intCollapse').style.display = roiMode ? 'none' : '';
-  document.getElementById('extCollapse').style.display = roiMode ? 'none' : '';
+  // 품목선택/내부/외부 섹션은 lease/discount 모드에서만 표시
+  const calcMode = (m === 'lease' || m === 'discount');
+  const roiMode  = m === 'roi';
+  const mgMode   = m === 'manage';
+  document.getElementById('roiSection').className    = 'roi-section'    + (roiMode ? ' visible' : '');
+  document.getElementById('manageSection').className = 'manage-section' + (mgMode  ? ' visible' : '');
+  document.getElementById('productGrid').parentElement.querySelectorAll('.section-label')[0].style.display = calcMode ? '' : 'none';
+  document.getElementById('productGrid').style.display = calcMode ? '' : 'none';
+  document.querySelectorAll('.sec-divider').forEach(el => el.style.display = calcMode ? '' : 'none');
+  document.getElementById('intCollapse').style.display = calcMode ? '' : 'none';
+  document.getElementById('extCollapse').style.display = calcMode ? '' : 'none';
 
-  if (roiMode) { updateRoi(); } else { renderGrid(); update(); }
+  if (roiMode)      { updateRoi(); }
+  else if (mgMode)  { renderManageTable(); }
+  else              { renderGrid(); update(); }
 }
 
 function fmt(n)  { return n === 0 ? '0원' : n.toLocaleString('ko-KR') + '원'; }
@@ -887,77 +973,99 @@ function toggleSection(id) {
   icon.textContent = open ? '+' : '−';
 }
 
-// ── Google Sheets 자동 연동 ──────────────────────────────────────────
-// ▼ Apps Script 웹 앱 URL (배포 후 여기에 붙여넣기)
-const APPS_SCRIPT_URL = 'https://script.google.com/a/macros/medistream.co.kr/s/AKfycbx7TmJGHc3MA3SijVa2iMkp1gnW7z9rrjG5CSdgt9KOr5XPR5B9qWYI-4lxBTqjANH3vQ/exec';
-
+// ── 품목 ID 생성 유틸 ────────────────────────────────────────────────
 function makeId(name) {
-  return name.toLowerCase().replace(/[^a-z0-9\uAC00-\uD7A3]/g, '').slice(0, 12);
+  return name.toLowerCase().replace(/[^a-z0-9\uAC00-\uD7A3]/g, '').slice(0, 12) || ('p' + Date.now().toString(36));
 }
 
-async function loadFromSheet() {
-  const status = document.getElementById('sheetStatus');
-  const btn    = document.getElementById('refreshBtn');
-  if (btn)    { btn.disabled = true; btn.textContent = '⏳ 동기화 중...'; }
-  if (status) { status.style.color = '#6366f1'; status.textContent = '⏳ 시트 동기화 중...'; }
+// ── 품목 관리 탭 ─────────────────────────────────────────────────────
+function parseIntInput(el) {
+  const raw = (el.value || '').replace(/[^0-9]/g,'');
+  return raw ? parseInt(raw) : 0;
+}
+function renderManageTable() {
+  const body = document.getElementById('manageBody');
+  document.getElementById('manageCount').textContent = PRODUCTS.length;
+  body.innerHTML = PRODUCTS.map((p, idx) => `
+    <tr data-idx="${idx}">
+      <td><input type="text" class="mg-name" value="${(p.name || '').replace(/"/g,'&quot;')}" placeholder="품목명"></td>
+      <td><input type="text" class="mg-desc" value="${(p.desc || '').replace(/"/g,'&quot;')}" placeholder="설명(선택)"></td>
+      <td><input type="text" class="mg-cost num" value="${(p.cost || 0).toLocaleString('ko-KR')}" placeholder="0"></td>
+      <td><input type="text" class="mg-price num" value="${(p.price || 0).toLocaleString('ko-KR')}" placeholder="0"></td>
+      <td style="text-align:right"><button class="del-btn" onclick="deleteProduct(${idx})">삭제</button></td>
+    </tr>`).join('');
 
-  if (!APPS_SCRIPT_URL) {
-    if (status) { status.style.color = '#f87171'; status.textContent = '⚠ Apps Script URL 미설정'; }
-    if (btn)    { btn.disabled = false; btn.textContent = '🔄 새로고침'; }
-    return;
-  }
-
-  try {
-    const res  = await fetch(APPS_SCRIPT_URL + '&_t=' + Date.now());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.error || '서버 오류');
-
-    const fresh = json.products.map(p => {
-      const pi   = p.name.indexOf('(');
-      const name = pi > -1 ? p.name.slice(0, pi).trim() : p.name;
-      const desc = pi > -1 ? p.name.slice(pi + 1).replace(')', '').trim() : '';
-      const lp   = p.leasePrice;   // null=빈셀→판매가, 0=0원 그대로
-      return { id: makeId(name), name, desc, cost: p.cost, price: p.price,
-               leasePrice: lp !== null ? lp : p.price };
+  // 각 셀 변경 시 PRODUCTS 업데이트 + 저장
+  body.querySelectorAll('tr').forEach(tr => {
+    const idx = parseInt(tr.dataset.idx);
+    const n = tr.querySelector('.mg-name');
+    const d = tr.querySelector('.mg-desc');
+    const c = tr.querySelector('.mg-cost');
+    const pr= tr.querySelector('.mg-price');
+    n.addEventListener('input',  () => { PRODUCTS[idx].name = n.value; saveProducts(); });
+    d.addEventListener('input',  () => { PRODUCTS[idx].desc = d.value; saveProducts(); });
+    [c, pr].forEach(el => {
+      el.addEventListener('input', () => {
+        const raw = (el.value || '').replace(/[^0-9]/g,'');
+        el.value = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
+      });
+      el.addEventListener('blur', () => {
+        PRODUCTS[idx].cost  = parseIntInput(c);
+        PRODUCTS[idx].price = parseIntInput(pr);
+        // 수동 편집되지 않은 맵은 새 price에 맞춰 재시드
+        const id = PRODUCTS[idx].id;
+        if (!manualByMode.lease.has(id))    promoByMode.lease[id]    = leaseSeed(PRODUCTS[idx]);
+        if (!manualByMode.discount.has(id)) promoByMode.discount[id] = discountSeed(PRODUCTS[idx]);
+        saveProducts();
+      });
     });
-
-    if (fresh.length === 0) throw new Error('품목 없음');
-
-    // PRODUCTS 배열 갱신
-    PRODUCTS.length = 0;
-    fresh.forEach(p => {
-      PRODUCTS.push(p);
-      // 수동 수정하지 않은 항목만 시트 값으로 업데이트 (모드별 독립)
-      if (!manualByMode.lease.has(p.id))    promoByMode.lease[p.id]    = leaseSeed(p);
-      if (!manualByMode.discount.has(p.id)) promoByMode.discount[p.id] = discountSeed(p);
-    });
-    renderGrid();
-    update();
-    const now = new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-    if (status) {
-      status.style.color = '#34d399';
-      status.textContent = `✓ ${fresh.length}개 품목 · ${now} 업데이트`;
-    }
-  } catch(e) {
-    if (status) {
-      status.style.color = '#f87171';
-      status.textContent = '⚠ 시트 연동 실패 · 기존 데이터 유지';
-    }
-    console.warn('Sheet load error:', e);
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '🔄 새로고침'; }
-  }
+  });
+}
+function addProduct() {
+  const newId = 'new' + Date.now().toString(36);
+  PRODUCTS.push({ id:newId, name:'새 품목', desc:'', cost:0, price:0, leasePrice:0 });
+  promoByMode.lease[newId]    = 0;
+  promoByMode.discount[newId] = 0;
+  saveProducts();
+  renderManageTable();
+}
+function deleteProduct(idx) {
+  const p = PRODUCTS[idx];
+  if (!p) return;
+  if (!confirm(`"${p.name}" 품목을 삭제할까요?`)) return;
+  selected.delete(p.id);
+  delete promoByMode.lease[p.id];
+  delete promoByMode.discount[p.id];
+  manualByMode.lease.delete(p.id);
+  manualByMode.discount.delete(p.id);
+  PRODUCTS.splice(idx, 1);
+  saveProducts();
+  renderManageTable();
+}
+function resetProducts() {
+  if (!confirm('기본값(초기 10종 DSE 품목)으로 되돌리시겠습니까?\n현재 추가/수정한 품목 정보는 사라집니다.')) return;
+  PRODUCTS.length = 0;
+  DEFAULT_PRODUCTS.forEach(p => PRODUCTS.push({...p}));
+  // 맵 재시드
+  Object.keys(promoByMode.lease).forEach(k => delete promoByMode.lease[k]);
+  Object.keys(promoByMode.discount).forEach(k => delete promoByMode.discount[k]);
+  manualByMode.lease.clear();
+  manualByMode.discount.clear();
+  PRODUCTS.forEach(p => {
+    promoByMode.lease[p.id]    = leaseSeed(p);
+    promoByMode.discount[p.id] = discountSeed(p);
+  });
+  selected.clear();
+  saveProducts();
+  renderManageTable();
 }
 
-// 60초마다 자동 동기화
-setInterval(loadFromSheet, 60000);
+// (기존 Google Sheets 자동 동기화는 localStorage 기반 품목 관리로 대체됨)
 // ─────────────────────────────────────────────────────────────────────
 
 renderGrid();
 update();
 loadStateFromUrl();  // URL 공유 상태 복원 (공유 링크로 접속 시)
-loadFromSheet();     // 비동기 · 완료 시 자동 갱신
 
 // 할인율 변경 시 즉시 재계산
 document.getElementById('discountInput').addEventListener('input', update);
@@ -981,17 +1089,23 @@ function shareQuote() {
     alert('먼저 품목을 선택해 주세요.');
     return;
   }
+  // 선택된 품목의 정의까지 포함 → 고객이 링크 열어도 맞춤 품목 그대로 표시됨
+  const selProducts = [...selected].map(id => {
+    const p = PRODUCTS.find(x => x.id === id);
+    return p ? { id:p.id, name:p.name, desc:p.desc||'', cost:p.cost||0, price:p.price||0 } : null;
+  }).filter(Boolean);
   const state = {
-    mode:    MODE,
-    sel:     [...selected],
-    pricesL: Object.fromEntries([...selected].map(id => [id, promoByMode.lease[id]])),
-    pricesD: Object.fromEntries([...selected].map(id => [id, promoByMode.discount[id]])),
-    period:  document.getElementById('periodSelect').value,
-    dep:    document.getElementById('depositSelect').value,
-    fee:    document.getElementById('feeRateInput').value,
-    rate:   document.getElementById('rateInput').value,
-    disc:   document.getElementById('discountInput').value,
-    ext:    1,   // 외부 공유 플래그 → 내부용 자동 숨김
+    mode:     MODE,
+    sel:      [...selected],
+    products: selProducts,  // 품목 정의 스냅샷
+    pricesL:  Object.fromEntries([...selected].map(id => [id, promoByMode.lease[id]])),
+    pricesD:  Object.fromEntries([...selected].map(id => [id, promoByMode.discount[id]])),
+    period:   document.getElementById('periodSelect').value,
+    dep:      document.getElementById('depositSelect').value,
+    fee:      document.getElementById('feeRateInput').value,
+    rate:     document.getElementById('rateInput').value,
+    disc:     document.getElementById('discountInput').value,
+    ext:      1,   // 외부 공유 플래그 → 내부용 자동 숨김
   };
   const hash = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
   const url  = location.origin + location.pathname + '#' + hash;
@@ -1013,6 +1127,15 @@ function loadStateFromUrl() {
       document.body.classList.add('shared-view');
       // 내부용 헤더 배지도 숨김
       document.getElementById('intCollapse').classList.add('closed');
+    }
+    // 공유 링크에 품목 정의가 포함되어 있으면, 고객 브라우저의 PRODUCTS를 대체
+    // (localStorage는 건드리지 않음 → 원래 쓰던 품목 보존)
+    if (Array.isArray(state.products) && state.products.length) {
+      PRODUCTS = state.products.map(p => ({...p, leasePrice: 0}));
+      PRODUCTS.forEach(p => {
+        promoByMode.lease[p.id]    = leaseSeed(p);
+        promoByMode.discount[p.id] = discountSeed(p);
+      });
     }
     if (state.mode) setMode(state.mode);
     if (state.period) document.getElementById('periodSelect').value = state.period;
