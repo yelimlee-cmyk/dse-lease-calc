@@ -506,7 +506,15 @@ PRODUCTS.forEach(p => {
   promoByMode.discount[p.id] = p.leasePrice;
 });
 function curPriceMode() { return MODE === 'discount' ? 'discount' : 'lease'; }
-function getPromo(id)   { return promoByMode[curPriceMode()][id]; }
+function getPromo(id)   {
+  const v = promoByMode[curPriceMode()][id];
+  if (v != null) return v;
+  // 안전망: 모드 맵에 값이 없으면 PRODUCTS의 leasePrice/판매가로 폴백 후 시드
+  const p = PRODUCTS.find(x => x.id === id);
+  const seed = p ? (p.leasePrice || p.price || 0) : 0;
+  promoByMode[curPriceMode()][id] = seed;
+  return seed;
+}
 function setPromo(id, v){ promoByMode[curPriceMode()][id] = v; manualByMode[curPriceMode()].add(id); }
 
 let MODE = 'lease';
@@ -1150,10 +1158,19 @@ function exportPng() {
   btn.disabled = true;
   btn.textContent = '⏳ 저장 중...';
 
-  // 캡처용 임시 래퍼 (흰 배경, 패딩)
+  // 원본 영역 폭을 그대로 가져와 캡처용 래퍼에 고정 → 비율 보존
+  const baseW = area.getBoundingClientRect().width || area.offsetWidth || 960;
+  const padX  = 24;
+  const wrapW = Math.round(baseW + padX * 2);
+
+  // 캡처용 임시 래퍼 (오프스크린, 원본과 동일한 폭)
   const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'background:#0f1117;padding:24px;border-radius:16px;display:inline-block;';
+  wrapper.style.cssText =
+    `background:#0f1117;padding:${padX}px;border-radius:16px;` +
+    `width:${wrapW}px;box-sizing:border-box;` +
+    `position:fixed;top:0;left:-99999px;`;
   const clone = area.cloneNode(true);
+  clone.style.width = baseW + 'px';
   wrapper.appendChild(clone);
   document.body.appendChild(wrapper);
 
@@ -1162,6 +1179,9 @@ function exportPng() {
     scale: 2,
     useCORS: true,
     logging: false,
+    width:       wrapW,
+    height:      wrapper.offsetHeight,
+    windowWidth: wrapW,
   }).then(canvas => {
     const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
     const items = [...selected].map(id => PRODUCTS.find(p=>p.id===id)?.name.split(' ')[0]).filter(Boolean).join('+');
@@ -1172,6 +1192,12 @@ function exportPng() {
     document.body.removeChild(wrapper);
     btn.disabled = false;
     btn.textContent = '📥 PNG로 저장';
+  }).catch(err => {
+    console.error('PNG 저장 실패:', err);
+    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+    btn.disabled = false;
+    btn.textContent = '📥 PNG로 저장';
+    alert('PNG 저장 중 오류가 발생했습니다. 다시 시도해 주세요.');
   });
 }
 </script>
