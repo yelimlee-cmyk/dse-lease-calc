@@ -68,8 +68,8 @@
   .sec-badge.internal { background:rgba(220,38,38,.15); color:#f87171; border:1px solid rgba(220,38,38,.3); }
   .sec-badge.external { background:rgba(37,99,235,.15); color:#60a5fa; border:1px solid rgba(37,99,235,.3); }
   .toggle-icon { font-size:14px; font-weight:900; line-height:1; }
-  .sec-collapse { overflow:hidden; transition:max-height .35s ease, opacity .3s ease; max-height:2000px; opacity:1; }
-  .sec-collapse.closed { max-height:0; opacity:0; margin-bottom:0; }
+  .sec-collapse { overflow:visible; transition:opacity .3s ease; max-height:none; opacity:1; }
+  .sec-collapse.closed { display:none; opacity:0; margin-bottom:0; }
 
   /* TABLE COMMON */
   .table-wrap { background:#1e293b; border:1px solid #334155; border-radius:14px; overflow:hidden; margin-bottom:14px; }
@@ -237,10 +237,16 @@
         <option value="20">20%</option>
       </select>
     </div>
-    <div class="param-chip" style="border-color:#7c2d12;background:#3b1a0a">
-      선취수수료율 <b id="feeRateChip" style="color:#fb923c">4.65%</b>
+    <div class="param-chip editable" style="border-color:#7c2d12;background:#3b1a0a">
+      선취수수료율 &nbsp;
+      <input class="rate-input" id="feeRateInput" type="number" value="4.65" min="0" max="100" step="0.01" style="color:#fb923c;border-color:#7c2d12">
+      <b style="color:#fb923c">%</b>
     </div>
-    <div class="param-chip">적용금리 <b>0%</b> · 무이자</div>
+    <div class="param-chip editable">
+      적용금리 &nbsp;
+      <input class="rate-input" id="rateInput" type="number" value="0" min="0" max="30" step="0.1">
+      <b>% 연이율</b>
+    </div>
   </div>
   <div class="params" id="discountParams" style="display:none">
     <div class="param-chip editable">
@@ -559,7 +565,7 @@ function renderGrid() {
   });
 }
 
-// 무이자 리스 조건표 (선취수수료율) — 기간 × 보증금율
+// 무이자 리스 조건표 (선취수수료율 기본값) — 기간 × 보증금율
 const LEASE_FEE_TABLE = {
   12: { 0: 0.0320, 10: 0.0265, 20: 0.0205 },
   24: { 0: 0.0580, 10: 0.0465, 20: 0.0360 },
@@ -569,13 +575,25 @@ const LEASE_FEE_TABLE = {
 function getPeriod()  { return parseInt(document.getElementById('periodSelect').value)  || 24; }
 function getDeposit() { return parseInt(document.getElementById('depositSelect').value) || 0;  }
 function getFeeRate() {
-  const tbl = LEASE_FEE_TABLE[getPeriod()];
-  return tbl ? (tbl[getDeposit()] || 0) : 0;
+  // 사용자 수동 입력 우선
+  const v = parseFloat(document.getElementById('feeRateInput').value);
+  return (isNaN(v) || v < 0) ? 0 : v / 100;
+}
+function getRate() {
+  const v = parseFloat(document.getElementById('rateInput').value);
+  return (isNaN(v) || v < 0) ? 0 : v / 100;
+}
+function lookupFeeRate(period, dep) {
+  const tbl = LEASE_FEE_TABLE[period];
+  return tbl ? (tbl[dep] || 0) : 0;
 }
 
 function calcMonthly(principal) {
-  // 무이자: 월납입 = 리스금액 ÷ 기간 (보증금은 별도 예치, 잔액 차감 X)
-  return Math.round(principal / getPeriod());
+  const period = getPeriod();
+  const r = getRate() / 12;
+  if (r === 0) return Math.round(principal / period);
+  // 원리금균등상환
+  return Math.round(principal * r * Math.pow(1+r,period) / (Math.pow(1+r,period)-1));
 }
 
 function update() {
@@ -773,8 +791,10 @@ function update() {
     // ── 리스 적용 모드 ──
     const period   = getPeriod();
     const depRate  = getDeposit() / 100;
+    const rateNum  = getRate();
+    const rateLbl  = rateNum === 0 ? '무이자' : `연 ${(rateNum*100).toFixed(2)}%`;
     document.getElementById('extTableTitle').textContent = '선택 품목 리스 견적';
-    document.getElementById('extTableSub').textContent  = `패키지 할인가 기준 · ${period}개월 무이자 · 보증금 ${getDeposit()}%`;
+    document.getElementById('extTableSub').textContent  = `패키지 할인가 기준 · ${period}개월 ${rateLbl} · 보증금 ${getDeposit()}%`;
     document.getElementById('extHead').innerHTML = `<tr>
       <th>품목</th>
       <th>패키지 할인가</th>
@@ -788,7 +808,7 @@ function update() {
     document.getElementById('eLabelDeposit').textContent = '보증금';
     document.getElementById('eSubDeposit').textContent   = `계약 시 선납 (${getDeposit()}%)`;
     document.getElementById('eLabelMonthly').textContent = '월 납입금';
-    document.getElementById('eSubMonthly').textContent   = `${period}개월 무이자`;
+    document.getElementById('eSubMonthly').textContent   = `${period}개월 ${rateLbl}`;
     document.getElementById('eMonthly').className        = 'es-val big';
 
     if (items.length === 0) {
@@ -912,13 +932,18 @@ loadFromSheet();     // 비동기 · 완료 시 자동 갱신
 // 할인율 변경 시 즉시 재계산
 document.getElementById('discountInput').addEventListener('input', update);
 
-// 기간/보증금 변경 시 선취수수료율 칩 갱신 + 재계산
-function refreshFeeChip() {
-  document.getElementById('feeRateChip').textContent = (getFeeRate() * 100).toFixed(2) + '%';
+// 기간/보증금 변경 시 → 선취수수료율 input 자동 채움 (수동 편집 전에만) + 재계산
+let feeManuallyEdited = false;
+function autoFillFeeRate() {
+  if (feeManuallyEdited) return;
+  const v = lookupFeeRate(getPeriod(), getDeposit());
+  document.getElementById('feeRateInput').value = (v * 100).toFixed(2);
 }
-document.getElementById('periodSelect').addEventListener('change', () => { refreshFeeChip(); update(); });
-document.getElementById('depositSelect').addEventListener('change', () => { refreshFeeChip(); update(); });
-refreshFeeChip();
+document.getElementById('periodSelect').addEventListener('change', () => { autoFillFeeRate(); update(); });
+document.getElementById('depositSelect').addEventListener('change', () => { autoFillFeeRate(); update(); });
+document.getElementById('feeRateInput').addEventListener('input', () => { feeManuallyEdited = true; update(); });
+document.getElementById('rateInput').addEventListener('input', update);
+autoFillFeeRate();
 
 // ── 공유 링크 생성 / 복원 ────────────────────────────────────────────
 function shareQuote() {
@@ -932,6 +957,8 @@ function shareQuote() {
     prices: Object.fromEntries([...selected].map(id => [id, promoPrices[id]])),
     period: document.getElementById('periodSelect').value,
     dep:    document.getElementById('depositSelect').value,
+    fee:    document.getElementById('feeRateInput').value,
+    rate:   document.getElementById('rateInput').value,
     disc:   document.getElementById('discountInput').value,
     ext:    1,   // 외부 공유 플래그 → 내부용 자동 숨김
   };
@@ -960,9 +987,15 @@ function loadStateFromUrl() {
     if (state.period) document.getElementById('periodSelect').value = state.period;
     if (state.dep)    document.getElementById('depositSelect').value = state.dep;
     if (state.disc)   document.getElementById('discountInput').value = state.disc;
+    if (state.rate)   document.getElementById('rateInput').value     = state.rate;
+    if (state.fee != null && state.fee !== '') {
+      document.getElementById('feeRateInput').value = state.fee;
+      feeManuallyEdited = true;
+    } else {
+      autoFillFeeRate();
+    }
     if (state.prices) Object.assign(promoPrices, state.prices);
     if (state.sel) state.sel.forEach(id => selected.add(id));
-    refreshFeeChip();
     renderGrid();
     update();
   } catch(e) { /* 잘못된 hash, 무시 */ }
