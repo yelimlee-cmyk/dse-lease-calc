@@ -501,19 +501,23 @@ const selected     = new Set();
 // 품목별 패키지 할인가 — 모드별로 분리 (리스 탭 / 할인 탭이 서로 영향 없음)
 const promoByMode  = { lease: {}, discount: {} };
 const manualByMode = { lease: new Set(), discount: new Set() };
+function seedPrice(p) { return p.leasePrice || p.price || 0; }  // 0/없음 → 판매가
 PRODUCTS.forEach(p => {
-  promoByMode.lease[p.id]    = p.leasePrice;
-  promoByMode.discount[p.id] = p.leasePrice;
+  const seed = seedPrice(p);
+  promoByMode.lease[p.id]    = seed;
+  promoByMode.discount[p.id] = seed;
 });
 function curPriceMode() { return MODE === 'discount' ? 'discount' : 'lease'; }
-function getPromo(id)   {
-  const v = promoByMode[curPriceMode()][id];
-  if (v != null) return v;
-  // 안전망: 모드 맵에 값이 없으면 PRODUCTS의 leasePrice/판매가로 폴백 후 시드
+function getPromo(id) {
+  const cur = curPriceMode();
+  const v   = promoByMode[cur][id];
+  if (v) return v;                                    // 유효 값이면 그대로
+  // 폴백 1: 반대 모드 맵에 값이 있으면 사용 (탭 독립성은 setPromo 시점부터 적용)
+  const other = cur === 'discount' ? 'lease' : 'discount';
+  if (promoByMode[other][id]) return promoByMode[other][id];
+  // 폴백 2: PRODUCTS의 leasePrice/판매가
   const p = PRODUCTS.find(x => x.id === id);
-  const seed = p ? (p.leasePrice || p.price || 0) : 0;
-  promoByMode[curPriceMode()][id] = seed;
-  return seed;
+  return p ? seedPrice(p) : 0;
 }
 function setPromo(id, v){ promoByMode[curPriceMode()][id] = v; manualByMode[curPriceMode()].add(id); }
 
@@ -921,8 +925,9 @@ async function loadFromSheet() {
     fresh.forEach(p => {
       PRODUCTS.push(p);
       // 수동 수정하지 않은 항목만 시트 값으로 업데이트 (모드별 독립)
+      const seed = seedPrice(p);  // 시트 값이 0/빈셀이면 판매가로 폴백
       ['lease','discount'].forEach(mode => {
-        if (!manualByMode[mode].has(p.id)) promoByMode[mode][p.id] = p.leasePrice;
+        if (!manualByMode[mode].has(p.id)) promoByMode[mode][p.id] = seed;
       });
     });
     renderGrid();
