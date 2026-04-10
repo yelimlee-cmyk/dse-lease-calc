@@ -42,12 +42,30 @@
   .cat-group { margin-bottom:14px; }
   .cat-title {
     font-size:11px; font-weight:800; color:#a5b4fc; letter-spacing:.5px;
-    padding:6px 12px; margin-bottom:7px;
+    padding:8px 12px; margin-bottom:7px;
     background:linear-gradient(90deg,rgba(99,102,241,.18),transparent);
     border-left:3px solid #6366f1; border-radius:4px;
+    cursor:pointer; user-select:none;
+    display:flex; align-items:center; gap:8px;
+    transition:background .15s;
   }
-  .cat-title .cat-count { color:#64748b; font-weight:600; font-size:10px; margin-left:6px; }
+  .cat-title:hover { background:linear-gradient(90deg,rgba(99,102,241,.28),transparent); }
+  .cat-title .cat-toggle {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:18px; height:18px; background:#1e1b4b; border:1px solid #4f46e5;
+    border-radius:4px; color:#a5b4fc; font-size:12px; font-weight:900; line-height:1;
+  }
+  .cat-title .cat-count { color:#64748b; font-weight:600; font-size:10px; margin-left:auto; }
   .cat-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .cat-group.collapsed .cat-cards { display:none; }
+  .cat-group.collapsed .cat-title { margin-bottom:0; opacity:.75; }
+  .cat-bulk-actions { display:flex; gap:6px; margin-bottom:10px; }
+  .cat-bulk-btn {
+    background:#1e293b; border:1px solid #334155; border-radius:6px;
+    color:#94a3b8; font-size:10.5px; padding:5px 11px; cursor:pointer;
+    font-family:inherit; font-weight:700; transition:all .15s;
+  }
+  .cat-bulk-btn:hover { border-color:#6366f1; color:#a5b4fc; }
   .product-card { background:#1e293b; border:1.5px solid #334155; border-radius:12px; padding:11px 13px; cursor:pointer; transition:all .15s; user-select:none; }
   .product-card:hover { border-color:#6366f1; }
   .product-card.selected { border-color:#6366f1; background:#1e1b4b; }
@@ -599,6 +617,40 @@ const DEFAULT_PRODUCTS = [
   { id:'wellcomet', name:'웰코멧 LDM',       desc:'',                           category:'바디 관리기기',       cost:17000000, price:22000000, leasePrice:0 },
 ];
 function productCategory(p) { return CATEGORIES.includes(p.category) ? p.category : DEFAULT_CATEGORY; }
+
+// 카테고리 접힘 상태 (localStorage 저장)
+const CAT_COLLAPSE_KEY = 'dseCatCollapsed_v1';
+const collapsedCats = (function() {
+  try {
+    const raw = localStorage.getItem(CAT_COLLAPSE_KEY);
+    if (raw) return new Set(JSON.parse(raw));
+  } catch(e) {}
+  return new Set();
+})();
+function saveCollapsedCats() {
+  try { localStorage.setItem(CAT_COLLAPSE_KEY, JSON.stringify([...collapsedCats])); }
+  catch(e) {}
+}
+function toggleCategory(cat) {
+  if (collapsedCats.has(cat)) collapsedCats.delete(cat);
+  else collapsedCats.add(cat);
+  saveCollapsedCats();
+  renderGrid();
+}
+function expandAllCategories() {
+  collapsedCats.clear();
+  saveCollapsedCats();
+  renderGrid();
+}
+function collapseAllCategories() {
+  CATEGORIES.forEach(c => collapsedCats.add(c));
+  // 알 수 없는 카테고리도 접기
+  PRODUCTS.forEach(p => {
+    if (!CATEGORIES.includes(p.category)) collapsedCats.add(p.category || DEFAULT_CATEGORY);
+  });
+  saveCollapsedCats();
+  renderGrid();
+}
 const PRODUCTS_STORAGE_KEY = 'dseProducts_v1';
 // localStorage에서 품목 불러오기 (없으면 기본값)
 let PRODUCTS = (function() {
@@ -684,6 +736,14 @@ function renderGrid() {
   const grid = document.getElementById('productGrid');
   grid.innerHTML = '';
 
+  // 전체 펼침/접힘 버튼
+  const bulk = document.createElement('div');
+  bulk.className = 'cat-bulk-actions';
+  bulk.innerHTML = `
+    <button class="cat-bulk-btn" onclick="expandAllCategories()">＋ 전체 펼치기</button>
+    <button class="cat-bulk-btn" onclick="collapseAllCategories()">− 전체 접기</button>`;
+  grid.appendChild(bulk);
+
   // 카테고리별로 묶되, CATEGORIES 순서를 유지하고 PRODUCTS 내부 순서도 보존
   const grouped = {};
   CATEGORIES.forEach(c => { grouped[c] = []; });
@@ -723,40 +783,33 @@ function renderGrid() {
     return card;
   };
 
-  // CATEGORIES 순서대로 렌더 (비어있는 카테고리는 생략)
-  CATEGORIES.forEach((cat, i) => {
-    const items = grouped[cat] || [];
-    if (items.length === 0) return;
+  const addCatSection = (cat, items, labelPrefix) => {
+    if (!items || items.length === 0) return;
+    const isCollapsed = collapsedCats.has(cat);
+    const selCount = items.filter(p => selected.has(p.id)).length;
     const group = document.createElement('div');
-    group.className = 'cat-group';
+    group.className = 'cat-group' + (isCollapsed ? ' collapsed' : '');
     const title = document.createElement('div');
     title.className = 'cat-title';
-    title.innerHTML = `${i+1}. ${cat} <span class="cat-count">(${items.length}종)</span>`;
+    title.innerHTML =
+      `<span class="cat-toggle">${isCollapsed ? '+' : '−'}</span>` +
+      `<span>${labelPrefix}${cat}</span>` +
+      `<span class="cat-count">${selCount > 0 ? `✓${selCount} / ` : ''}${items.length}종</span>`;
+    title.addEventListener('click', () => toggleCategory(cat));
     const cards = document.createElement('div');
     cards.className = 'cat-cards';
     items.forEach(p => cards.appendChild(makeCard(p)));
     group.appendChild(title);
     group.appendChild(cards);
     grid.appendChild(group);
-  });
+  };
+
+  // CATEGORIES 순서대로 렌더 (비어있는 카테고리는 생략)
+  CATEGORIES.forEach((cat, i) => addCatSection(cat, grouped[cat], `${i+1}. `));
 
   // 등록되지 않은 카테고리에 속한 품목도 표시 (호환성)
-  const unknownCats = Object.keys(grouped).filter(c => !CATEGORIES.includes(c));
-  unknownCats.forEach(cat => {
-    const items = grouped[cat];
-    if (!items || items.length === 0) return;
-    const group = document.createElement('div');
-    group.className = 'cat-group';
-    const title = document.createElement('div');
-    title.className = 'cat-title';
-    title.innerHTML = `${cat} <span class="cat-count">(${items.length}종)</span>`;
-    const cards = document.createElement('div');
-    cards.className = 'cat-cards';
-    items.forEach(p => cards.appendChild(makeCard(p)));
-    group.appendChild(title);
-    group.appendChild(cards);
-    grid.appendChild(group);
-  });
+  Object.keys(grouped).filter(c => !CATEGORIES.includes(c))
+    .forEach(cat => addCatSection(cat, grouped[cat], ''));
 }
 
 // 무이자 리스 조건표 (선취수수료율 기본값) — 기간 × 보증금율
