@@ -811,19 +811,21 @@ function update() {
     const rateNum  = getRate();
     const rateLbl  = rateNum === 0 ? '무이자' : `연 ${(rateNum*100).toFixed(2)}%`;
     document.getElementById('extTableTitle').textContent = '선택 품목 리스 견적';
-    document.getElementById('extTableSub').textContent  = `패키지 할인가 기준 · ${period}개월 ${rateLbl} · 보증금 ${getDeposit()}%`;
+    document.getElementById('extTableSub').innerHTML    =
+      `패키지 할인가 기준 · ${period}개월 ${rateLbl} · 보증금 ${getDeposit()}% ` +
+      `<span style="color:#34d399">(만기 시 환급)</span>`;
     document.getElementById('extHead').innerHTML = `<tr>
       <th>품목</th>
       <th>패키지 할인가</th>
-      <th>보증금 (${getDeposit()}%)</th>
+      <th>보증금 (${getDeposit()}%)<br><span style="color:#34d399;font-weight:500">환급</span></th>
       <th>월 납입금</th>
-      <th>총 납부액</th>
+      <th>총 납부액<br><span style="color:#94a3b8;font-weight:500">(보증금 제외)</span></th>
     </tr>`;
     extSum.className = 'ext-summary';
     document.getElementById('eLabelTotal').textContent   = '패키지 할인가 합계';
     document.getElementById('eSubTotal').textContent     = '선택 품목 기준';
-    document.getElementById('eLabelDeposit').textContent = '보증금';
-    document.getElementById('eSubDeposit').textContent   = `계약 시 선납 (${getDeposit()}%)`;
+    document.getElementById('eLabelDeposit').textContent = '보증금 (환급)';
+    document.getElementById('eSubDeposit').textContent   = `계약 시 선납 ${getDeposit()}% · ${period}개월 후 환급`;
     document.getElementById('eLabelMonthly').textContent = '월 납입금';
     document.getElementById('eSubMonthly').textContent   = `${period}개월 ${rateLbl}`;
     document.getElementById('eMonthly').className        = 'es-val big';
@@ -841,7 +843,7 @@ function update() {
       const lp      = getPromo(p.id);
       const deposit = Math.round(lp * depRate);
       const monthly = calcMonthly(lp);              // 무이자: lp / period
-      const totalPay= deposit + monthly * period;
+      const totalPay= monthly * period;             // 보증금은 환급 → 총 납부에서 제외
       etTotal += lp;
       return `<tr>
         <td class="ec-name">${p.name}</td>
@@ -851,9 +853,9 @@ function update() {
         <td class="ec-total">${fmt(totalPay)}</td>
       </tr>`;
     }).join('');
-    const etDeposit = Math.round(etTotal * depRate);
-    const etMonthly = calcMonthly(etTotal);
-    const etTotalPay= etDeposit + etMonthly * period;
+    const etDeposit  = Math.round(etTotal * depRate);
+    const etMonthly  = calcMonthly(etTotal);
+    const etTotalPay = etMonthly * period;          // 보증금 환급분 제외
     extFoot.innerHTML = `<tr>
       <td style="color:#93c5fd">합계 (${items.length}종)</td>
       <td style="color:#93c5fd">${fmt(etTotal)}</td>
