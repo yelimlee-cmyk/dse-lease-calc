@@ -2,356 +2,691 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="DSE Medical Solution 피부미용 장비 리스 견적 시뮬레이터">
 <title>[DSE] 피부미용 리스 시뮬레이터</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+  :root {
+    --bg:         #f5f7fb;
+    --surface:    #ffffff;
+    --surface-2:  #f8fafc;
+    --border:     #e2e8f0;
+    --border-2:   #cbd5e1;
+    --text:       #0f172a;
+    --text-2:     #475569;
+    --text-3:     #64748b;
+    --muted:      #94a3b8;
+    --primary:    #4f46e5;
+    --primary-2:  #6366f1;
+    --primary-soft:#eef2ff;
+    --red:        #dc2626;
+    --red-soft:   #fee2e2;
+    --blue:       #2563eb;
+    --blue-soft:  #dbeafe;
+    --green:      #059669;
+    --green-soft: #d1fae5;
+    --orange:     #ea580c;
+    --orange-soft:#ffedd5;
+    --amber:      #b45309;
+    --pink:       #be185d;
+    --pink-soft:  #fce7f3;
+    --shadow:     0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.06);
+    --shadow-lg:  0 4px 12px rgba(15,23,42,.06), 0 2px 6px rgba(15,23,42,.04);
+    --focus:      0 0 0 3px rgba(79,70,229,.18);
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Noto Sans KR','Malgun Gothic',sans-serif; background:#0f1117; color:#e2e8f0; min-height:100vh; padding:28px 20px; }
+  html, body { background: var(--bg); }
+  body {
+    font-family: 'Noto Sans KR','Malgun Gothic',sans-serif;
+    color: var(--text); min-height:100vh; padding:24px 18px;
+    -webkit-font-smoothing: antialiased;
+  }
   .wrap { max-width:1040px; margin:0 auto; }
+  button { font-family: inherit; }
+  button:focus-visible, input:focus-visible, select:focus-visible, [role=button]:focus-visible {
+    outline: none; box-shadow: var(--focus);
+  }
 
   /* HEADER */
-  .header { background:linear-gradient(120deg,#1e1b4b,#312e81); border:1px solid #3730a3; border-radius:16px; padding:22px 32px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; }
-  .header h1 { font-size:21px; font-weight:900; color:#fff; }
-  .header h1 span { color:#a5b4fc; }
-  .header .sub { font-size:11px; color:#6366f1; margin-top:3px; letter-spacing:.3px; }
-  .badge-wrap { display:flex; gap:8px; align-items:center; }
-  .badge { font-size:10px; font-weight:800; padding:5px 13px; border-radius:20px; letter-spacing:1.5px; }
-  .badge.red { background:#dc2626; color:#fff; }
-  .badge.blue { background:#2563eb; color:#fff; }
+  .header {
+    background:linear-gradient(120deg,#eef2ff,#e0e7ff);
+    border:1px solid #c7d2fe; border-radius:16px;
+    padding:20px 28px; margin-bottom:12px;
+    display:flex; justify-content:space-between; align-items:center;
+    box-shadow: var(--shadow);
+    gap:14px; flex-wrap:wrap;
+  }
+  .header h1 { font-size:21px; font-weight:900; color:#1e1b4b; }
+  .header h1 span { color: var(--primary); }
+  .header .sub { font-size:11px; color: var(--primary); margin-bottom:3px; letter-spacing:.3px; font-weight:700; }
+  .badge-wrap { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .badge { font-size:10px; font-weight:800; padding:5px 13px; border-radius:20px; letter-spacing:1.2px; white-space:nowrap; }
+  .badge.red  { background:var(--red-soft);  color:var(--red);  border:1px solid #fecaca; }
+  .badge.blue { background:var(--blue-soft); color:var(--blue); border:1px solid #bfdbfe; }
+
+  /* TOOLTIP */
+  .hint {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:15px; height:15px; border-radius:50%;
+    background:#e2e8f0; color:#475569; font-size:10px; font-weight:900;
+    cursor:help; margin-left:4px; position:relative;
+    user-select:none; line-height:1;
+  }
+  .hint:hover, .hint:focus { background:var(--primary); color:#fff; outline:none; }
+  .hint[data-tip]::after {
+    content: attr(data-tip);
+    position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%);
+    background:#0f172a; color:#f1f5f9; font-size:11px; font-weight:500;
+    padding:8px 12px; border-radius:8px; white-space:normal; width:240px;
+    line-height:1.55; letter-spacing:.2px;
+    opacity:0; pointer-events:none; transition:opacity .15s;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15); z-index:50;
+    text-align:left;
+  }
+  .hint[data-tip]::before {
+    content:''; position:absolute; bottom:calc(100% + 2px); left:50%;
+    transform:translateX(-50%);
+    border:6px solid transparent; border-top-color:#0f172a;
+    opacity:0; pointer-events:none; transition:opacity .15s;
+  }
+  .hint:hover::after, .hint:focus::after,
+  .hint:hover::before, .hint:focus::before { opacity:1; }
 
   /* PARAMS */
   .params { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
-  .param-chip { background:#1e293b; border:1px solid #334155; border-radius:8px; padding:7px 14px; font-size:11px; color:#94a3b8; display:flex; align-items:center; gap:5px; }
-  .param-chip b { color:#e2e8f0; }
-  .param-chip.editable { border-color:#4f46e5; cursor:default; }
-  .rate-input {
-    width:40px; background:#0f172a; border:1px solid #4f46e5;
-    border-radius:5px; color:#a5b4fc; font-size:13px; font-weight:800;
-    padding:1px 5px; font-family:inherit; text-align:center; outline:none;
-    transition:border-color .15s;
+  .param-chip {
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:8px 14px; font-size:12px; color:var(--text-2);
+    display:flex; align-items:center; gap:6px;
+    box-shadow: var(--shadow);
   }
-  .rate-input:focus { border-color:#818cf8; }
+  .param-chip b { color:var(--text); }
+  .param-chip.editable { border-color:#c7d2fe; }
+  .param-chip.warn { border-color:#fed7aa; background:#fff7ed; }
+  .rate-input {
+    background:var(--surface); border:1px solid var(--border-2);
+    border-radius:6px; color:var(--primary); font-size:13px; font-weight:800;
+    padding:3px 8px; font-family:inherit; text-align:center; outline:none;
+    transition:border-color .15s, box-shadow .15s;
+    min-height: 28px;
+  }
+  .rate-input:hover { border-color:var(--primary-2); }
+  .rate-input:focus { border-color:var(--primary); box-shadow: var(--focus); }
+
+  /* 검색 바 */
+  .product-search {
+    display:flex; align-items:center; gap:10px; margin-bottom:12px;
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:8px 14px; box-shadow: var(--shadow); position:relative;
+  }
+  .product-search .ps-icon { color:var(--muted); font-size:14px; flex-shrink:0; }
+  .product-search input {
+    flex:1; border:none; outline:none; background:transparent;
+    font-family:inherit; font-size:13.5px; color:var(--text);
+    padding:8px 0; min-height:32px;
+  }
+  .product-search input::placeholder { color:var(--muted); }
+  .product-search .ps-clear {
+    background:var(--surface-2); border:1px solid var(--border-2);
+    color:var(--text-3); font-size:12px; padding:4px 10px;
+    border-radius:14px; cursor:pointer; font-family:inherit; font-weight:700;
+    display:none;
+  }
+  .product-search .ps-clear:hover { border-color:var(--red); color:var(--red); }
+  .product-search.has-query .ps-clear { display:inline-flex; }
+  .product-search .ps-count {
+    color:var(--primary); font-size:11.5px; font-weight:700; white-space:nowrap;
+  }
+
+  /* 선택 품목 pinned 섹션 */
+  .pinned-section {
+    background:linear-gradient(135deg, #fefce8, #fef3c7);
+    border:1.5px solid #fcd34d; border-radius:14px;
+    padding:14px 16px; margin-bottom:14px;
+    box-shadow: var(--shadow);
+  }
+  .pinned-head {
+    display:flex; align-items:center; gap:10px; margin-bottom:10px;
+    font-size:12px; font-weight:800; color:#92400e; letter-spacing:.3px;
+  }
+  .pinned-head .pn-count {
+    background:#f59e0b; color:#fff; padding:3px 10px;
+    border-radius:12px; font-size:11px; font-weight:800;
+  }
+  .pinned-head .pn-clear {
+    margin-left:auto; background:#fff; border:1px solid #fcd34d;
+    color:#92400e; font-size:11px; padding:5px 12px; border-radius:8px;
+    cursor:pointer; font-family:inherit; font-weight:700; transition:all .15s;
+  }
+  .pinned-head .pn-clear:hover { background:var(--red); color:#fff; border-color:var(--red); }
+  .pinned-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .pinned-cards .product-card.selected { background:#fff; border-color:#f59e0b; }
+
+  .empty-search {
+    padding:40px 20px; text-align:center; color:var(--text-3);
+    background:var(--surface); border:1px dashed var(--border-2); border-radius:12px;
+    font-size:13px;
+  }
+  .empty-search b { color:var(--text); }
 
   /* PRODUCT GRID */
-  .section-label { font-size:10px; letter-spacing:3px; color:#6366f1; text-transform:uppercase; margin-bottom:8px; font-weight:700; }
+  .section-label {
+    font-size:11px; letter-spacing:2.5px; color:var(--primary);
+    text-transform:uppercase; margin-bottom:8px; font-weight:800;
+    display:flex; align-items:center; gap:6px;
+  }
   .product-grid { margin-bottom:18px; }
   .cat-group { margin-bottom:14px; }
   .cat-title {
-    font-size:11px; font-weight:800; color:#a5b4fc; letter-spacing:.5px;
-    padding:8px 12px; margin-bottom:7px;
-    background:linear-gradient(90deg,rgba(99,102,241,.18),transparent);
-    border-left:3px solid #6366f1; border-radius:4px;
-    cursor:pointer; user-select:none;
-    display:flex; align-items:center; gap:8px;
-    transition:background .15s;
+    font-size:12px; font-weight:800; color:var(--text); letter-spacing:.2px;
+    padding:10px 14px; margin-bottom:8px;
+    background:linear-gradient(90deg, var(--primary-soft), #ffffff);
+    border:1px solid var(--border); border-left:3px solid var(--primary);
+    border-radius:8px; cursor:pointer; user-select:none;
+    display:flex; align-items:center; gap:10px;
+    transition:background .15s, transform .1s;
   }
-  .cat-title:hover { background:linear-gradient(90deg,rgba(99,102,241,.28),transparent); }
+  .cat-title:hover { background:linear-gradient(90deg, #e0e7ff, #f8fafc); }
+  .cat-title:active { transform: translateY(1px); }
   .cat-title .cat-toggle {
     display:inline-flex; align-items:center; justify-content:center;
-    width:18px; height:18px; background:#1e1b4b; border:1px solid #4f46e5;
-    border-radius:4px; color:#a5b4fc; font-size:12px; font-weight:900; line-height:1;
+    width:20px; height:20px; background:#fff; border:1px solid var(--primary);
+    border-radius:5px; color:var(--primary); font-size:12px; font-weight:900; line-height:1;
   }
-  .cat-title .cat-count { color:#64748b; font-weight:600; font-size:10px; margin-left:auto; }
-  .cat-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .cat-title .cat-count { color:var(--text-3); font-weight:700; font-size:10.5px; margin-left:auto; }
+  .cat-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
   .cat-group.collapsed .cat-cards { display:none; }
-  .cat-group.collapsed .cat-title { margin-bottom:0; opacity:.75; }
-  .cat-bulk-actions { display:flex; gap:6px; margin-bottom:10px; }
+  .cat-group.collapsed .cat-title { margin-bottom:0; }
+  .cat-bulk-actions { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
   .cat-bulk-btn {
-    background:#1e293b; border:1px solid #334155; border-radius:6px;
-    color:#94a3b8; font-size:10.5px; padding:5px 11px; cursor:pointer;
+    background:var(--surface); border:1px solid var(--border-2); border-radius:8px;
+    color:var(--text-2); font-size:11.5px; padding:7px 14px; cursor:pointer;
     font-family:inherit; font-weight:700; transition:all .15s;
+    min-height:36px;
   }
-  .cat-bulk-btn:hover { border-color:#6366f1; color:#a5b4fc; }
-  .product-card { background:#1e293b; border:1.5px solid #334155; border-radius:12px; padding:11px 13px; cursor:pointer; transition:all .15s; user-select:none; }
-  .product-card:hover { border-color:#6366f1; }
-  .product-card.selected { border-color:#6366f1; background:#1e1b4b; }
-  .pc-top { display:flex; align-items:center; gap:9px; margin-bottom:7px; }
-  .check-box { width:17px; height:17px; border-radius:4px; border:2px solid #475569; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:10px; color:#fff; transition:all .15s; }
-  .product-card.selected .check-box { background:#6366f1; border-color:#6366f1; }
+  .cat-bulk-btn:hover { border-color:var(--primary); color:var(--primary); }
+  .product-card {
+    background:var(--surface); border:1.5px solid var(--border);
+    border-radius:12px; padding:12px 14px; cursor:pointer;
+    transition:all .15s; user-select:none;
+    box-shadow: var(--shadow);
+  }
+  .product-card:hover { border-color:var(--primary-2); transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+  .product-card.selected { border-color:var(--primary); background:var(--primary-soft); }
+  .pc-top { display:flex; align-items:center; gap:9px; margin-bottom:8px; }
+  .check-box {
+    width:18px; height:18px; border-radius:5px;
+    border:2px solid var(--border-2); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; color:#fff; transition:all .15s; background:#fff;
+  }
+  .product-card.selected .check-box { background:var(--primary); border-color:var(--primary); }
   .product-card.selected .check-box::after { content:'✓'; }
-  .p-name { font-size:12.5px; font-weight:700; color:#e2e8f0; flex:1; }
-  .p-sale { font-size:11.5px; font-weight:800; color:#818cf8; }
-  /* 패키지 할인가 입력 */
-  .promo-row { display:flex; align-items:center; gap:6px; }
-  .promo-label { font-size:9px; color:#64748b; letter-spacing:.5px; white-space:nowrap; }
+  .p-name { font-size:13px; font-weight:700; color:var(--text); flex:1; line-height:1.35; }
+  .p-name .p-desc { display:block; font-size:10.5px; color:var(--text-3); font-weight:400; margin-top:2px; }
+  .p-sale { font-size:12px; font-weight:800; color:var(--primary); white-space:nowrap; }
+  .promo-row { display:flex; align-items:center; gap:8px; }
+  .promo-label { font-size:10px; color:var(--text-3); letter-spacing:.3px; white-space:nowrap; font-weight:700; }
   .promo-input {
-    flex:1; background:#0f172a; border:1px solid #334155; border-radius:6px;
-    color:#a5b4fc; font-size:11.5px; font-weight:700; padding:4px 8px;
-    font-family:inherit; text-align:right; outline:none; transition:border-color .15s;
+    flex:1; background:#fff; border:1px solid var(--border-2); border-radius:7px;
+    color:var(--primary); font-size:12px; font-weight:700; padding:6px 10px;
+    font-family:inherit; text-align:right; outline:none; transition:border-color .15s, box-shadow .15s;
+    min-height: 32px;
   }
-  .promo-input:focus { border-color:#6366f1; }
-  .product-card:not(.selected) .promo-row { opacity:.4; pointer-events:none; }
+  .promo-input:focus { border-color:var(--primary); box-shadow: var(--focus); }
+  .product-card:not(.selected) .promo-row { opacity:.45; pointer-events:none; }
 
   /* SECTION DIVIDER */
-  .sec-divider { display:flex; align-items:center; gap:12px; margin:22px 0 14px; cursor:pointer; user-select:none; }
-  .sec-divider .line { flex:1; height:1px; background:#1e293b; transition:background .2s; }
-  .sec-divider:hover .line { background:#334155; }
-  .sec-badge { font-size:10px; font-weight:800; padding:4px 14px; border-radius:20px; letter-spacing:1.5px; display:flex; align-items:center; gap:8px; transition:opacity .15s; }
+  .sec-divider {
+    display:flex; align-items:center; gap:12px;
+    margin:22px 0 14px; cursor:pointer; user-select:none;
+  }
+  .sec-divider .line { flex:1; height:1px; background:var(--border); transition:background .2s; }
+  .sec-divider:hover .line { background:var(--border-2); }
+  .sec-badge {
+    font-size:11px; font-weight:800; padding:6px 14px; border-radius:20px;
+    letter-spacing:1px; display:flex; align-items:center; gap:8px;
+    transition:opacity .15s;
+  }
   .sec-badge:hover { opacity:.8; }
-  .sec-badge.internal { background:rgba(220,38,38,.15); color:#f87171; border:1px solid rgba(220,38,38,.3); }
-  .sec-badge.external { background:rgba(37,99,235,.15); color:#60a5fa; border:1px solid rgba(37,99,235,.3); }
+  .sec-badge.internal { background:var(--red-soft); color:var(--red); border:1px solid #fecaca; }
+  .sec-badge.external { background:var(--blue-soft); color:var(--blue); border:1px solid #bfdbfe; }
   .toggle-icon { font-size:14px; font-weight:900; line-height:1; }
   .sec-collapse { overflow:visible; transition:opacity .3s ease; max-height:none; opacity:1; }
   .sec-collapse.closed { display:none; opacity:0; margin-bottom:0; }
 
   /* TABLE COMMON */
-  .table-wrap { background:#1e293b; border:1px solid #334155; border-radius:14px; overflow:hidden; margin-bottom:14px; }
-  .table-header { padding:12px 20px; border-bottom:1px solid #334155; font-size:11px; color:#94a3b8; }
-  .table-header b { color:#e2e8f0; }
+  .table-wrap {
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    overflow:hidden; margin-bottom:14px; box-shadow: var(--shadow);
+  }
+  .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .table-header { padding:13px 20px; border-bottom:1px solid var(--border); font-size:11.5px; color:var(--text-2); }
+  .table-header b { color:var(--text); }
   table { width:100%; border-collapse:collapse; }
-  thead th { padding:9px 13px; font-size:10px; color:#64748b; font-weight:700; text-align:right; border-bottom:1px solid #334155; letter-spacing:.4px; white-space:nowrap; }
+  thead th {
+    padding:10px 13px; font-size:10.5px; color:var(--text-3);
+    font-weight:800; text-align:right; border-bottom:1px solid var(--border);
+    letter-spacing:.4px; white-space:nowrap; background:var(--surface-2);
+  }
   thead th:first-child { text-align:left; }
-  tbody tr { border-bottom:1px solid #0f1117; transition:background .1s; }
+  tbody tr { border-bottom:1px solid var(--border); transition:background .1s; }
   tbody tr:last-child { border-bottom:none; }
-  tbody tr:hover { background:#263247; }
-  td { padding:10px 13px; font-size:12px; text-align:right; white-space:nowrap; }
-  td:first-child { text-align:left; font-weight:700; color:#e2e8f0; }
-  tfoot td { padding:11px 13px; font-weight:900; font-size:12.5px; border-top:1px solid #4f46e5; background:#0f172a; white-space:nowrap; }
-  tfoot td:first-child { color:#818cf8; text-align:left; }
-  .empty-td { text-align:center !important; color:#475569; font-style:italic; padding:22px !important; font-weight:400 !important; }
+  tbody tr:hover { background:var(--surface-2); }
+  td { padding:11px 13px; font-size:12.5px; text-align:right; white-space:nowrap; color:var(--text); }
+  td:first-child { text-align:left; font-weight:700; color:var(--text); }
+  tfoot td {
+    padding:12px 13px; font-weight:900; font-size:12.5px;
+    border-top:2px solid var(--primary); background:var(--primary-soft); white-space:nowrap;
+  }
+  tfoot td:first-child { color:var(--primary); text-align:left; }
+  .empty-td {
+    text-align:center !important; color:var(--muted); font-style:italic;
+    padding:28px !important; font-weight:400 !important;
+  }
 
-  /* INTERNAL TABLE COLORS */
-  .tc-cost   { color:#94a3b8; }
-  .tc-sale   { color:#e2e8f0; }
-  .tc-promo  { color:#a5b4fc; font-weight:700; }
-  .tc-fee    { color:#f87171; }
-  .tc-net    { color:#fb923c; font-weight:700; }
-  .tc-margin { color:#fbbf24; }
-  .tc-mlease { color:#34d399; font-weight:700; }
-  .tc-diff   { font-size:10.5px; }
-  .up   { color:#34d399; }
-  .down { color:#f87171; }
+  /* INTERNAL TABLE COLORS — 라이트 테마용 */
+  .tc-cost   { color:var(--text-2); }
+  .tc-sale   { color:var(--text); }
+  .tc-promo  { color:var(--primary); font-weight:700; }
+  .tc-fee    { color:var(--red); }
+  .tc-net    { color:var(--orange); font-weight:700; }
+  .tc-margin { color:var(--amber); }
+  .tc-mlease { color:var(--green); font-weight:700; }
+  .tc-diff   { font-size:11px; font-weight:700; }
+  .up   { color:var(--green); }
+  .down { color:var(--red); }
 
   /* INTERNAL SUMMARY */
-  .int-summary { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px; }
-  .sum-card { background:#1e293b; border:1px solid #334155; border-radius:11px; padding:14px 16px; }
-  .sum-card.hl { background:linear-gradient(135deg,#1e1b4b,#1e3a2f); border-color:#4f46e5; }
-  .sum-label { font-size:9.5px; color:#64748b; letter-spacing:.8px; text-transform:uppercase; margin-bottom:5px; }
-  .sum-val { font-size:17px; font-weight:900; }
-  .sum-sub { font-size:10px; color:#475569; margin-top:2px; }
+  .int-summary { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+  .sum-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:14px 16px; box-shadow: var(--shadow);
+  }
+  .sum-card.hl {
+    background:linear-gradient(135deg, #ecfdf5, #eef2ff);
+    border-color:var(--primary);
+  }
+  .sum-label {
+    font-size:10px; color:var(--text-3); letter-spacing:.8px;
+    text-transform:uppercase; margin-bottom:6px; font-weight:800;
+  }
+  .sum-val { font-size:18px; font-weight:900; line-height:1.2; }
+  .sum-sub { font-size:11px; color:var(--muted); margin-top:4px; }
 
   /* EXTERNAL TABLE COLORS */
-  .ec-name   { color:#e2e8f0; }
-  .ec-sale   { color:#93c5fd; }
-  .ec-deposit{ color:#94a3b8; }
-  .ec-monthly{ color:#60a5fa; font-weight:700; }
-  .ec-total  { color:#a5b4fc; font-weight:700; }
+  .ec-name   { color:var(--text); }
+  .ec-sale   { color:var(--blue); }
+  .ec-deposit{ color:var(--text-2); }
+  .ec-monthly{ color:var(--blue); font-weight:800; }
+  .ec-total  { color:var(--primary); font-weight:700; }
 
   /* EXTERNAL SUMMARY */
-  .ext-summary { background:linear-gradient(135deg,#1e2d5a,#1e3a5f); border:1px solid #3b82f6; border-radius:12px; padding:18px 24px; display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:8px; }
+  .ext-summary {
+    background:linear-gradient(135deg, #eff6ff, #dbeafe);
+    border:1px solid #bfdbfe; border-radius:14px;
+    padding:20px 24px; display:grid; grid-template-columns:repeat(3,1fr); gap:16px;
+    margin-bottom:8px; box-shadow: var(--shadow);
+  }
   .es-item { text-align:center; }
-  .es-label { font-size:10px; color:#93c5fd; letter-spacing:1px; margin-bottom:5px; }
-  .es-val { font-size:19px; font-weight:900; color:#fff; }
-  .es-val.big { font-size:22px; color:#60a5fa; }
-  .es-sub { font-size:10px; color:#3b82f6; margin-top:2px; }
-  .es-divider { border-left:1px solid rgba(59,130,246,.3); }
-
+  .es-label { font-size:10.5px; color:var(--blue); letter-spacing:1px; margin-bottom:6px; font-weight:800; }
+  .es-val   { font-size:19px; font-weight:900; color:var(--text); line-height:1.25; }
+  .es-val.big { font-size:23px; color:var(--blue); }
+  .es-sub   { font-size:10.5px; color:#3b82f6; margin-top:4px; }
+  .es-divider { border-left:1px solid rgba(59,130,246,.25); }
 
   /* MODE TABS */
-  .mode-tabs { display:flex; margin-bottom:14px; border:1px solid #334155; border-radius:12px; overflow:hidden; }
-  .mode-tab { flex:1; padding:11px 0; text-align:center; font-size:12.5px; font-weight:800; cursor:pointer; transition:all .2s; color:#64748b; background:#1e293b; letter-spacing:.5px; border-right:1px solid #334155; }
+  .mode-tabs {
+    display:flex; margin-bottom:14px;
+    border:1px solid var(--border); border-radius:12px;
+    overflow:hidden; background:var(--surface); box-shadow: var(--shadow);
+    position:sticky; top:0; z-index:20;
+  }
+  .mode-tab {
+    flex:1; padding:12px 6px; text-align:center; font-size:13px; font-weight:800;
+    cursor:pointer; transition:all .2s; color:var(--text-3); background:var(--surface);
+    letter-spacing:.3px; border-right:1px solid var(--border);
+    min-height:44px; display:flex; align-items:center; justify-content:center; gap:6px;
+  }
   .mode-tab:last-child { border-right:none; }
-  .mode-tab:hover:not(.active) { background:#263247; color:#94a3b8; }
-  .mode-tab.active.lease { background:linear-gradient(135deg,#1e1b4b,#312e81); color:#a5b4fc; }
-  .mode-tab.active.discount { background:linear-gradient(135deg,#14352a,#064e3b); color:#34d399; }
-  .mode-tab.active.roi { background:linear-gradient(135deg,#3b1a0a,#7c2d12); color:#fb923c; }
-  .mode-tab.active.manage { background:linear-gradient(135deg,#0f172a,#1e293b); color:#f472b6; border-color:#be185d; }
+  .mode-tab:hover:not(.active) { background:var(--surface-2); color:var(--text); }
+  .mode-tab.active.lease    { background:var(--primary-soft); color:var(--primary); border-bottom:2px solid var(--primary); }
+  .mode-tab.active.discount { background:var(--green-soft);   color:var(--green);   border-bottom:2px solid var(--green); }
+  .mode-tab.active.roi      { background:var(--orange-soft);  color:var(--orange);  border-bottom:2px solid var(--orange); }
+  .mode-tab.active.manage   { background:var(--pink-soft);    color:var(--pink);    border-bottom:2px solid var(--pink); }
 
   /* MANAGE TAB */
   .manage-section { display:none; }
   .manage-section.visible { display:block; }
-  .manage-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:10px; flex-wrap:wrap; }
-  .manage-bar .mb-title { font-size:13px; color:#e2e8f0; font-weight:800; }
-  .manage-bar .mb-count { color:#f472b6; font-weight:900; }
-  .manage-bar .mb-actions { display:flex; gap:8px; }
-  .manage-btn {
-    border:none; border-radius:8px; padding:9px 16px;
-    font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;
-    display:flex; align-items:center; gap:6px; transition:opacity .15s;
+  .manage-bar {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:12px; gap:10px; flex-wrap:wrap;
   }
-  .manage-btn:hover { opacity:.85; }
-  .manage-btn.add   { background:linear-gradient(135deg,#be185d,#db2777); color:#fff; }
-  .manage-btn.reset { background:#1e293b; color:#94a3b8; border:1px solid #334155; }
-  .manage-table-wrap { background:#1e293b; border:1px solid #334155; border-radius:14px; overflow:hidden; margin-bottom:12px; }
+  .manage-bar .mb-title { font-size:14px; color:var(--text); font-weight:800; }
+  .manage-bar .mb-count { color:var(--pink); font-weight:900; }
+  .manage-bar .mb-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .manage-btn {
+    border:none; border-radius:10px; padding:10px 16px;
+    font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit;
+    display:inline-flex; align-items:center; gap:6px; transition:opacity .15s, transform .1s;
+    min-height:40px; box-shadow: var(--shadow);
+  }
+  .manage-btn:hover { opacity:.9; }
+  .manage-btn:active { transform: translateY(1px); }
+  .manage-btn.add    { background:linear-gradient(135deg, var(--pink), #db2777); color:#fff; }
+  .manage-btn.reset  { background:var(--surface); color:var(--text-2); border:1px solid var(--border-2); }
+  .manage-btn.export { background:linear-gradient(135deg, var(--green), #10b981); color:#fff; }
+  .manage-btn.import { background:linear-gradient(135deg, var(--blue), #3b82f6); color:#fff; }
+  .manage-table-wrap {
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    overflow:hidden; margin-bottom:12px; box-shadow: var(--shadow);
+  }
   .manage-table { width:100%; border-collapse:collapse; }
   .manage-table thead th {
-    padding:10px 12px; font-size:10px; color:#64748b; font-weight:700;
-    text-align:left; border-bottom:1px solid #334155; letter-spacing:.4px;
-    background:#0f172a;
+    padding:11px 12px; font-size:10.5px; color:var(--text-3); font-weight:800;
+    text-align:left; border-bottom:1px solid var(--border); letter-spacing:.4px;
+    background:var(--surface-2);
   }
-  .manage-table tbody td { padding:7px 10px; border-bottom:1px solid #0f1117; }
+  .manage-table tbody td { padding:8px 10px; border-bottom:1px solid var(--border); }
   .manage-table tbody tr:last-child td { border-bottom:none; }
   .manage-table input {
-    width:100%; background:#0f172a; border:1px solid #334155; border-radius:6px;
-    color:#e2e8f0; font-size:12px; font-weight:600; padding:6px 9px;
-    font-family:inherit; outline:none; transition:border-color .15s;
+    width:100%; background:#fff; border:1px solid var(--border-2); border-radius:7px;
+    color:var(--text); font-size:12.5px; font-weight:600; padding:7px 10px;
+    font-family:inherit; outline:none; transition:border-color .15s, box-shadow .15s;
+    min-height:34px;
   }
-  .manage-table input.num { text-align:right; color:#a5b4fc; }
-  .manage-table input:focus { border-color:#f472b6; }
+  .manage-table input.num { text-align:right; color:var(--primary); }
+  .manage-table input:focus { border-color:var(--pink); box-shadow: 0 0 0 3px rgba(190,24,93,.15); }
   .manage-table select {
-    width:100%; background:#0f172a; border:1px solid #334155; border-radius:6px;
-    color:#a5b4fc; font-size:11.5px; font-weight:600; padding:5px 8px;
+    width:100%; background:#fff; border:1px solid var(--border-2); border-radius:7px;
+    color:var(--primary); font-size:12px; font-weight:600; padding:6px 9px;
     font-family:inherit; outline:none; cursor:pointer; transition:border-color .15s;
+    min-height:34px;
   }
-  .manage-table select:focus { border-color:#f472b6; }
+  .manage-table select:focus { border-color:var(--pink); }
   .manage-table .row-actions { display:flex; gap:4px; justify-content:flex-end; }
   .manage-table .ic-btn {
-    background:#0f172a; border:1px solid #334155; color:#94a3b8;
-    border-radius:6px; padding:5px 8px; font-size:11px; font-weight:700;
-    cursor:pointer; font-family:inherit; transition:all .15s; min-width:28px;
+    background:#fff; border:1px solid var(--border-2); color:var(--text-2);
+    border-radius:7px; padding:6px 9px; font-size:11px; font-weight:700;
+    cursor:pointer; font-family:inherit; transition:all .15s; min-width:32px; min-height:32px;
   }
-  .manage-table .ic-btn:hover:not(:disabled) { border-color:#f472b6; color:#f472b6; }
+  .manage-table .ic-btn:hover:not(:disabled) { border-color:var(--pink); color:var(--pink); }
   .manage-table .ic-btn:disabled { opacity:.3; cursor:not-allowed; }
   .manage-table .del-btn {
-    background:#3f1221; border:1px solid #7f1d1d; color:#f87171;
-    border-radius:6px; padding:5px 10px; font-size:11px; font-weight:700;
-    cursor:pointer; font-family:inherit; transition:all .15s;
+    background:var(--red-soft); border:1px solid #fecaca; color:var(--red);
+    border-radius:7px; padding:6px 11px; font-size:11px; font-weight:700;
+    cursor:pointer; font-family:inherit; transition:all .15s; min-height:32px;
   }
-  .manage-table .del-btn:hover { background:#7f1d1d; color:#fff; }
-  .manage-btn.export { background:linear-gradient(135deg,#065f46,#059669); color:#fff; }
-  .manage-btn.import { background:linear-gradient(135deg,#1d4ed8,#2563eb); color:#fff; }
-  .manage-note { font-size:11px; color:#64748b; line-height:1.6; padding:10px 14px; background:#0f172a; border:1px solid #1e293b; border-radius:8px; }
-  .manage-note b { color:#94a3b8; }
+  .manage-table .del-btn:hover { background:var(--red); color:#fff; border-color:var(--red); }
+  .manage-note {
+    font-size:11.5px; color:var(--text-2); line-height:1.75;
+    padding:14px 16px; background:#fffbeb; border:1px solid #fde68a;
+    border-radius:10px;
+  }
+  .manage-note b { color:var(--text); }
 
   /* ROI TAB */
   .roi-section { display:none; }
   .roi-section.visible { display:block; }
-  .roi-inputs { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:18px; }
-  .roi-field { background:#1e293b; border:1px solid #334155; border-radius:10px; padding:14px 16px; }
-  .roi-field label { display:block; font-size:10px; color:#64748b; letter-spacing:.8px; text-transform:uppercase; margin-bottom:6px; font-weight:700; }
-  .roi-field input {
-    width:100%; background:#0f172a; border:1px solid #334155; border-radius:6px;
-    color:#fb923c; font-size:15px; font-weight:800; padding:8px 12px;
-    font-family:inherit; text-align:right; outline:none; transition:border-color .15s;
+  .roi-inputs { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:18px; }
+  .roi-field {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:14px 16px; box-shadow: var(--shadow);
   }
-  .roi-field input:focus { border-color:#f97316; }
-  .roi-field .unit { font-size:10px; color:#64748b; margin-top:4px; text-align:right; }
-  .roi-result-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
-  .roi-card { background:#1e293b; border:1px solid #334155; border-radius:12px; padding:18px 16px; text-align:center; }
-  .roi-card.primary { background:linear-gradient(135deg,#3b1a0a,#7c2d12); border-color:#f97316; }
-  .roi-card .rc-label { font-size:11px; color:#64748b; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; font-weight:700; }
-  .roi-card .rc-val { font-size:22px; font-weight:900; color:#e2e8f0; line-height:1.25; }
-  .roi-card.primary .rc-val { color:#fb923c; }
-  .roi-card .rc-sub { font-size:12.5px; color:#94a3b8; margin-top:8px; line-height:1.55; font-weight:500; }
-  .roi-card .rc-sub b { color:#fb923c; font-weight:800; font-size:13.5px; }
-  .roi-card .rc-sub .muted { color:#64748b; }
-  .roi-card .rc-sub .pos { color:#34d399; font-weight:800; font-size:13.5px; }
-  .roi-bar-wrap { background:#1e293b; border:1px solid #334155; border-radius:12px; padding:18px 20px; margin-bottom:14px; }
-  .roi-bar-label { font-size:11px; color:#94a3b8; margin-bottom:8px; font-weight:700; }
-  .roi-bar-track { background:#0f172a; border-radius:8px; height:28px; position:relative; overflow:hidden; }
-  .roi-bar-fill { height:100%; border-radius:8px; background:linear-gradient(90deg,#f97316,#fb923c); transition:width .4s ease; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; font-size:11px; font-weight:800; color:#fff; min-width:60px; }
-  .roi-bar-mark { position:absolute; top:0; bottom:0; width:2px; background:#e2e8f0; }
-  .roi-bar-mark-label { position:absolute; top:-16px; font-size:9px; color:#94a3b8; white-space:nowrap; transform:translateX(-50%); }
+  .roi-field label {
+    display:flex; align-items:center; font-size:11px; color:var(--text-3);
+    letter-spacing:.6px; text-transform:uppercase; margin-bottom:7px; font-weight:800;
+  }
+  .roi-field input {
+    width:100%; background:#fff; border:1px solid var(--border-2); border-radius:8px;
+    color:var(--orange); font-size:16px; font-weight:800; padding:10px 14px;
+    font-family:inherit; text-align:right; outline:none;
+    transition:border-color .15s, box-shadow .15s; min-height:44px;
+  }
+  .roi-field input:focus { border-color:var(--orange); box-shadow: 0 0 0 3px rgba(234,88,12,.15); }
+  .roi-field .unit { font-size:11px; color:var(--text-3); margin-top:5px; text-align:right; }
+  .roi-result-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:14px; }
+  .roi-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:18px 16px; text-align:center; box-shadow: var(--shadow);
+  }
+  .roi-card.primary {
+    background:linear-gradient(135deg, #fff7ed, #ffedd5);
+    border-color:var(--orange);
+  }
+  .roi-card .rc-label {
+    font-size:11px; color:var(--text-3); letter-spacing:1px;
+    text-transform:uppercase; margin-bottom:8px; font-weight:800;
+  }
+  .roi-card .rc-val { font-size:22px; font-weight:900; color:var(--text); line-height:1.25; }
+  .roi-card.primary .rc-val { color:var(--orange); }
+  .roi-card .rc-sub { font-size:12.5px; color:var(--text-2); margin-top:8px; line-height:1.6; font-weight:500; }
+  .roi-card .rc-sub b { color:var(--orange); font-weight:800; font-size:13px; }
+  .roi-card .rc-sub .muted { color:var(--muted); }
+  .roi-card .rc-sub .pos   { color:var(--green); font-weight:800; font-size:13px; }
+  .roi-bar-wrap {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:18px 20px; margin-bottom:14px; box-shadow: var(--shadow);
+  }
+  .roi-bar-label { font-size:11.5px; color:var(--text-2); margin-bottom:10px; font-weight:700; }
+  .roi-bar-track { background:#f1f5f9; border-radius:8px; height:28px; position:relative; overflow:hidden; border:1px solid var(--border); }
+  .roi-bar-fill {
+    height:100%; border-radius:8px;
+    background:linear-gradient(90deg, var(--orange), #fb923c);
+    transition:width .4s ease;
+    display:flex; align-items:center; justify-content:flex-end;
+    padding-right:10px; font-size:11px; font-weight:800; color:#fff; min-width:60px;
+  }
+  .roi-bar-mark { position:absolute; top:0; bottom:0; width:2px; background:var(--text); }
+  .roi-bar-mark-label { position:absolute; top:-18px; font-size:10px; color:var(--text-2); white-space:nowrap; transform:translateX(-50%); font-weight:700; }
   .roi-monthly-table { margin-bottom:14px; }
   .roi-monthly-table table { width:100%; }
-  .roi-monthly-table thead th { padding:8px 10px; font-size:10px; }
-  .roi-monthly-table tbody td { padding:8px 10px; font-size:11.5px; }
-  .roi-monthly-table .breakeven-row { background:rgba(249,115,22,.12); }
-  .roi-monthly-table .breakeven-row td { color:#fb923c; font-weight:700; }
+  .roi-monthly-table thead th { padding:9px 10px; font-size:10.5px; }
+  .roi-monthly-table tbody td { padding:8px 10px; font-size:12px; }
+  .roi-monthly-table .breakeven-row { background: #fff7ed; }
+  .roi-monthly-table .breakeven-row td { color:var(--orange); font-weight:800; }
 
-  .ext-summary.disc { background:linear-gradient(135deg,#14352a,#064e3b); border-color:#059669; }
-  .ext-summary.disc .es-label { color:#6ee7b7; }
-  .ext-summary.disc .es-val.big { color:#34d399; }
-  .ext-summary.disc .es-sub { color:#059669; }
-  .ext-summary.disc .es-divider { border-color:rgba(5,150,105,.3); }
-  .note-bar { background:#1e293b; border:1px solid #334155; border-radius:8px; padding:9px 16px; font-size:10px; color:#475569; margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
+  .ext-summary.disc {
+    background:linear-gradient(135deg, #ecfdf5, #d1fae5);
+    border-color:#6ee7b7;
+  }
+  .ext-summary.disc .es-label { color:var(--green); }
+  .ext-summary.disc .es-val.big { color:var(--green); }
+  .ext-summary.disc .es-sub { color:var(--green); }
+  .ext-summary.disc .es-divider { border-color:rgba(5,150,105,.25); }
+
+  .note-bar {
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:11px 16px; font-size:11px; color:var(--text-3);
+    margin-top:12px; display:flex; gap:16px; flex-wrap:wrap;
+    box-shadow: var(--shadow);
+  }
+
   /* PNG 저장 / 공유 버튼 */
-  .png-btn-wrap { display:flex; justify-content:flex-end; gap:8px; margin-bottom:10px; }
-  .png-btn {
-    background:linear-gradient(135deg,#1d4ed8,#2563eb); color:#fff;
-    border:none; border-radius:10px; padding:10px 22px;
-    font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;
-    display:flex; align-items:center; gap:8px; transition:opacity .15s;
-    letter-spacing:.3px;
+  .png-btn-wrap { display:flex; justify-content:flex-end; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .btn-primary, .png-btn, .share-btn {
+    border:none; border-radius:10px; padding:11px 20px;
+    font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit;
+    display:inline-flex; align-items:center; gap:8px;
+    transition:opacity .15s, transform .1s;
+    letter-spacing:.3px; min-height:42px;
+    box-shadow: var(--shadow);
   }
-  .png-btn:hover { opacity:.85; }
-  .png-btn:disabled { opacity:.5; cursor:not-allowed; }
-  .share-btn {
-    background:linear-gradient(135deg,#065f46,#059669); color:#fff;
-    border:none; border-radius:10px; padding:10px 22px;
-    font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;
-    display:flex; align-items:center; gap:8px; transition:opacity .15s;
-    letter-spacing:.3px;
+  .btn-primary:hover, .png-btn:hover, .share-btn:hover { opacity:.9; }
+  .btn-primary:active, .png-btn:active, .share-btn:active { transform: translateY(1px); }
+  .png-btn   { background:linear-gradient(135deg, var(--blue), #3b82f6); color:#fff; }
+  .share-btn { background:linear-gradient(135deg, var(--green), #10b981); color:#fff; }
+  .png-btn:disabled, .share-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+  /* TOAST */
+  .toast-wrap {
+    position:fixed; left:50%; bottom:28px; transform:translateX(-50%);
+    z-index:200; display:flex; flex-direction:column; gap:8px; align-items:center;
+    pointer-events:none; padding:0 16px; width:100%; max-width:520px;
   }
-  .share-btn:hover { opacity:.85; }
-  /* 공유 링크로 열릴 때 내부용 섹션 자동 숨김 */
-  body.shared-view .sec-badge.internal { display:none; }
-  body.shared-view #intCollapse { display:none; }
+  .toast {
+    background:#0f172a; color:#fff; border-radius:12px;
+    padding:12px 20px; font-size:13px; font-weight:600;
+    box-shadow: 0 8px 24px rgba(15,23,42,.2);
+    display:flex; align-items:center; gap:10px;
+    animation: toastIn .25s ease-out;
+    max-width:100%; pointer-events:auto;
+  }
+  .toast.success { background: #065f46; }
+  .toast.error   { background: #991b1b; }
+  .toast.info    { background: #1e40af; }
+  .toast .icn { font-size:15px; }
+  @keyframes toastIn {
+    from { opacity:0; transform: translateY(10px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* SKIP LINK (접근성) */
+  .skip-link {
+    position:absolute; top:-40px; left:0;
+    background:var(--primary); color:#fff;
+    padding:8px 14px; border-radius:0 0 8px 0;
+    font-weight:700; font-size:12px; z-index:1000;
+    transition: top .2s;
+  }
+  .skip-link:focus { top:0; outline:none; }
+
+  /* 모바일 반응형 */
+  @media (max-width: 960px) {
+    .cat-cards, .pinned-cards { grid-template-columns:repeat(2,1fr); }
+    .int-summary { grid-template-columns:repeat(2,1fr); }
+    .roi-result-grid { grid-template-columns:1fr; }
+    .roi-inputs { grid-template-columns:1fr; }
+    .ext-summary { grid-template-columns:1fr; }
+    .es-divider { border-left:none; border-top:1px solid rgba(59,130,246,.25); padding-top:12px; }
+  }
+  @media (max-width: 640px) {
+    body { padding:14px 10px; }
+    .header { padding:16px 18px; }
+    .header h1 { font-size:18px; }
+    .cat-cards, .pinned-cards { grid-template-columns:1fr; }
+    .int-summary { grid-template-columns:1fr; }
+    .mode-tab { font-size:11.5px; padding:11px 2px; letter-spacing:0; }
+    .table-scroll table { min-width:560px; }
+    .manage-table-wrap { overflow-x:auto; }
+    .manage-table { min-width:780px; }
+    .params { gap:6px; }
+    .param-chip { padding:7px 11px; font-size:11.5px; }
+    .rate-input { font-size:12.5px; }
+    .png-btn-wrap { justify-content:stretch; }
+    .png-btn, .share-btn { flex:1; justify-content:center; }
+    .note-bar { font-size:10.5px; gap:8px; }
+  }
+  @media (max-width: 420px) {
+    .header h1 { font-size:16px; }
+    .mode-tab { font-size:10.5px; }
+    .badge { font-size:9px; padding:4px 10px; }
+  }
+
+  /* 프린트 */
+  @media print {
+    body { background:#fff; padding:0; }
+    .mode-tabs, .png-btn-wrap, .cat-bulk-actions, .params,
+    .sec-divider, body.shared-view .sec-badge, .note-bar, .toast-wrap { display:none !important; }
+    .table-wrap, .ext-summary, .int-summary, .sum-card, .roi-field, .roi-card { box-shadow:none !important; }
+  }
 </style>
 </head>
 <body>
 
+<a href="#main" class="skip-link">본문으로 건너뛰기</a>
+
 <div class="wrap">
 
   <!-- HEADER -->
-  <div class="header">
+  <header class="header" role="banner">
     <div>
       <div class="sub">DSE Medical Solution · 피부미용 장비</div>
       <h1>리스 <span>견적 시뮬레이터</span></h1>
     </div>
     <div class="badge-wrap">
-      <div class="badge red">🔒 내부용</div>
-      <div class="badge blue">📋 외부용 포함</div>
+      <div class="badge red"  role="status" aria-label="내부용 섹션 포함">🔒 내부용</div>
+      <div class="badge blue" role="status" aria-label="외부용 섹션 포함">📋 외부용 포함</div>
     </div>
-  </div>
+  </header>
+
+  <main id="main">
 
   <!-- MODE TABS -->
-  <div class="mode-tabs">
-    <div class="mode-tab active lease" id="tabLease" onclick="setMode('lease')">💳 리스 적용</div>
-    <div class="mode-tab discount" id="tabDiscount" onclick="setMode('discount')">🏷️ 할인 적용</div>
-    <div class="mode-tab roi" id="tabRoi" onclick="setMode('roi')">📊 ROI 계산</div>
-    <div class="mode-tab manage" id="tabManage" onclick="setMode('manage')">📦 품목 관리</div>
+  <div class="mode-tabs" role="tablist" aria-label="시뮬레이터 모드 선택">
+    <div class="mode-tab active lease"  id="tabLease"    role="tab" tabindex="0" aria-selected="true"  aria-controls="calcArea" onclick="setMode('lease')"    onkeydown="tabKey(event,'lease')">💳 리스 적용</div>
+    <div class="mode-tab discount"      id="tabDiscount" role="tab" tabindex="0" aria-selected="false" aria-controls="calcArea" onclick="setMode('discount')" onkeydown="tabKey(event,'discount')">🏷️ 할인 적용</div>
+    <div class="mode-tab roi"           id="tabRoi"      role="tab" tabindex="0" aria-selected="false" aria-controls="roiSection" onclick="setMode('roi')"     onkeydown="tabKey(event,'roi')">📊 ROI 계산</div>
+    <div class="mode-tab manage"        id="tabManage"   role="tab" tabindex="0" aria-selected="false" aria-controls="manageSection" onclick="setMode('manage')" onkeydown="tabKey(event,'manage')">📦 품목 관리</div>
   </div>
 
   <!-- PARAMS -->
-  <div class="params" id="leaseParams">
+  <div class="params" id="leaseParams" role="group" aria-label="리스 조건 입력">
     <div class="param-chip editable">
-      기간 &nbsp;
-      <select id="periodSelect" class="rate-input" style="width:auto;padding:2px 6px">
+      <label for="periodSelect">기간</label>
+      <span class="hint" tabindex="0" data-tip="리스 계약 기간입니다. 기간이 길수록 월 납입금은 줄지만 선취수수료는 커집니다.">?</span>
+      <select id="periodSelect" class="rate-input" style="width:auto;padding:3px 8px" aria-label="리스 기간 선택">
         <option value="12">12개월</option>
         <option value="24" selected>24개월</option>
         <option value="36">36개월</option>
       </select>
     </div>
     <div class="param-chip editable">
-      보증금 &nbsp;
-      <select id="depositSelect" class="rate-input" style="width:auto;padding:2px 6px">
+      <label for="depositSelect">보증금</label>
+      <span class="hint" tabindex="0" data-tip="계약 시 선납하는 보증금 비율입니다. 만기 후 전액 환급됩니다. 보증금 비율이 높을수록 선취수수료율이 낮아집니다.">?</span>
+      <select id="depositSelect" class="rate-input" style="width:auto;padding:3px 8px" aria-label="보증금 비율 선택">
         <option value="0">0%</option>
         <option value="10" selected>10%</option>
         <option value="20">20%</option>
       </select>
     </div>
-    <div class="param-chip editable" style="border-color:#7c2d12;background:#3b1a0a">
-      선취수수료율 &nbsp;
-      <input class="rate-input" id="feeRateInput" type="number" value="4.65" min="0" max="100" step="0.01" style="color:#fb923c;border-color:#7c2d12;width:70px">
-      <b style="color:#fb923c">%</b>
+    <div class="param-chip editable warn">
+      <label for="feeRateInput" style="color:var(--orange);font-weight:700">선취수수료율</label>
+      <span class="hint" tabindex="0" data-tip="리스사가 원금에서 먼저 공제하는 수수료율입니다. 기간/보증금을 변경하면 자동으로 권장값이 채워지며 직접 수정도 가능합니다.">?</span>
+      <input class="rate-input" id="feeRateInput" type="number" value="4.65" min="0" max="100" step="0.01" style="color:var(--orange);border-color:#fed7aa;width:78px" inputmode="decimal" aria-label="선취수수료율(%)">
+      <b style="color:var(--orange)">%</b>
     </div>
     <div class="param-chip editable">
-      적용금리 &nbsp;
-      <input class="rate-input" id="rateInput" type="number" value="0" min="0" max="30" step="0.1" style="width:60px">
+      <label for="rateInput">적용금리</label>
+      <span class="hint" tabindex="0" data-tip="리스 분납 시 적용되는 연이율입니다. 0%로 두면 무이자 분납으로 계산됩니다.">?</span>
+      <input class="rate-input" id="rateInput" type="number" value="0" min="0" max="30" step="0.1" style="width:68px" inputmode="decimal" aria-label="적용금리(%)">
       <b>% 연이율</b>
     </div>
   </div>
-  <div class="params" id="discountParams" style="display:none">
+  <div class="params" id="discountParams" style="display:none" role="group" aria-label="할인 조건 입력">
     <div class="param-chip editable">
-      할인율 &nbsp;
-      <input class="rate-input" id="discountInput" type="number" value="0" min="0" max="100" step="0.1" style="width:70px">
+      <label for="discountInput">할인율</label>
+      <span class="hint" tabindex="0" data-tip="패키지 할인가 합계에 곱해지는 추가 할인율입니다. 최종가 = 합계 × (1 − 할인율)">?</span>
+      <input class="rate-input" id="discountInput" type="number" value="0" min="0" max="100" step="0.1" style="width:78px" inputmode="decimal" aria-label="할인율(%)">
       <b>%</b>
     </div>
     <div class="param-chip">적용 기준 <b>패키지 할인가 합계</b></div>
     <div class="param-chip">최종가 = 합계 × <b>(1 − 할인율)</b></div>
   </div>
 
+  <div id="calcArea" role="tabpanel" aria-labelledby="tabLease">
+
   <!-- PRODUCT SELECTION -->
-  <div class="section-label">품목 선택 · 패키지 할인가 입력</div>
+  <div class="section-label" id="productSectionLabel">
+    품목 선택 · 패키지 할인가 입력
+    <span class="hint" tabindex="0" data-tip="품목을 클릭하면 선택됩니다. 카드 하단의 '패키지 할인가'는 원 단위로 입력(콤마 자동)되며, 비워두면 판매가가 사용됩니다.">?</span>
+  </div>
+  <div class="product-search" id="productSearch" role="search">
+    <span class="ps-icon" aria-hidden="true">🔍</span>
+    <input id="searchInput" type="search" placeholder="품목명·설명·카테고리 검색 (예: CO2, 엔디야그)" aria-label="품목 검색" autocomplete="off">
+    <span class="ps-count" id="searchCount"></span>
+    <button class="ps-clear" id="searchClear" type="button" aria-label="검색어 지우기">✕ 지우기</button>
+  </div>
   <div class="product-grid" id="productGrid"></div>
 
   <!-- ═══ 내부용 ═══ -->
-  <div class="sec-divider" onclick="toggleSection('int')">
+  <div class="sec-divider" onclick="toggleSection('int')" role="button" tabindex="0" aria-expanded="true" aria-controls="intCollapse" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSection('int');}">
     <div class="line"></div>
     <div class="sec-badge internal"><span class="toggle-icon" id="intIcon">−</span> 🔒 내부용 · 마진 분석</div>
     <div class="line"></div>
@@ -362,7 +697,8 @@
     <div class="table-header" id="intTableHeader">
       <b>품목별 마진 분석</b> &nbsp;·&nbsp; <span id="intTableSub">패키지 할인가 기준 &nbsp;·&nbsp; 선취수수료 4.65% 적용</span>
     </div>
-    <table>
+    <div class="table-scroll">
+    <table aria-label="품목별 마진 분석">
       <thead id="intHead">
         <tr>
           <th>품목</th>
@@ -379,6 +715,7 @@
       <tbody id="intBody"></tbody>
       <tfoot id="intFoot"></tfoot>
     </table>
+    </div>
   </div>
 
   <!-- 내부용 요약 -->
@@ -407,7 +744,7 @@
   </div><!-- /intCollapse -->
 
   <!-- ═══ 외부용 ═══ -->
-  <div class="sec-divider" onclick="toggleSection('ext')">
+  <div class="sec-divider" onclick="toggleSection('ext')" role="button" tabindex="0" aria-expanded="true" aria-controls="extCollapse" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSection('ext');}">
     <div class="line"></div>
     <div class="sec-badge external"><span class="toggle-icon" id="extIcon">−</span> 📋 외부용 · 고객 견적</div>
     <div class="line"></div>
@@ -415,8 +752,7 @@
 
   <div class="sec-collapse" id="extCollapse">
   <div class="png-btn-wrap">
-    <button class="share-btn" onclick="shareQuote()">🔗 외부 공유 링크 복사</button>
-    <button class="png-btn" id="pngBtn" onclick="exportPng()">📥 PNG로 저장</button>
+    <button class="png-btn" id="pngBtn" onclick="exportPng()" aria-label="견적서를 PNG 이미지로 저장">📥 PNG로 저장</button>
   </div>
 
   <!-- 캡처 영역 시작 -->
@@ -425,7 +761,8 @@
     <div class="table-header" id="extTableHeader">
       <b id="extTableTitle">선택 품목 리스 견적</b> &nbsp;·&nbsp; <span id="extTableSub">패키지 할인가 기준 &nbsp;·&nbsp; 24개월 무이자 · 보증금 10%</span>
     </div>
-    <table>
+    <div class="table-scroll">
+    <table aria-label="고객 견적표">
       <thead id="extHead">
         <tr>
           <th>품목</th>
@@ -438,6 +775,7 @@
       <tbody id="extBody"></tbody>
       <tfoot id="extFoot"></tfoot>
     </table>
+    </div>
   </div>
 
   <!-- 외부용 요약 -->
@@ -461,29 +799,42 @@
   </div><!-- 캡처 영역 끝 -->
   </div><!-- /extCollapse -->
 
+  </div><!-- /calcArea -->
+
   <!-- ═══ ROI 계산기 ═══ -->
-  <div class="roi-section" id="roiSection">
-    <div class="section-label" style="margin-top:4px">투자 수익률 (ROI) 계산</div>
+  <div class="roi-section" id="roiSection" role="tabpanel" aria-labelledby="tabRoi">
+    <div class="section-label" style="margin-top:4px">
+      투자 수익률 (ROI) 계산
+      <span class="hint" tabindex="0" data-tip="장비 투자 대비 예상 매출·회수기간을 계산합니다. 제품 단가, 시술 금액, 월 신환·재환 수를 입력하세요.">?</span>
+    </div>
     <div class="roi-inputs">
       <div class="roi-field">
-        <label>제품 단가 (장비 투자금액)</label>
-        <input type="text" id="roiCost" placeholder="0" value="">
+        <label for="roiCost">제품 단가 (장비 투자금액)
+          <span class="hint" tabindex="0" data-tip="VAT 포함 장비 총 구입 비용을 입력하세요. 리스 시에는 총 납부액을 기준으로 입력합니다.">?</span>
+        </label>
+        <input type="text" id="roiCost" placeholder="예: 20,000,000" value="" inputmode="numeric" aria-label="제품 단가(원)">
         <div class="unit">원 (VAT 포함)</div>
       </div>
       <div class="roi-field">
-        <label>환자당 시술 금액</label>
-        <input type="text" id="roiChargePerPatient" placeholder="0" value="">
+        <label for="roiChargePerPatient">환자당 시술 금액
+          <span class="hint" tabindex="0" data-tip="환자 1명당 1회 시술 평균 수납 금액입니다.">?</span>
+        </label>
+        <input type="text" id="roiChargePerPatient" placeholder="예: 150,000" value="" inputmode="numeric" aria-label="환자당 시술 금액(원)">
         <div class="unit">원 / 1회 시술</div>
       </div>
       <div class="roi-field">
-        <label>월 신환 수</label>
-        <input type="number" id="roiNewPatients" placeholder="0" value="" min="0" step="1">
-        <div class="unit">명 / 월 · <span id="roiNewPatientsAnnual" style="color:#fb923c;font-weight:700;">연 0명</span></div>
+        <label for="roiNewPatients">월 신환 수
+          <span class="hint" tabindex="0" data-tip="해당 장비로 새로 유입되는 월 평균 신규 환자 수입니다.">?</span>
+        </label>
+        <input type="number" id="roiNewPatients" placeholder="0" value="" min="0" step="1" inputmode="numeric" aria-label="월 신환 수(명)">
+        <div class="unit">명 / 월 · <span id="roiNewPatientsAnnual" style="color:var(--orange);font-weight:800;">연 0명</span></div>
       </div>
       <div class="roi-field">
-        <label>월 재환 수</label>
-        <input type="number" id="roiReturnPatients" placeholder="0" value="" min="0" step="1">
-        <div class="unit">명 / 월 · <span id="roiReturnPatientsAnnual" style="color:#fb923c;font-weight:700;">연 0명</span></div>
+        <label for="roiReturnPatients">월 재환 수
+          <span class="hint" tabindex="0" data-tip="월 평균 재방문 환자 수입니다.">?</span>
+        </label>
+        <input type="number" id="roiReturnPatients" placeholder="0" value="" min="0" step="1" inputmode="numeric" aria-label="월 재환 수(명)">
+        <div class="unit">명 / 월 · <span id="roiReturnPatientsAnnual" style="color:var(--orange);font-weight:800;">연 0명</span></div>
       </div>
     </div>
 
@@ -509,7 +860,7 @@
     <!-- ROI 비주얼 바 -->
     <div class="roi-bar-wrap">
       <div class="roi-bar-label">12개월 기준 투자 회수 진행률</div>
-      <div class="roi-bar-track">
+      <div class="roi-bar-track" role="progressbar" aria-label="12개월 투자 회수 진행률" aria-valuemin="0" aria-valuemax="300" aria-valuenow="0">
         <div class="roi-bar-fill" id="roiBarFill" style="width:0%">0%</div>
         <div class="roi-bar-mark" id="roiBarMark" style="left:100%;display:none">
           <div class="roi-bar-mark-label">손익분기</div>
@@ -539,7 +890,8 @@
     <!-- 월별 누적 테이블 -->
     <div class="table-wrap roi-monthly-table">
       <div class="table-header"><b>월별 누적 매출 vs 투자금</b></div>
-      <table>
+      <div class="table-scroll">
+      <table aria-label="월별 누적 매출">
         <thead><tr>
           <th style="text-align:left">월</th>
           <th>월 매출</th>
@@ -549,23 +901,26 @@
         </tr></thead>
         <tbody id="roiTableBody"></tbody>
       </table>
+      </div>
     </div>
   </div>
 
   <!-- ═══ 품목 관리 ═══ -->
-  <div class="manage-section" id="manageSection">
+  <div class="manage-section" id="manageSection" role="tabpanel" aria-labelledby="tabManage">
     <div class="manage-bar">
-      <div class="mb-title">품목 리스트 · <span class="mb-count" id="manageCount">0</span>종</div>
+      <div class="mb-title">품목 리스트 · <span class="mb-count" id="manageCount">0</span>종
+        <span id="saveIndicator" style="font-size:11px;color:var(--green);font-weight:700;margin-left:10px;opacity:0;transition:opacity .3s">✓ 자동 저장됨</span>
+      </div>
       <div class="mb-actions">
-        <button class="manage-btn add"    onclick="addProduct()">+ 품목 추가</button>
-        <button class="manage-btn export" onclick="exportProducts()">📤 내보내기</button>
-        <button class="manage-btn import" onclick="document.getElementById('importFile').click()">📥 가져오기</button>
-        <button class="manage-btn reset"  onclick="resetProducts()">↺ 기본값</button>
+        <button class="manage-btn add"    onclick="addProduct()"    aria-label="새 품목 추가">+ 품목 추가</button>
+        <button class="manage-btn export" onclick="exportProducts()" aria-label="품목 리스트를 JSON 파일로 내보내기">📤 내보내기</button>
+        <button class="manage-btn import" onclick="document.getElementById('importFile').click()" aria-label="JSON 파일에서 품목 리스트 불러오기">📥 가져오기</button>
+        <button class="manage-btn reset"  onclick="resetProducts()"  aria-label="기본 품목 리스트로 초기화">↺ 기본값</button>
         <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importProducts(event)">
       </div>
     </div>
     <div class="manage-table-wrap">
-      <table class="manage-table">
+      <table class="manage-table" aria-label="품목 관리 테이블">
         <thead>
           <tr>
             <th style="width:16%">품목명</th>
@@ -582,19 +937,39 @@
     <div class="manage-note">
       💡 품목 정보는 <b>이 브라우저</b>에 자동 저장됩니다 (localStorage).<br>
       📤 <b>내보내기</b>: JSON 파일로 저장 → 다른 PC의 <b>📥 가져오기</b>로 복원 가능<br>
-      📋 공유링크(🔗)로 전달하면 고객에게도 추가한 품목이 그대로 표시됩니다.<br>
       ↺ "기본값"을 누르면 초기 10종 DSE 품목 리스트로 되돌아갑니다.
     </div>
   </div>
 
-  <div class="note-bar">
+  <div class="note-bar" role="contentinfo">
     <span>🔒 내부: 패키지 할인가 기준 · 리스마진율 = (패키지 할인가 - 공급가) / 패키지 할인가</span>
     <span>📋 외부: 패키지 할인가 기준 · 보증금 10% (만기 환급) · 무이자 분납</span>
-    <span id="sheetStatus" style="color:#475569">💾 품목은 브라우저에 자동 저장됩니다</span>
+    <span id="sheetStatus" style="color:var(--muted)">💾 품목은 브라우저에 자동 저장됩니다</span>
   </div>
 
+  </main>
 </div>
+
+<!-- Toast container -->
+<div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>
+
 <script>
+// ── Toast (스낵바) ────────────────────────────────────────────────────
+function toast(msg, type) {
+  const wrap = document.getElementById('toastWrap');
+  const el   = document.createElement('div');
+  const t    = type || 'info';
+  const icn  = t === 'success' ? '✓' : t === 'error' ? '⚠' : 'ℹ';
+  el.className = 'toast ' + t;
+  el.innerHTML = `<span class="icn">${icn}</span><span>${msg}</span>`;
+  wrap.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity .25s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 280);
+  }, 2400);
+}
+
 // 카테고리 (순서대로 표시됨)
 const CATEGORIES = [
   'CO2 레이저/엔디야그',
@@ -644,7 +1019,6 @@ function expandAllCategories() {
 }
 function collapseAllCategories() {
   CATEGORIES.forEach(c => collapsedCats.add(c));
-  // 알 수 없는 카테고리도 접기
   PRODUCTS.forEach(p => {
     if (!CATEGORIES.includes(p.category)) collapsedCats.add(p.category || DEFAULT_CATEGORY);
   });
@@ -652,7 +1026,6 @@ function collapseAllCategories() {
   renderGrid();
 }
 const PRODUCTS_STORAGE_KEY = 'dseProducts_v1';
-// localStorage에서 품목 불러오기 (없으면 기본값)
 let PRODUCTS = (function() {
   try {
     const raw = localStorage.getItem(PRODUCTS_STORAGE_KEY);
@@ -669,13 +1042,10 @@ function saveProducts() {
 }
 
 const selected     = new Set();
-// 품목별 패키지 할인가 — 모드별로 분리 (리스 탭 / 할인 탭이 서로 영향 없음)
-// 리스탭: leasePrice 그대로 (0 기본값 허용)
-// 할인탭: leasePrice || price (시트 미동기 상태에서도 판매가 폴백)
 const promoByMode  = { lease: {}, discount: {} };
 const manualByMode = { lease: new Set(), discount: new Set() };
-function leaseSeed(p)    { return p.leasePrice || 0; }             // 0 허용
-function discountSeed(p) { return p.leasePrice || p.price || 0; }  // 판매가 폴백
+function leaseSeed(p)    { return p.leasePrice || 0; }
+function discountSeed(p) { return p.leasePrice || p.price || 0; }
 PRODUCTS.forEach(p => {
   promoByMode.lease[p.id]    = leaseSeed(p);
   promoByMode.discount[p.id] = discountSeed(p);
@@ -685,9 +1055,7 @@ function getPromo(id) {
   const cur = curPriceMode();
   const v   = promoByMode[cur][id];
   if (v != null) {
-    // 리스: 0 포함 그대로 반환
     if (cur === 'lease') return v;
-    // 할인: 0이면 판매가 폴백
     if (v) return v;
   }
   const p = PRODUCTS.find(x => x.id === id);
@@ -704,21 +1072,23 @@ function setMode(m) {
   const td = document.getElementById('tabDiscount');
   const tr = document.getElementById('tabRoi');
   const tm = document.getElementById('tabManage');
-  tl.className = 'mode-tab lease'    + (m === 'lease'    ? ' active' : '');
-  td.className = 'mode-tab discount' + (m === 'discount' ? ' active' : '');
-  tr.className = 'mode-tab roi'      + (m === 'roi'      ? ' active' : '');
-  tm.className = 'mode-tab manage'   + (m === 'manage'   ? ' active' : '');
+  const tabs = {lease:tl, discount:td, roi:tr, manage:tm};
+  ['lease','discount','roi','manage'].forEach(k => {
+    tabs[k].className = 'mode-tab ' + k + (m === k ? ' active' : '');
+    tabs[k].setAttribute('aria-selected', m === k ? 'true' : 'false');
+  });
   document.getElementById('leaseParams').style.display    = m === 'lease'    ? 'flex' : 'none';
   document.getElementById('discountParams').style.display = m === 'discount' ? 'flex' : 'none';
 
-  // 품목선택/내부/외부 섹션은 lease/discount 모드에서만 표시
   const calcMode = (m === 'lease' || m === 'discount');
   const roiMode  = m === 'roi';
   const mgMode   = m === 'manage';
   document.getElementById('roiSection').className    = 'roi-section'    + (roiMode ? ' visible' : '');
   document.getElementById('manageSection').className = 'manage-section' + (mgMode  ? ' visible' : '');
-  document.getElementById('productGrid').parentElement.querySelectorAll('.section-label')[0].style.display = calcMode ? '' : 'none';
+  document.getElementById('productSectionLabel').style.display = calcMode ? '' : 'none';
   document.getElementById('productGrid').style.display = calcMode ? '' : 'none';
+  const ps = document.getElementById('productSearch');
+  if (ps) ps.style.display = calcMode ? '' : 'none';
   document.querySelectorAll('.sec-divider').forEach(el => el.style.display = calcMode ? '' : 'none');
   document.getElementById('intCollapse').style.display = calcMode ? '' : 'none';
   document.getElementById('extCollapse').style.display = calcMode ? '' : 'none';
@@ -728,74 +1098,157 @@ function setMode(m) {
   else              { renderGrid(); update(); }
 }
 
+function tabKey(e, current) {
+  const order = ['lease','discount','roi','manage'];
+  const idx = order.indexOf(current);
+  if (e.key === 'ArrowRight') { e.preventDefault(); setMode(order[(idx+1)%order.length]); document.getElementById('tab'+cap(order[(idx+1)%order.length])).focus(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); setMode(order[(idx-1+order.length)%order.length]); document.getElementById('tab'+cap(order[(idx-1+order.length)%order.length])).focus(); }
+  else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMode(current); }
+}
+function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+
 function fmt(n)  { return n === 0 ? '0원' : n.toLocaleString('ko-KR') + '원'; }
 function pct(n)  { return (n * 100).toFixed(2) + '%'; }
 function wan(n)  { return (n / 10000).toLocaleString('ko-KR') + '만'; }
+
+let searchQuery = '';
+function matchesQuery(p, q) {
+  if (!q) return true;
+  const hay = (p.name + ' ' + (p.desc||'') + ' ' + (p.category||'')).toLowerCase();
+  return hay.includes(q);
+}
 
 function renderGrid() {
   const grid = document.getElementById('productGrid');
   grid.innerHTML = '';
 
-  // 전체 펼침/접힘 버튼
-  const bulk = document.createElement('div');
-  bulk.className = 'cat-bulk-actions';
-  bulk.innerHTML = `
-    <button class="cat-bulk-btn" onclick="expandAllCategories()">＋ 전체 펼치기</button>
-    <button class="cat-bulk-btn" onclick="collapseAllCategories()">− 전체 접기</button>`;
-  grid.appendChild(bulk);
+  const q = searchQuery.trim().toLowerCase();
 
-  // 카테고리별로 묶되, CATEGORIES 순서를 유지하고 PRODUCTS 내부 순서도 보존
-  const grouped = {};
-  CATEGORIES.forEach(c => { grouped[c] = []; });
-  PRODUCTS.forEach(p => {
-    const c = productCategory(p);
-    if (!grouped[c]) grouped[c] = [];
-    grouped[c].push(p);
-  });
+  // 검색 바 UI 상태
+  const searchBar = document.getElementById('productSearch');
+  if (searchBar) searchBar.classList.toggle('has-query', !!q);
+
+  // 전체 필터링
+  const filtered = PRODUCTS.filter(p => matchesQuery(p, q));
+  const totalMatch = filtered.length;
+  const countEl = document.getElementById('searchCount');
+  if (countEl) countEl.textContent = q ? `${totalMatch}개 일치` : '';
 
   const makeCard = (p) => {
     const isSel = selected.has(p.id);
     const card = document.createElement('div');
     card.className = 'product-card' + (isSel ? ' selected' : '');
+    card.setAttribute('role', 'checkbox');
+    card.setAttribute('aria-checked', isSel ? 'true' : 'false');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-label', `${p.name}${p.desc ? ' — ' + p.desc : ''}, 판매가 ${wan(p.price)}원`);
     card.innerHTML = `
       <div class="pc-top">
-        <div class="check-box"></div>
-        <div class="p-name">${p.name}<br><span style="font-size:10px;color:#64748b;font-weight:400">${p.desc || ''}</span></div>
-        <div class="p-sale">${wan(p.price)}</div>
+        <div class="check-box" aria-hidden="true"></div>
+        <div class="p-name">${p.name}<span class="p-desc">${p.desc || ''}</span></div>
+        <div class="p-sale" aria-hidden="true">${wan(p.price)}</div>
       </div>
       <div class="promo-row">
         <span class="promo-label">패키지 할인가</span>
-        <input class="promo-input" data-id="${p.id}" type="text" value="${getPromo(p.id).toLocaleString('ko-KR')}" placeholder="판매가와 동일">
+        <input class="promo-input" data-id="${p.id}" type="text" inputmode="numeric"
+               value="${getPromo(p.id) ? getPromo(p.id).toLocaleString('ko-KR') : ''}"
+               placeholder="판매가와 동일"
+               aria-label="${p.name} 패키지 할인가 (원)">
       </div>`;
-    card.addEventListener('click', e => {
-      if (e.target.classList.contains('promo-input')) return;
+    const toggleSel = () => {
       selected.has(p.id) ? selected.delete(p.id) : selected.add(p.id);
       renderGrid(); update();
+    };
+    card.addEventListener('click', e => {
+      if (e.target.classList.contains('promo-input')) return;
+      toggleSel();
+    });
+    card.addEventListener('keydown', e => {
+      if (e.target.classList.contains('promo-input')) return;
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleSel(); }
     });
     const input = card.querySelector('.promo-input');
     input.addEventListener('input', () => {
       const raw = input.value.replace(/[^0-9]/g,'');
       setPromo(p.id, raw ? parseInt(raw) : p.price);
-      input.value = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
+      const formatted = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
+      input.value = formatted;
+      // pinned 섹션과 카테고리 카드에 같은 id가 두 번 나올 수 있으므로 동기화
+      document.querySelectorAll(`.promo-input[data-id="${p.id}"]`).forEach(other => {
+        if (other !== input) other.value = formatted;
+      });
       update();
     });
     input.addEventListener('focus', () => { if (!selected.has(p.id)) { selected.add(p.id); renderGrid(); } });
     return card;
   };
 
+  // 선택한 품목 pinned 섹션
+  const selectedList = PRODUCTS.filter(p => selected.has(p.id));
+  if (selectedList.length > 0) {
+    const pinned = document.createElement('div');
+    pinned.className = 'pinned-section';
+    const head = document.createElement('div');
+    head.className = 'pinned-head';
+    head.innerHTML = `
+      <span>⭐ 선택한 품목</span>
+      <span class="pn-count">${selectedList.length}</span>
+      <button class="pn-clear" onclick="clearSelection()" aria-label="선택 모두 해제">모두 해제</button>`;
+    pinned.appendChild(head);
+    const pCards = document.createElement('div');
+    pCards.className = 'pinned-cards';
+    selectedList.forEach(p => pCards.appendChild(makeCard(p)));
+    pinned.appendChild(pCards);
+    grid.appendChild(pinned);
+  }
+
+  // 전체 카테고리 섹션 컨트롤 (검색·핀 아래)
+  const bulk = document.createElement('div');
+  bulk.className = 'cat-bulk-actions';
+  bulk.innerHTML = `
+    <button class="cat-bulk-btn" onclick="expandAllCategories()" aria-label="모든 카테고리 펼치기">＋ 전체 펼치기</button>
+    <button class="cat-bulk-btn" onclick="collapseAllCategories()" aria-label="모든 카테고리 접기">− 전체 접기</button>
+    <button class="cat-bulk-btn" onclick="clearSelection()" aria-label="선택한 품목 모두 해제">✕ 선택 해제</button>`;
+  grid.appendChild(bulk);
+
+  // 검색 결과 없음
+  if (q && totalMatch === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-search';
+    empty.innerHTML = `<b>"${searchQuery}"</b>에 일치하는 품목이 없습니다.<br><span style="font-size:11.5px;color:var(--muted)">다른 키워드로 검색하거나 ✕ 지우기를 눌러주세요.</span>`;
+    grid.appendChild(empty);
+    return;
+  }
+
+  // 필터된 품목을 카테고리로 그룹핑
+  const grouped = {};
+  CATEGORIES.forEach(c => { grouped[c] = []; });
+  filtered.forEach(p => {
+    const c = productCategory(p);
+    if (!grouped[c]) grouped[c] = [];
+    grouped[c].push(p);
+  });
+
   const addCatSection = (cat, items, labelPrefix) => {
     if (!items || items.length === 0) return;
-    const isCollapsed = collapsedCats.has(cat);
+    // 검색 중일 땐 강제 펼침
+    const isCollapsed = !q && collapsedCats.has(cat);
     const selCount = items.filter(p => selected.has(p.id)).length;
     const group = document.createElement('div');
     group.className = 'cat-group' + (isCollapsed ? ' collapsed' : '');
     const title = document.createElement('div');
     title.className = 'cat-title';
+    title.setAttribute('role', 'button');
+    title.setAttribute('tabindex', '0');
+    title.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
     title.innerHTML =
-      `<span class="cat-toggle">${isCollapsed ? '+' : '−'}</span>` +
+      `<span class="cat-toggle" aria-hidden="true">${isCollapsed ? '+' : '−'}</span>` +
       `<span>${labelPrefix}${cat}</span>` +
       `<span class="cat-count">${selCount > 0 ? `✓${selCount} / ` : ''}${items.length}종</span>`;
     title.addEventListener('click', () => toggleCategory(cat));
+    title.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleCategory(cat); }
+    });
     const cards = document.createElement('div');
     cards.className = 'cat-cards';
     items.forEach(p => cards.appendChild(makeCard(p)));
@@ -804,15 +1257,41 @@ function renderGrid() {
     grid.appendChild(group);
   };
 
-  // CATEGORIES 순서대로 렌더 (비어있는 카테고리는 생략)
   CATEGORIES.forEach((cat, i) => addCatSection(cat, grouped[cat], `${i+1}. `));
-
-  // 등록되지 않은 카테고리에 속한 품목도 표시 (호환성)
   Object.keys(grouped).filter(c => !CATEGORIES.includes(c))
     .forEach(cat => addCatSection(cat, grouped[cat], ''));
 }
 
-// 무이자 리스 조건표 (선취수수료율 기본값) — 기간 × 보증금율
+function clearSelection() {
+  if (selected.size === 0) { toast('선택된 품목이 없습니다', 'info'); return; }
+  const n = selected.size;
+  selected.clear();
+  renderGrid(); update();
+  toast(`${n}개 품목 선택 해제됨`, 'success');
+}
+
+// 검색 바 이벤트 바인딩 (한 번만)
+(function bindSearch() {
+  const inp = document.getElementById('searchInput');
+  const btn = document.getElementById('searchClear');
+  if (!inp || !btn) return;
+  let _t = null;
+  inp.addEventListener('input', () => {
+    searchQuery = inp.value;
+    clearTimeout(_t);
+    _t = setTimeout(renderGrid, 80);
+  });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { inp.value = ''; searchQuery = ''; renderGrid(); inp.blur(); }
+  });
+  btn.addEventListener('click', () => {
+    inp.value = ''; searchQuery = '';
+    renderGrid();
+    inp.focus();
+  });
+})();
+
+// 무이자 리스 조건표
 const LEASE_FEE_TABLE = {
   12: { 0: 0.0320, 10: 0.0265, 20: 0.0205 },
   24: { 0: 0.0580, 10: 0.0465, 20: 0.0360 },
@@ -822,7 +1301,6 @@ const LEASE_FEE_TABLE = {
 function getPeriod()  { return parseInt(document.getElementById('periodSelect').value)  || 24; }
 function getDeposit() { return parseInt(document.getElementById('depositSelect').value) || 0;  }
 function getFeeRate() {
-  // 사용자 수동 입력 우선
   const v = parseFloat(document.getElementById('feeRateInput').value);
   return (isNaN(v) || v < 0) ? 0 : v / 100;
 }
@@ -839,14 +1317,28 @@ function calcMonthly(principal) {
   const period = getPeriod();
   const r = getRate() / 12;
   if (r === 0) return Math.round(principal / period);
-  // 원리금균등상환
   return Math.round(principal * r * Math.pow(1+r,period) / (Math.pow(1+r,period)-1));
+}
+
+// 입력 범위 검증 (시각 피드백만 — 숫자값은 getter에서 방어)
+function clampInputs() {
+  const fee = document.getElementById('feeRateInput');
+  const rate = document.getElementById('rateInput');
+  const disc = document.getElementById('discountInput');
+  [fee, rate, disc].forEach(el => {
+    if (!el) return;
+    const v = parseFloat(el.value);
+    const min = parseFloat(el.min), max = parseFloat(el.max);
+    if (!isNaN(v)) {
+      if (!isNaN(min) && v < min) el.value = min;
+      if (!isNaN(max) && v > max) el.value = max;
+    }
+  });
 }
 
 function update() {
   const items = PRODUCTS.filter(p => selected.has(p.id));
 
-  // ── 내부용 테이블 ──
   const intBody = document.getElementById('intBody');
   const intFoot = document.getElementById('intFoot');
 
@@ -868,7 +1360,6 @@ function update() {
       intBody.innerHTML = items.map(p => {
         const lp     = getPromo(p.id);
         const fin    = Math.round(lp * (1 - dRate));
-        const disc   = p.price - lp;
         const mOrig  = (p.price - p.cost) / p.price;
         const mDisc  = fin > 0 ? (fin - p.cost) / fin : 0;
         const diff   = mDisc - mOrig;
@@ -884,17 +1375,16 @@ function update() {
           <td class="tc-diff ${diff>=0?'up':'down'}">${diff>=0?'+':''}${pct(diff)}</td>
         </tr>`;
       }).join('');
-      const tDisc   = tSale - tLease;
       const tmOrig  = (tSale  - tCost) / tSale;
       const tmDisc  = tFinal > 0 ? (tFinal - tCost) / tFinal : 0;
       const tmDiff  = tmDisc - tmOrig;
       intFoot.innerHTML = `<tr>
         <td>합계 (${items.length}종)</td>
         <td>${fmt(tCost)}</td><td>${fmt(tSale)}</td>
-        <td style="color:#a5b4fc">${fmt(tLease)}</td>
-        <td style="color:#34d399">${fmt(tFinal)}</td>
-        <td style="color:#fbbf24">${pct(tmOrig)}</td>
-        <td style="color:#34d399">${pct(tmDisc)}</td>
+        <td class="tc-promo">${fmt(tLease)}</td>
+        <td class="tc-mlease">${fmt(tFinal)}</td>
+        <td class="tc-margin">${pct(tmOrig)}</td>
+        <td class="tc-mlease">${pct(tmDisc)}</td>
         <td class="${tmDiff>=0?'up':'down'}">${tmDiff>=0?'+':''}${pct(tmDiff)}</td>
       </tr>`;
       document.getElementById('iPromo').textContent    = fmt(tLease);
@@ -906,11 +1396,10 @@ function update() {
       document.getElementById('iMLeaseAmt').textContent= `할인후마진 ${fmt(tFinal-tCost)}`;
     }
   } else {
-    // ── 리스 모드 내부 ──
     const feeRate = getFeeRate();
     const period  = getPeriod();
     const dep     = getDeposit();
-    document.getElementById('intTableSub').innerHTML = `패키지 할인가 기준 &nbsp;·&nbsp; ${period}개월 / 보증금 ${dep}% &nbsp;·&nbsp; 선취수수료 <b style="color:#fb923c">${(feeRate*100).toFixed(2)}%</b> 적용`;
+    document.getElementById('intTableSub').innerHTML = `패키지 할인가 기준 &nbsp;·&nbsp; ${period}개월 / 보증금 ${dep}% &nbsp;·&nbsp; 선취수수료 <b style="color:var(--orange)">${(feeRate*100).toFixed(2)}%</b> 적용`;
     document.getElementById('intHead').innerHTML = `<tr>
       <th>품목</th><th>공급가</th><th>판매가</th><th>패키지 할인가</th>
       <th>선취수수료</th><th>실수금</th><th>기존 마진율</th><th>리스 마진율</th><th>변화</th>
@@ -957,11 +1446,11 @@ function update() {
       intFoot.innerHTML = `<tr>
         <td>합계 (${items.length}종)</td>
         <td>${fmt(tCost)}</td><td>${fmt(tSale)}</td>
-        <td style="color:#a5b4fc">${fmt(tLease)}</td>
-        <td style="color:#f87171">-${fmt(tFee)}</td>
-        <td style="color:#fb923c">${fmt(tNet)}</td>
-        <td style="color:#fbbf24">${pct(tmOrig)}</td>
-        <td style="color:#34d399">${pct(tmLease)}</td>
+        <td class="tc-promo">${fmt(tLease)}</td>
+        <td class="tc-fee">-${fmt(tFee)}</td>
+        <td class="tc-net">${fmt(tNet)}</td>
+        <td class="tc-margin">${pct(tmOrig)}</td>
+        <td class="tc-mlease">${pct(tmLease)}</td>
         <td class="${tmDiff>=0?'up':'down'}">${tmDiff>=0?'+':''}${pct(tmDiff)}</td>
       </tr>`;
       document.getElementById('iPromo').textContent    = fmt(tLease);
@@ -974,13 +1463,12 @@ function update() {
     }
   }
 
-  // ── 외부용 테이블 ──
+  // 외부용
   const extBody = document.getElementById('extBody');
   const extFoot = document.getElementById('extFoot');
   const extSum  = document.getElementById('extSummaryDiv');
 
   if (MODE === 'discount') {
-    // ── 할인 적용 모드 ──
     document.getElementById('extTableTitle').textContent = '선택 품목 할인 견적';
     document.getElementById('extTableSub').textContent  = '패키지 할인가 기준 · 할인율 적용';
     document.getElementById('extHead').innerHTML = `<tr>
@@ -1017,17 +1505,17 @@ function update() {
       return `<tr>
         <td class="ec-name">${p.name}</td>
         <td class="ec-sale">${fmt(lp)}</td>
-        <td style="color:#f87171">-${fmt(itemDisc)}</td>
-        <td class="ec-monthly">${fmt(itemFinal)}</td>
+        <td class="tc-fee">-${fmt(itemDisc)}</td>
+        <td class="tc-mlease">${fmt(itemFinal)}</td>
       </tr>`;
     }).join('');
     const etDisc  = Math.round(etTotal * discRate);
     const etFinal = etTotal - etDisc;
     extFoot.innerHTML = `<tr>
-      <td style="color:#93c5fd">합계 (${items.length}종)</td>
-      <td style="color:#93c5fd">${fmt(etTotal)}</td>
-      <td style="color:#f87171">-${fmt(etDisc)}</td>
-      <td style="color:#34d399">${fmt(etFinal)}</td>
+      <td class="ec-sale">합계 (${items.length}종)</td>
+      <td class="ec-sale">${fmt(etTotal)}</td>
+      <td class="tc-fee">-${fmt(etDisc)}</td>
+      <td class="tc-mlease">${fmt(etFinal)}</td>
     </tr>`;
     document.getElementById('eTotal').textContent        = fmt(etTotal);
     document.getElementById('eDeposit').textContent      = fmt(etDisc);
@@ -1035,7 +1523,6 @@ function update() {
     document.getElementById('eMonthly').textContent      = fmt(etFinal);
 
   } else {
-    // ── 리스 적용 모드 ──
     const period   = getPeriod();
     const depRate  = getDeposit() / 100;
     const rateNum  = getRate();
@@ -1043,13 +1530,13 @@ function update() {
     document.getElementById('extTableTitle').textContent = '선택 품목 리스 견적';
     document.getElementById('extTableSub').innerHTML    =
       `패키지 할인가 기준 · ${period}개월 ${rateLbl} · 보증금 ${getDeposit()}% ` +
-      `<span style="color:#34d399">(만기 시 환급)</span>`;
+      `<span style="color:var(--green)">(만기 시 환급)</span>`;
     document.getElementById('extHead').innerHTML = `<tr>
       <th>품목</th>
       <th>패키지 할인가</th>
-      <th>보증금 (${getDeposit()}%)<br><span style="color:#34d399;font-weight:500">환급</span></th>
+      <th>보증금 (${getDeposit()}%)<br><span style="color:var(--green);font-weight:500">환급</span></th>
       <th>월 납입금</th>
-      <th>총 납부액<br><span style="color:#94a3b8;font-weight:500">(보증금 제외)</span></th>
+      <th>총 납부액<br><span style="color:var(--text-3);font-weight:500">(보증금 제외)</span></th>
     </tr>`;
     extSum.className = 'ext-summary';
     document.getElementById('eLabelTotal').textContent   = '패키지 할인가 합계';
@@ -1072,9 +1559,7 @@ function update() {
     extBody.innerHTML = items.map(p => {
       const lp      = getPromo(p.id);
       const deposit = Math.round(lp * depRate);
-      const monthly = calcMonthly(lp);              // 무이자: lp / period
-      // 총 납부액 = 패키지 할인가 그대로 (보증금은 환급되므로 실부담 = 원금)
-      // monthly × period로 계산하면 반올림 오차 발생 → lp 직접 사용
+      const monthly = calcMonthly(lp);
       const totalPay= lp;
       etTotal += lp;
       return `<tr>
@@ -1087,13 +1572,13 @@ function update() {
     }).join('');
     const etDeposit  = Math.round(etTotal * depRate);
     const etMonthly  = calcMonthly(etTotal);
-    const etTotalPay = etTotal;                     // 합계도 패키지 할인가 합계 그대로
+    const etTotalPay = etTotal;
     extFoot.innerHTML = `<tr>
-      <td style="color:#93c5fd">합계 (${items.length}종)</td>
-      <td style="color:#93c5fd">${fmt(etTotal)}</td>
-      <td style="color:#94a3b8">${fmt(etDeposit)}</td>
-      <td style="color:#60a5fa">${fmt(etMonthly)}/월</td>
-      <td style="color:#a5b4fc">${fmt(etTotalPay)}</td>
+      <td class="ec-sale">합계 (${items.length}종)</td>
+      <td class="ec-sale">${fmt(etTotal)}</td>
+      <td class="ec-deposit">${fmt(etDeposit)}</td>
+      <td class="ec-monthly">${fmt(etMonthly)}/월</td>
+      <td class="ec-total">${fmt(etTotalPay)}</td>
     </tr>`;
     document.getElementById('eTotal').textContent   = fmt(etTotal);
     document.getElementById('eDeposit').textContent = fmt(etDeposit);
@@ -1104,20 +1589,30 @@ function update() {
 function toggleSection(id) {
   const el   = document.getElementById(id + 'Collapse');
   const icon = document.getElementById(id + 'Icon');
+  const divider = icon.closest('.sec-divider');
   const open = !el.classList.contains('closed');
   el.classList.toggle('closed', open);
   icon.textContent = open ? '+' : '−';
+  if (divider) divider.setAttribute('aria-expanded', open ? 'false' : 'true');
 }
 
-// ── 품목 ID 생성 유틸 ────────────────────────────────────────────────
 function makeId(name) {
   return name.toLowerCase().replace(/[^a-z0-9\uAC00-\uD7A3]/g, '').slice(0, 12) || ('p' + Date.now().toString(36));
 }
 
-// ── 품목 관리 탭 ─────────────────────────────────────────────────────
 function parseIntInput(el) {
   const raw = (el.value || '').replace(/[^0-9]/g,'');
   return raw ? parseInt(raw) : 0;
+}
+
+// 품목 관리 저장 인디케이터
+let _saveFlashTimer = null;
+function flashSaved() {
+  const el = document.getElementById('saveIndicator');
+  if (!el) return;
+  el.style.opacity = '1';
+  clearTimeout(_saveFlashTimer);
+  _saveFlashTimer = setTimeout(() => { el.style.opacity = '0'; }, 1200);
 }
 function renderManageTable() {
   const body = document.getElementById('manageBody');
@@ -1128,21 +1623,20 @@ function renderManageTable() {
   ).join('');
   body.innerHTML = PRODUCTS.map((p, idx) => `
     <tr data-idx="${idx}">
-      <td><input type="text" class="mg-name" value="${(p.name || '').replace(/"/g,'&quot;')}" placeholder="품목명"></td>
-      <td><input type="text" class="mg-desc" value="${(p.desc || '').replace(/"/g,'&quot;')}" placeholder="설명(선택)"></td>
-      <td><select class="mg-cat">${catOptions(productCategory(p))}</select></td>
-      <td><input type="text" class="mg-cost num" value="${(p.cost || 0).toLocaleString('ko-KR')}" placeholder="0"></td>
-      <td><input type="text" class="mg-price num" value="${(p.price || 0).toLocaleString('ko-KR')}" placeholder="0"></td>
+      <td><input type="text" class="mg-name" value="${(p.name || '').replace(/"/g,'&quot;')}" placeholder="품목명" aria-label="품목명"></td>
+      <td><input type="text" class="mg-desc" value="${(p.desc || '').replace(/"/g,'&quot;')}" placeholder="설명(선택)" aria-label="설명"></td>
+      <td><select class="mg-cat" aria-label="카테고리">${catOptions(productCategory(p))}</select></td>
+      <td><input type="text" inputmode="numeric" class="mg-cost num" value="${(p.cost || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="공급가"></td>
+      <td><input type="text" inputmode="numeric" class="mg-price num" value="${(p.price || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="판매가"></td>
       <td>
         <div class="row-actions">
-          <button class="ic-btn" onclick="moveProduct(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="위로">▲</button>
-          <button class="ic-btn" onclick="moveProduct(${idx}, 1)"  ${idx === last ? 'disabled' : ''} title="아래로">▼</button>
-          <button class="del-btn" onclick="deleteProduct(${idx})">삭제</button>
+          <button class="ic-btn" onclick="moveProduct(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} aria-label="위로 이동">▲</button>
+          <button class="ic-btn" onclick="moveProduct(${idx}, 1)"  ${idx === last ? 'disabled' : ''} aria-label="아래로 이동">▼</button>
+          <button class="del-btn" onclick="deleteProduct(${idx})" aria-label="${p.name} 품목 삭제">삭제</button>
         </div>
       </td>
     </tr>`).join('');
 
-  // 각 셀 변경 시 PRODUCTS 업데이트 + 저장
   body.querySelectorAll('tr').forEach(tr => {
     const idx = parseInt(tr.dataset.idx);
     const n  = tr.querySelector('.mg-name');
@@ -1150,22 +1644,26 @@ function renderManageTable() {
     const ct = tr.querySelector('.mg-cat');
     const c  = tr.querySelector('.mg-cost');
     const pr = tr.querySelector('.mg-price');
-    n.addEventListener('input',  () => { PRODUCTS[idx].name = n.value; saveProducts(); });
-    d.addEventListener('input',  () => { PRODUCTS[idx].desc = d.value; saveProducts(); });
-    ct.addEventListener('change',() => { PRODUCTS[idx].category = ct.value; saveProducts(); });
+    const commit = () => {
+      PRODUCTS[idx].name     = n.value;
+      PRODUCTS[idx].desc     = d.value;
+      PRODUCTS[idx].category = ct.value;
+      PRODUCTS[idx].cost     = parseIntInput(c);
+      PRODUCTS[idx].price    = parseIntInput(pr);
+      const id = PRODUCTS[idx].id;
+      if (!manualByMode.lease.has(id))    promoByMode.lease[id]    = leaseSeed(PRODUCTS[idx]);
+      if (!manualByMode.discount.has(id)) promoByMode.discount[id] = discountSeed(PRODUCTS[idx]);
+      saveProducts();
+      flashSaved();
+    };
+    n.addEventListener('input',  commit);
+    d.addEventListener('input',  commit);
+    ct.addEventListener('change', commit);
     [c, pr].forEach(el => {
       el.addEventListener('input', () => {
         const raw = (el.value || '').replace(/[^0-9]/g,'');
         el.value = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
-      });
-      el.addEventListener('blur', () => {
-        PRODUCTS[idx].cost  = parseIntInput(c);
-        PRODUCTS[idx].price = parseIntInput(pr);
-        // 수동 편집되지 않은 맵은 새 price에 맞춰 재시드
-        const id = PRODUCTS[idx].id;
-        if (!manualByMode.lease.has(id))    promoByMode.lease[id]    = leaseSeed(PRODUCTS[idx]);
-        if (!manualByMode.discount.has(id)) promoByMode.discount[id] = discountSeed(PRODUCTS[idx]);
-        saveProducts();
+        commit();
       });
     });
   });
@@ -1177,6 +1675,7 @@ function addProduct() {
   promoByMode.discount[newId] = 0;
   saveProducts();
   renderManageTable();
+  toast('새 품목이 추가되었습니다', 'success');
 }
 function deleteProduct(idx) {
   const p = PRODUCTS[idx];
@@ -1190,12 +1689,12 @@ function deleteProduct(idx) {
   PRODUCTS.splice(idx, 1);
   saveProducts();
   renderManageTable();
+  toast(`"${p.name}" 삭제됨`, 'success');
 }
 function resetProducts() {
   if (!confirm('기본값(초기 10종 DSE 품목)으로 되돌리시겠습니까?\n현재 추가/수정한 품목 정보는 사라집니다.')) return;
   PRODUCTS.length = 0;
   DEFAULT_PRODUCTS.forEach(p => PRODUCTS.push({...p}));
-  // 맵 재시드
   Object.keys(promoByMode.lease).forEach(k => delete promoByMode.lease[k]);
   Object.keys(promoByMode.discount).forEach(k => delete promoByMode.discount[k]);
   manualByMode.lease.clear();
@@ -1207,6 +1706,7 @@ function resetProducts() {
   selected.clear();
   saveProducts();
   renderManageTable();
+  toast('기본 품목으로 초기화되었습니다', 'success');
 }
 function moveProduct(idx, dir) {
   const newIdx = idx + dir;
@@ -1234,6 +1734,7 @@ function exportProducts() {
   a.download = `DSE_품목리스트_${today}.json`;
   a.click();
   URL.revokeObjectURL(url);
+  toast('JSON 파일이 다운로드되었습니다', 'success');
 }
 function importProducts(event) {
   const file = event.target.files && event.target.files[0];
@@ -1244,7 +1745,6 @@ function importProducts(event) {
       const parsed = JSON.parse(reader.result);
       const list = Array.isArray(parsed) ? parsed : parsed.products;
       if (!Array.isArray(list) || list.length === 0) throw new Error('품목 리스트가 비어있거나 잘못된 형식입니다');
-      // 최소 필드 검증
       const cleaned = list.map(p => ({
         id:       p.id || makeId(p.name || '') || ('p'+Date.now().toString(36)),
         name:     String(p.name || '새 품목'),
@@ -1260,7 +1760,6 @@ function importProducts(event) {
       }
       PRODUCTS.length = 0;
       cleaned.forEach(p => PRODUCTS.push(p));
-      // 맵 리셋 + 재시드
       Object.keys(promoByMode.lease).forEach(k => delete promoByMode.lease[k]);
       Object.keys(promoByMode.discount).forEach(k => delete promoByMode.discount[k]);
       manualByMode.lease.clear();
@@ -1272,31 +1771,25 @@ function importProducts(event) {
       selected.clear();
       saveProducts();
       renderManageTable();
-      alert(`✓ ${cleaned.length}개 품목을 불러왔습니다.`);
+      toast(`✓ ${cleaned.length}개 품목을 불러왔습니다`, 'success');
     } catch(e) {
-      alert('⚠ JSON 파일을 읽을 수 없습니다: ' + e.message);
+      toast('JSON 파일을 읽을 수 없습니다: ' + e.message, 'error');
       console.error(e);
     }
-    event.target.value = '';  // 같은 파일 재선택 허용
+    event.target.value = '';
   };
   reader.onerror = () => {
-    alert('⚠ 파일 읽기 실패');
+    toast('파일 읽기 실패', 'error');
     event.target.value = '';
   };
   reader.readAsText(file);
 }
 
-// (기존 Google Sheets 자동 동기화는 localStorage 기반 품목 관리로 대체됨)
-// ─────────────────────────────────────────────────────────────────────
-
 renderGrid();
 update();
-loadStateFromUrl();  // URL 공유 상태 복원 (공유 링크로 접속 시)
 
-// 할인율 변경 시 즉시 재계산
-document.getElementById('discountInput').addEventListener('input', update);
+document.getElementById('discountInput').addEventListener('input', () => { clampInputs(); update(); });
 
-// 기간/보증금 변경 시 → 선취수수료율 input 자동 채움 (수동 편집 전에만) + 재계산
 let feeManuallyEdited = false;
 function autoFillFeeRate() {
   if (feeManuallyEdited) return;
@@ -1305,90 +1798,10 @@ function autoFillFeeRate() {
 }
 document.getElementById('periodSelect').addEventListener('change', () => { autoFillFeeRate(); update(); });
 document.getElementById('depositSelect').addEventListener('change', () => { autoFillFeeRate(); update(); });
-document.getElementById('feeRateInput').addEventListener('input', () => { feeManuallyEdited = true; update(); });
-document.getElementById('rateInput').addEventListener('input', update);
+document.getElementById('feeRateInput').addEventListener('input', () => { feeManuallyEdited = true; clampInputs(); update(); });
+document.getElementById('rateInput').addEventListener('input', () => { clampInputs(); update(); });
 autoFillFeeRate();
 
-// ── 공유 링크 생성 / 복원 ────────────────────────────────────────────
-function shareQuote() {
-  if (selected.size === 0) {
-    alert('먼저 품목을 선택해 주세요.');
-    return;
-  }
-  // 선택된 품목의 정의까지 포함 → 고객이 링크 열어도 맞춤 품목 그대로 표시됨
-  const selProducts = [...selected].map(id => {
-    const p = PRODUCTS.find(x => x.id === id);
-    return p ? { id:p.id, name:p.name, desc:p.desc||'', category:productCategory(p), cost:p.cost||0, price:p.price||0 } : null;
-  }).filter(Boolean);
-  const state = {
-    mode:     MODE,
-    sel:      [...selected],
-    products: selProducts,  // 품목 정의 스냅샷
-    pricesL:  Object.fromEntries([...selected].map(id => [id, promoByMode.lease[id]])),
-    pricesD:  Object.fromEntries([...selected].map(id => [id, promoByMode.discount[id]])),
-    period:   document.getElementById('periodSelect').value,
-    dep:      document.getElementById('depositSelect').value,
-    fee:      document.getElementById('feeRateInput').value,
-    rate:     document.getElementById('rateInput').value,
-    disc:     document.getElementById('discountInput').value,
-    ext:      1,   // 외부 공유 플래그 → 내부용 자동 숨김
-  };
-  const hash = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
-  const url  = location.origin + location.pathname + '#' + hash;
-  navigator.clipboard.writeText(url).then(() => {
-    const btn = event.currentTarget;
-    const orig = btn.textContent;
-    btn.textContent = '✓ 링크 복사 완료!';
-    setTimeout(() => { btn.textContent = orig; }, 2000);
-  }).catch(() => { prompt('아래 링크를 복사하세요:', url); });
-}
-
-function loadStateFromUrl() {
-  const hash = location.hash.slice(1);
-  if (!hash) return;
-  try {
-    const state = JSON.parse(decodeURIComponent(escape(atob(hash))));
-    // 외부 공유 링크: 내부용 섹션 숨김
-    if (state.ext) {
-      document.body.classList.add('shared-view');
-      // 내부용 헤더 배지도 숨김
-      document.getElementById('intCollapse').classList.add('closed');
-    }
-    // 공유 링크에 품목 정의가 포함되어 있으면, 고객 브라우저의 PRODUCTS를 대체
-    // (localStorage는 건드리지 않음 → 원래 쓰던 품목 보존)
-    if (Array.isArray(state.products) && state.products.length) {
-      PRODUCTS = state.products.map(p => ({...p, leasePrice: 0}));
-      PRODUCTS.forEach(p => {
-        promoByMode.lease[p.id]    = leaseSeed(p);
-        promoByMode.discount[p.id] = discountSeed(p);
-      });
-    }
-    if (state.mode) setMode(state.mode);
-    if (state.period) document.getElementById('periodSelect').value = state.period;
-    if (state.dep)    document.getElementById('depositSelect').value = state.dep;
-    if (state.disc)   document.getElementById('discountInput').value = state.disc;
-    if (state.rate)   document.getElementById('rateInput').value     = state.rate;
-    if (state.fee != null && state.fee !== '') {
-      document.getElementById('feeRateInput').value = state.fee;
-      feeManuallyEdited = true;
-    } else {
-      autoFillFeeRate();
-    }
-    if (state.pricesL) Object.assign(promoByMode.lease,    state.pricesL);
-    if (state.pricesD) Object.assign(promoByMode.discount, state.pricesD);
-    // 구버전 공유링크 호환 (단일 prices)
-    if (state.prices) {
-      Object.assign(promoByMode.lease,    state.prices);
-      Object.assign(promoByMode.discount, state.prices);
-    }
-    if (state.sel) state.sel.forEach(id => selected.add(id));
-    renderGrid();
-    update();
-  } catch(e) { /* 잘못된 hash, 무시 */ }
-}
-// ─────────────────────────────────────────────────────────────────────
-
-// ── ROI 계산 ─────────────────────────────────────────────────────────
 function parseRoiInput(id) {
   const el = document.getElementById(id);
   if (!el) return 0;
@@ -1425,7 +1838,7 @@ function updateRoi() {
 
   document.getElementById('roiTotalPatients').innerHTML     =
     `월 ${totalPt.toLocaleString('ko-KR')}명 ` +
-    `<span style="color:#fb923c">/ 연 ${(totalPt * 12).toLocaleString('ko-KR')}명</span>`;
+    `<span style="color:var(--orange)">/ 연 ${(totalPt * 12).toLocaleString('ko-KR')}명</span>`;
   document.getElementById('roiTotalPatientsSub').innerHTML  =
     `🆕 신환 월 <b>${newPt.toLocaleString('ko-KR')}</b>명 → 연 <b>${(newPt*12).toLocaleString('ko-KR')}</b>명<br>` +
     `🔁 재환 월 <b>${retPt.toLocaleString('ko-KR')}</b>명 → 연 <b>${(retPt*12).toLocaleString('ko-KR')}</b>명`;
@@ -1433,38 +1846,34 @@ function updateRoi() {
   document.getElementById('roiReturnPatientsAnnual').textContent = `연 ${(retPt * 12).toLocaleString('ko-KR')}명`;
   document.getElementById('roiMonthlyRevenue').textContent  = fmt(monthlyRev);
   document.getElementById('roiAnnualRevenue').textContent   = fmt(annualRev);
-  // 연간매출 카드 sub: 연 환자수 × 시술단가 분해 표시
   document.getElementById('roiAnnualSub').innerHTML =
     `연 환자 <b>${(totalPt*12).toLocaleString('ko-KR')}</b>명 × ${chargePerPt.toLocaleString('ko-KR')}원`;
   document.getElementById('roiAnnualProfit').textContent    = fmt(annualProfit);
-  document.getElementById('roiAnnualProfit').style.color    = annualProfit >= 0 ? '#34d399' : '#f87171';
+  document.getElementById('roiAnnualProfit').style.color    = annualProfit >= 0 ? 'var(--green)' : 'var(--red)';
 
-  // 투자 회수 기간
   if (monthlyRev <= 0 || cost <= 0) {
     document.getElementById('roiBreakeven').textContent    = '—';
     document.getElementById('roiBreakevenSub').textContent = '값을 입력하세요';
     document.getElementById('roiAnnualPct').textContent    = '—';
   } else {
     const months  = Math.ceil(breakeven);
-    // 회수기간 동안 누적될 환자 수 (월 입력값 × 회수개월)
     const beNew   = Math.ceil(breakeven * newPt);
-    const beRet   = Math.ceil(breakeven * retPt);
     const beTotal = Math.ceil(breakeven * totalPt);
     document.getElementById('roiBreakeven').textContent    = months + '개월';
     document.getElementById('roiBreakevenSub').innerHTML   =
       `약 ${(breakeven).toFixed(1)}개월 · ${months <= 12 ? '1년 이내 회수' : '1년 초과'}<br>` +
       `회수까지 신환 <b>${beNew.toLocaleString('ko-KR')}</b>명 · 총 <b>${beTotal.toLocaleString('ko-KR')}</b>명`;
     document.getElementById('roiAnnualPct').textContent    = roiPct.toFixed(1) + '%';
-    document.getElementById('roiAnnualPct').style.color    = roiPct >= 0 ? '#fb923c' : '#f87171';
+    document.getElementById('roiAnnualPct').style.color    = roiPct >= 0 ? 'var(--orange)' : 'var(--red)';
   }
 
-  // 프로그레스 바 (12개월 기준)
   const fill = document.getElementById('roiBarFill');
+  const track = fill.parentElement;
   if (cost > 0 && monthlyRev > 0) {
     const ratio12 = Math.min((annualRev / cost) * 100, 300);
     fill.style.width = Math.min(ratio12, 100) + '%';
     fill.textContent = ratio12.toFixed(0) + '%';
-    // 손익분기 마크
+    track.setAttribute('aria-valuenow', Math.round(ratio12));
     const mark = document.getElementById('roiBarMark');
     const bePos = (breakeven / 12) * 100;
     if (bePos <= 100) {
@@ -1476,10 +1885,10 @@ function updateRoi() {
   } else {
     fill.style.width = '0%';
     fill.textContent = '0%';
+    track.setAttribute('aria-valuenow', 0);
     document.getElementById('roiBarMark').style.display = 'none';
   }
 
-  // 월별 테이블
   const tbody = document.getElementById('roiTableBody');
   if (cost <= 0 || monthlyRev <= 0) {
     tbody.innerHTML = '<tr><td class="empty-td" colspan="5">제품 단가와 환자 정보를 입력하면 계산됩니다</td></tr>';
@@ -1496,37 +1905,35 @@ function updateRoi() {
     const isBe   = m === beMonth;
     rows += `<tr class="${isBe ? 'breakeven-row' : ''}">
       <td style="text-align:left">${m}개월${isBe ? ' ← 손익분기' : ''}</td>
-      <td style="color:#94a3b8">${fmt(monthlyRev)}</td>
-      <td style="color:#60a5fa">${fmt(cumul)}</td>
-      <td style="color:${remain > 0 ? '#f87171' : '#34d399'}">${remain > 0 ? '-' + fmt(remain) : '+' + fmt(Math.abs(remain))}</td>
-      <td style="color:${ratio >= 100 ? '#34d399' : '#fb923c'}">${ratio.toFixed(1)}%</td>
+      <td class="tc-cost">${fmt(monthlyRev)}</td>
+      <td class="ec-monthly">${fmt(cumul)}</td>
+      <td style="color:${remain > 0 ? 'var(--red)' : 'var(--green)'}">${remain > 0 ? '-' + fmt(remain) : '+' + fmt(Math.abs(remain))}</td>
+      <td style="color:${ratio >= 100 ? 'var(--green)' : 'var(--orange)'}">${ratio.toFixed(1)}%</td>
     </tr>`;
   }
   tbody.innerHTML = rows;
 }
 
 formatRoiInputs();
-// ─────────────────────────────────────────────────────────────────────
 
 function exportPng() {
   const area = document.getElementById('extExportArea');
   const btn  = document.getElementById('pngBtn');
-  if (!area || area.children.length === 0) {
-    alert('먼저 품목을 선택해주세요.');
+  if (!area || selected.size === 0) {
+    toast('먼저 품목을 선택해주세요', 'error');
     return;
   }
   btn.disabled = true;
+  const origText = btn.textContent;
   btn.textContent = '⏳ 저장 중...';
 
-  // 원본 영역 폭을 그대로 가져와 캡처용 래퍼에 고정 → 비율 보존
   const baseW = area.getBoundingClientRect().width || area.offsetWidth || 960;
   const padX  = 24;
   const wrapW = Math.round(baseW + padX * 2);
 
-  // 캡처용 임시 래퍼 (오프스크린, 원본과 동일한 폭)
   const wrapper = document.createElement('div');
   wrapper.style.cssText =
-    `background:#0f1117;padding:${padX}px;border-radius:16px;` +
+    `background:#ffffff;padding:${padX}px;border-radius:16px;` +
     `width:${wrapW}px;box-sizing:border-box;` +
     `position:fixed;top:0;left:-99999px;`;
   const clone = area.cloneNode(true);
@@ -1535,7 +1942,7 @@ function exportPng() {
   document.body.appendChild(wrapper);
 
   html2canvas(wrapper, {
-    backgroundColor: '#0f1117',
+    backgroundColor: '#ffffff',
     scale: 2,
     useCORS: true,
     logging: false,
@@ -1551,13 +1958,14 @@ function exportPng() {
     link.click();
     document.body.removeChild(wrapper);
     btn.disabled = false;
-    btn.textContent = '📥 PNG로 저장';
+    btn.textContent = origText;
+    toast('PNG 이미지가 저장되었습니다', 'success');
   }).catch(err => {
     console.error('PNG 저장 실패:', err);
     if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
     btn.disabled = false;
-    btn.textContent = '📥 PNG로 저장';
-    alert('PNG 저장 중 오류가 발생했습니다. 다시 시도해 주세요.');
+    btn.textContent = origText;
+    toast('PNG 저장 중 오류가 발생했습니다', 'error');
   });
 }
 </script>
