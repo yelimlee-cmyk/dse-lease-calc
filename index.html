@@ -321,7 +321,8 @@
   .sum-sub { font-size:11px; color:var(--muted); margin-top:4px; }
 
   /* EXTERNAL TABLE COLORS */
-  .ec-name   { color:var(--text); }
+  .ec-name   { color:var(--text); white-space:normal; }
+  .ec-name .p-desc { display:block; font-size:10.5px; color:var(--text-3); font-weight:400; margin-top:2px; }
   .ec-sale   { color:var(--blue); }
   .ec-deposit{ color:var(--text-2); }
   .ec-monthly{ color:var(--blue); font-weight:800; }
@@ -1504,7 +1505,7 @@ function update() {
       const itemFinal= lp - itemDisc;
       etTotal += lp;
       return `<tr>
-        <td class="ec-name">${p.name}</td>
+        <td class="ec-name">${p.name}${p.desc ? `<span class="p-desc">${p.desc}</span>` : ''}</td>
         <td class="ec-sale">${fmt(lp)}</td>
         <td class="tc-fee">-${fmt(itemDisc)}</td>
         <td class="tc-mlease">${fmt(itemFinal)}</td>
@@ -1564,7 +1565,7 @@ function update() {
       const totalPay= lp;
       etTotal += lp;
       return `<tr>
-        <td class="ec-name">${p.name}</td>
+        <td class="ec-name">${p.name}${p.desc ? `<span class="p-desc">${p.desc}</span>` : ''}</td>
         <td class="ec-sale">${fmt(lp)}</td>
         <td class="ec-deposit">${fmt(deposit)}</td>
         <td class="ec-monthly">${fmt(monthly)}/월</td>
