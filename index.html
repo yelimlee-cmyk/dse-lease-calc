@@ -1046,7 +1046,7 @@ function saveProducts() {
 const selected     = new Set();
 const promoByMode  = { lease: {}, discount: {} };
 const manualByMode = { lease: new Set(), discount: new Set() };
-function leaseSeed(p)    { return p.leasePrice || 0; }
+function leaseSeed(p)    { return p.leasePrice || p.price || 0; }
 function discountSeed(p) { return p.leasePrice || p.price || 0; }
 PRODUCTS.forEach(p => {
   promoByMode.lease[p.id]    = leaseSeed(p);
