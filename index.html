@@ -667,6 +667,12 @@
       <input class="rate-input" id="discountInput" type="number" value="0" min="0" max="100" step="0.1" style="width:78px" inputmode="decimal" aria-label="할인율(%)">
       <b>%</b>
     </div>
+    <div class="param-chip editable">
+      <label for="targetTotalInput">최종 금액</label>
+      <span class="hint" tabindex="0" data-tip="목표로 하는 최종 합계 금액을 입력하면 할인율이 자동 계산됩니다.">?</span>
+      <input class="rate-input" id="targetTotalInput" type="text" placeholder="0" inputmode="numeric" style="width:130px" aria-label="최종 금액(원)">
+      <b>원</b>
+    </div>
     <div class="param-chip">적용 기준 <b>패키지 할인가 합계</b></div>
     <div class="param-chip">최종가 = 합계 × <b>(1 − 할인율)</b></div>
   </div>
@@ -1067,6 +1073,7 @@ function getPromo(id) {
 function setPromo(id, v){ promoByMode[curPriceMode()][id] = v; manualByMode[curPriceMode()].add(id); }
 
 let MODE = 'lease';
+let _suppressTargetSync = false;
 
 function setMode(m) {
   MODE = m;
@@ -1496,6 +1503,10 @@ function update() {
       document.getElementById('eTotal').textContent   = '0원';
       document.getElementById('eDeposit').textContent = '0원';
       document.getElementById('eMonthly').textContent = '0원';
+      if (!_suppressTargetSync) {
+        const tInput = document.getElementById('targetTotalInput');
+        if (tInput) tInput.value = '';
+      }
       return;
     }
     let etTotal = 0;
@@ -1523,6 +1534,10 @@ function update() {
     document.getElementById('eDeposit').textContent      = fmt(etDisc);
     document.getElementById('eSubDeposit').textContent   = `할인율 ${(discRate*100).toFixed(1)}%`;
     document.getElementById('eMonthly').textContent      = fmt(etFinal);
+    if (!_suppressTargetSync) {
+      const tInput = document.getElementById('targetTotalInput');
+      if (tInput) tInput.value = etFinal > 0 ? etFinal.toLocaleString('ko-KR') : '';
+    }
 
   } else {
     const period   = getPeriod();
@@ -1791,6 +1806,25 @@ renderGrid();
 update();
 
 document.getElementById('discountInput').addEventListener('input', () => { clampInputs(); update(); });
+
+document.getElementById('targetTotalInput').addEventListener('input', (ev) => {
+  const el = ev.target;
+  const raw = (el.value || '').replace(/[^0-9]/g, '');
+  const target = raw ? parseInt(raw) : 0;
+  el.value = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
+  const items = PRODUCTS.filter(p => selected.has(p.id));
+  const currentSum = items.reduce((s, p) => s + getPromo(p.id), 0);
+  let rate = 0;
+  if (currentSum > 0) {
+    rate = ((currentSum - target) / currentSum) * 100;
+    if (rate < 0) rate = 0;
+    if (rate > 100) rate = 100;
+  }
+  document.getElementById('discountInput').value = rate.toFixed(2);
+  _suppressTargetSync = true;
+  update();
+  _suppressTargetSync = false;
+});
 
 let feeManuallyEdited = false;
 function autoFillFeeRate() {
