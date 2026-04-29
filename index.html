@@ -726,13 +726,13 @@
   </div>
 
   <!-- 내부용 요약 -->
-  <div class="int-summary" style="margin-bottom:8px">
+  <div class="int-summary" id="intSummary" style="margin-bottom:8px">
     <div class="sum-card">
       <div class="sum-label">패키지 할인가 합계</div>
       <div class="sum-val tc-promo" id="iPromo">0원</div>
       <div class="sum-sub" id="iPromoSub">—</div>
     </div>
-    <div class="sum-card">
+    <div class="sum-card" id="iFeeCard">
       <div class="sum-label" id="iFeeTitle">선취수수료 합계</div>
       <div class="sum-val tc-fee" id="iFee">0원</div>
       <div class="sum-sub" id="iFeeLabel">리스 조건 적용</div>
@@ -1353,13 +1353,15 @@ function update() {
 
   if (MODE === 'discount') {
     const dRate = (parseFloat(document.getElementById('discountInput').value) || 0) / 100;
-    document.getElementById('intTableSub').textContent  = '패키지 할인가 기준 · 할인율 적용';
+    document.getElementById('intTableSub').textContent  = '패키지 할인가 기준 · 할인율 적용 (선취수수료 제외)';
     document.getElementById('intHead').innerHTML = `<tr>
       <th>품목</th><th>공급가</th><th>판매가</th><th>패키지 할인가</th>
       <th>최종가 (할인후)</th><th>기존 마진율</th><th>할인 마진율</th><th>변화</th>
     </tr>`;
-    document.getElementById('iFeeLabel').textContent    = '할인 조건 할인';
+    document.getElementById('iFeeCard').style.display   = 'none';
+    document.getElementById('intSummary').style.gridTemplateColumns = 'repeat(3,1fr)';
     document.getElementById('iMLeaseLabel').textContent = '할인 마진율';
+    document.getElementById('iMLeaseAmt').textContent   = '할인후 기준';
 
     if (items.length === 0) {
       intBody.innerHTML = `<tr><td class="empty-td" colspan="8">품목을 선택하면 분석이 표시됩니다</td></tr>`;
@@ -1398,7 +1400,6 @@ function update() {
       </tr>`;
       document.getElementById('iPromo').textContent    = fmt(tLease);
       document.getElementById('iPromoSub').textContent = `최종가 합계 ${fmt(tFinal)}`;
-      document.getElementById('iFee').textContent      = fmt(tSale - tLease);
       document.getElementById('iMOrig').textContent    = pct(tmOrig);
       document.getElementById('iMOrigAmt').textContent = `마진금액 ${fmt(tSale-tCost)}`;
       document.getElementById('iMLease').textContent   = pct(tmDisc);
@@ -1408,6 +1409,8 @@ function update() {
     const feeRate = getFeeRate();
     const period  = getPeriod();
     const dep     = getDeposit();
+    document.getElementById('iFeeCard').style.display   = '';
+    document.getElementById('intSummary').style.gridTemplateColumns = 'repeat(4,1fr)';
     document.getElementById('intTableSub').innerHTML = `패키지 할인가 기준 &nbsp;·&nbsp; ${period}개월 / 보증금 ${dep}% &nbsp;·&nbsp; 선취수수료 <b style="color:var(--orange)">${(feeRate*100).toFixed(2)}%</b> 적용`;
     document.getElementById('intHead').innerHTML = `<tr>
       <th>품목</th><th>공급가</th><th>판매가</th><th>패키지 할인가</th>
