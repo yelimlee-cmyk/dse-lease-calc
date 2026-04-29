@@ -1177,11 +1177,9 @@ function renderGrid() {
       if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleSel(); }
     });
     const input = card.querySelector('.promo-input');
-    input.addEventListener('input', () => {
-      const raw = input.value.replace(/[^0-9]/g,'');
-      setPromo(p.id, raw ? parseInt(raw) : p.price);
-      const formatted = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
-      input.value = formatted;
+    bindCommaInput(input, (num, raw) => {
+      setPromo(p.id, raw ? num : p.price);
+      const formatted = raw ? num.toLocaleString('ko-KR') : '';
       // pinned 섹션과 카테고리 카드에 같은 id가 두 번 나올 수 있으므로 동기화
       document.querySelectorAll(`.promo-input[data-id="${p.id}"]`).forEach(other => {
         if (other !== input) other.value = formatted;
@@ -1625,6 +1623,49 @@ function parseIntInput(el) {
   return raw ? parseInt(raw) : 0;
 }
 
+// 콤마가 들어간 숫자 입력 — 캐럿 위치 보존 + 구분자 위에서 Backspace/Delete 시 숫자도 함께 삭제
+function bindCommaInput(el, onCommit) {
+  el.addEventListener('keydown', (e) => {
+    const start = el.selectionStart, end = el.selectionEnd;
+    if (start == null || start !== end) return;
+    if (e.key === 'Backspace' && start > 0 && !/\d/.test(el.value[start - 1])) {
+      e.preventDefault();
+      const cut = Math.max(0, start - 2);
+      el.value = el.value.slice(0, cut) + el.value.slice(start);
+      el.setSelectionRange(cut, cut);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    } else if (e.key === 'Delete' && start < el.value.length && !/\d/.test(el.value[start])) {
+      e.preventDefault();
+      el.value = el.value.slice(0, start) + el.value.slice(start + 2);
+      el.setSelectionRange(start, start);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+  el.addEventListener('input', () => {
+    const oldVal = el.value || '';
+    const oldCaret = el.selectionStart != null ? el.selectionStart : oldVal.length;
+    let digitsBefore = 0;
+    for (let i = 0; i < oldCaret; i++) if (/\d/.test(oldVal[i])) digitsBefore++;
+    const raw = oldVal.replace(/\D/g, '');
+    const num = raw ? parseInt(raw, 10) : 0;
+    const formatted = raw ? num.toLocaleString('ko-KR') : '';
+    el.value = formatted;
+    let newCaret = formatted.length;
+    if (digitsBefore <= 0) newCaret = 0;
+    else {
+      let count = 0;
+      for (let i = 0; i < formatted.length; i++) {
+        if (/\d/.test(formatted[i])) {
+          count++;
+          if (count === digitsBefore) { newCaret = i + 1; break; }
+        }
+      }
+    }
+    try { el.setSelectionRange(newCaret, newCaret); } catch(_) {}
+    if (onCommit) onCommit(num, raw);
+  });
+}
+
 // 품목 관리 저장 인디케이터
 let _saveFlashTimer = null;
 function flashSaved() {
@@ -1680,11 +1721,7 @@ function renderManageTable() {
     d.addEventListener('input',  commit);
     ct.addEventListener('change', commit);
     [c, pr].forEach(el => {
-      el.addEventListener('input', () => {
-        const raw = (el.value || '').replace(/[^0-9]/g,'');
-        el.value = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
-        commit();
-      });
+      bindCommaInput(el, () => commit());
     });
   });
 }
@@ -1810,11 +1847,7 @@ update();
 
 document.getElementById('discountInput').addEventListener('input', () => { clampInputs(); update(); });
 
-document.getElementById('targetTotalInput').addEventListener('input', (ev) => {
-  const el = ev.target;
-  const raw = (el.value || '').replace(/[^0-9]/g, '');
-  const target = raw ? parseInt(raw) : 0;
-  el.value = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
+bindCommaInput(document.getElementById('targetTotalInput'), (target) => {
   const items = PRODUCTS.filter(p => selected.has(p.id));
   const currentSum = items.reduce((s, p) => s + getPromo(p.id), 0);
   let rate = 0;
@@ -1850,12 +1883,7 @@ function parseRoiInput(id) {
 
 function formatRoiInputs() {
   ['roiCost','roiChargePerPatient'].forEach(id => {
-    const el = document.getElementById(id);
-    el.addEventListener('input', () => {
-      const raw = el.value.replace(/[^0-9]/g, '');
-      el.value = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
-      updateRoi();
-    });
+    bindCommaInput(document.getElementById(id), () => updateRoi());
   });
   ['roiNewPatients','roiReturnPatients'].forEach(id => {
     document.getElementById(id).addEventListener('input', updateRoi);
