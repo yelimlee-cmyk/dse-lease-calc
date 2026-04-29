@@ -1862,15 +1862,13 @@ bindCommaInput(document.getElementById('targetTotalInput'), (target) => {
   _suppressTargetSync = false;
 });
 
-let feeManuallyEdited = false;
 function autoFillFeeRate() {
-  if (feeManuallyEdited) return;
   const v = lookupFeeRate(getPeriod(), getDeposit());
   document.getElementById('feeRateInput').value = (v * 100).toFixed(2);
 }
 document.getElementById('periodSelect').addEventListener('change', () => { autoFillFeeRate(); update(); });
 document.getElementById('depositSelect').addEventListener('change', () => { autoFillFeeRate(); update(); });
-document.getElementById('feeRateInput').addEventListener('input', () => { feeManuallyEdited = true; clampInputs(); update(); });
+document.getElementById('feeRateInput').addEventListener('input', () => { clampInputs(); update(); });
 document.getElementById('rateInput').addEventListener('input', () => { clampInputs(); update(); });
 autoFillFeeRate();
 
