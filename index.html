@@ -601,6 +601,116 @@
     .sec-divider, body.shared-view .sec-badge, .note-bar, .toast-wrap { display:none !important; }
     .table-wrap, .ext-summary, .int-summary, .sum-card, .roi-field, .roi-card { box-shadow:none !important; }
   }
+/* ===========================================================
+   MD palette / typography 톤 통일 (참고: md-lecture-calc)
+   - 섹션 카드 / 입력 / KPI / 반응형 / 번호 칩
+   =========================================================== */
+
+/* 섹션 카드 통일 */
+.wrap > .header,
+.wrap > [role="tabpanel"],
+.wrap > [class$="-section"]{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 22px 22px 20px;
+  margin-bottom: 18px;
+}
+.wrap > .header{ /* 헤더는 그라데이션 유지 */
+  padding: 20px 28px;
+}
+
+/* 섹션 H2 톤 + 번호 칩 (각 탭 panel 내부 h2; panel 진입 시 1부터) */
+[role="tabpanel"]{ counter-reset: secnum; }
+[role="tabpanel"] h2{
+  font-size: 16px; font-weight: 700; letter-spacing: -.01em;
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 0 12px; color: var(--text);
+}
+[role="tabpanel"] h2::before{
+  counter-increment: secnum;
+  content: counter(secnum);
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--primary-soft); color: var(--primary);
+  font-size: 12px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+[role="tabpanel"] h2 + .desc,
+[role="tabpanel"] h2 + p{
+  color: var(--muted); font-size: 13px; margin: 0 0 16px;
+}
+
+/* 입력 톤 통일 (모든 input, select) */
+input[type=text], input[type=number], input[type=email],
+input[type=password], input[type=search], select, textarea{
+  font-family: inherit;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+}
+input[type=text]:focus, input[type=number]:focus,
+input[type=email]:focus, input[type=password]:focus,
+input[type=search]:focus, select:focus, textarea:focus{
+  outline: 0;
+  border-color: var(--primary);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.10);
+}
+
+/* KPI 카드 (roi-card 톤) */
+.roi-card{
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.roi-card:hover{ border-color: rgba(37,99,235,.35); }
+.roi-card.primary{
+  background: var(--primary-soft);
+  border-color: rgba(37,99,235,.25);
+}
+.roi-card .roi-label, .roi-card-label, .roi-card > .label{
+  color: var(--muted); font-size: 12.5px; font-weight: 500;
+}
+.roi-card .roi-value, .roi-card-value, .roi-card > .value{
+  font-size: 22px; font-weight: 700; letter-spacing: -.02em; color: var(--text);
+}
+.roi-card.primary .roi-value,
+.roi-card.primary .roi-card-value,
+.roi-card.primary > .value{ color: var(--primary); }
+
+/* 진행률 막대 톤 */
+.roi-bar-track{
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.roi-bar-fill{
+  background: linear-gradient(90deg, var(--primary), var(--primary-2));
+  color: #fff;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* 모바일 반응형 (참고 페이지 720px 기준) */
+@media (max-width: 720px){
+  body{ padding: 16px 12px; }
+  .wrap > .header{ padding: 16px 18px; }
+  .wrap > [role="tabpanel"],
+  .wrap > [class$="-section"]{ padding: 16px; }
+  .header h1{ font-size: 18px; }
+  .roi-inputs{ grid-template-columns: 1fr !important; gap: 12px !important; }
+  .roi-result-grid{ grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+  .roi-card{ padding: 14px; }
+  .roi-card .roi-value, .roi-card-value, .roi-card > .value{ font-size: 18px; }
+}
+
 /* Auth gate */
 #authGate{position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
 #authGate.hidden{display:none}
