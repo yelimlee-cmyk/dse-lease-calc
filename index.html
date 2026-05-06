@@ -597,9 +597,50 @@
     .sec-divider, body.shared-view .sec-badge, .note-bar, .toast-wrap { display:none !important; }
     .table-wrap, .ext-summary, .int-summary, .sum-card, .roi-field, .roi-card { box-shadow:none !important; }
   }
+/* Auth gate */
+#authGate{position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+#authGate.hidden{display:none}
+#authCard{background:#fff;width:min(420px,92vw);border-radius:14px;padding:28px;box-shadow:0 20px 50px rgba(0,0,0,.18)}
+#authCard h2{margin:0 0 18px;font-size:20px;color:#0f172a}
+#authCard label{display:block;font-size:13px;color:#475569;margin:10px 0 6px}
+#authCard input{width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;box-sizing:border-box}
+#authCard .btns{display:flex;gap:8px;margin-top:18px}
+#authCard button{flex:1;padding:10px;border:0;border-radius:8px;font:600 14px/1 inherit;cursor:pointer}
+#authCard .auth-primary{background:#4f46e5;color:#fff}
+#authCard .auth-ghost{background:#f1f5f9;color:#0f172a}
+#authCard .auth-msg{margin-top:10px;font-size:13px;min-height:18px}
+#authCard .auth-msg.err{color:#dc2626}
+#authCard .auth-msg.ok{color:#16a34a}
+#userBar{position:fixed;top:8px;right:12px;z-index:50;font-size:12px;color:#475569;display:flex;gap:8px;align-items:center;background:rgba(255,255,255,.85);padding:4px 8px;border-radius:8px;backdrop-filter:blur(4px)}
+#userBar .signout{background:none;border:1px solid #cbd5e1;border-radius:6px;padding:4px 8px;cursor:pointer;color:#475569}
 </style>
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+window.SUPABASE_URL='https://wuidsmpsufpdvbkugjmv.supabase.co';
+window.SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1aWRzbXBzdWZwZHZia3Vnam12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNDk0MTAsImV4cCI6MjA5MzYyNTQxMH0.2O6ZhFzSMqL2D9_GDiYLldxbINU9ToNM5mfD0j4v4RU';
+</script>
 </head>
 <body>
+<!-- Auth gate (Supabase) -->
+<div id="authGate">
+  <div id="authCard">
+    <h2 id="authTitle">로그인</h2>
+    <label for="authEmail">이메일</label>
+    <input id="authEmail" type="email" autocomplete="email" placeholder="name@medistream.co.kr">
+    <label for="authPassword">비밀번호</label>
+    <input id="authPassword" type="password" autocomplete="current-password" placeholder="6자 이상" onkeydown="if(event.key==='Enter')authPrimary()">
+    <div class="btns">
+      <button class="auth-primary" id="authPrimaryBtn" type="button" onclick="authPrimary()">로그인</button>
+      <button class="auth-ghost" id="authToggleBtn" type="button" onclick="toggleAuthMode()">회원가입으로</button>
+    </div>
+    <div class="auth-msg" id="authMsg"></div>
+  </div>
+</div>
+<div id="userBar" style="display:none">
+  <span id="userEmailLabel"></span>
+  <button class="signout" type="button" onclick="authSignOut()">로그아웃</button>
+</div>
 
 <a href="#main" class="skip-link">본문으로 건너뛰기</a>
 
@@ -937,19 +978,20 @@
       <table class="manage-table" aria-label="품목 관리 테이블">
         <thead>
           <tr>
-            <th style="width:16%">품목명</th>
-            <th style="width:20%">설명</th>
-            <th style="width:16%">카테고리</th>
-            <th style="width:13%;text-align:right">공급가</th>
-            <th style="width:13%;text-align:right">판매가</th>
-            <th style="width:22%;text-align:right">순서/삭제</th>
+            <th style="width:14%">품목명</th>
+            <th style="width:14%">설명</th>
+            <th style="width:11%">의료기기 분류</th>
+            <th style="width:12%">브랜드</th>
+            <th style="width:11%;text-align:right">공급가</th>
+            <th style="width:11%;text-align:right">판매가</th>
+            <th style="width:27%;text-align:right">한방수가 / 순서 / 삭제</th>
           </tr>
         </thead>
         <tbody id="manageBody"></tbody>
       </table>
     </div>
     <div class="manage-note">
-      💡 품목 정보는 <b>이 브라우저</b>에 자동 저장됩니다 (localStorage).<br>
+      💡 품목 정보는 <b>본인 계정</b>에 자동 저장됩니다 (Supabase). 다른 기기에서도 같은 계정으로 로그인하면 동기화됩니다.<br>
       📤 <b>내보내기</b>: JSON 파일로 저장 → 다른 PC의 <b>📥 가져오기</b>로 복원 가능<br>
       ↺ "기본값"을 누르면 초기 10종 품목 리스트로 되돌아갑니다.
     </div>
@@ -968,6 +1010,94 @@
 <div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>
 
 <script>
+/* ==================== Supabase + Auth (added) ==================== */
+let sbClient = null;
+let currentUser = null;
+
+function _ensureSb(){
+  if (sbClient) return sbClient;
+  if (!window.supabase || !window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) return null;
+  sbClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
+    auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:false }
+  });
+  return sbClient;
+}
+
+let _authMode = 'signin';
+function toggleAuthMode(){
+  _authMode = _authMode === 'signin' ? 'signup' : 'signin';
+  document.getElementById('authTitle').textContent = _authMode === 'signin' ? '로그인' : '회원가입';
+  document.getElementById('authPrimaryBtn').textContent = _authMode === 'signin' ? '로그인' : '회원가입';
+  document.getElementById('authToggleBtn').textContent = _authMode === 'signin' ? '회원가입으로' : '로그인으로';
+  _setAuthMsg('','');
+}
+function _setAuthMsg(text, kind){
+  const el = document.getElementById('authMsg');
+  if (!el) return;
+  el.textContent = text || '';
+  el.className = 'auth-msg' + (kind ? ' ' + kind : '');
+}
+async function authPrimary(){
+  const sb = _ensureSb();
+  if (!sb) { _setAuthMsg('Supabase 미설정','err'); return; }
+  const email = (document.getElementById('authEmail').value || '').trim();
+  const password = document.getElementById('authPassword').value || '';
+  if (!email || !password) { _setAuthMsg('이메일/비밀번호를 입력하세요','err'); return; }
+  if (password.length < 6)  { _setAuthMsg('비밀번호는 6자 이상','err'); return; }
+  _setAuthMsg('처리 중...','');
+  try {
+    if (_authMode === 'signin') {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    } else {
+      const { error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+      _setAuthMsg('가입 완료. (이메일 확인이 켜져 있으면 메일 확인)','ok');
+    }
+  } catch(e) { _setAuthMsg(e.message || '오류','err'); }
+}
+async function authSignOut(){
+  const sb = _ensureSb(); if (!sb) return;
+  try { await sb.auth.signOut(); } catch(e) {}
+  currentUser = null;
+  if (typeof PRODUCTS !== 'undefined' && PRODUCTS.length) PRODUCTS.length = 0;
+  if (typeof selected !== 'undefined' && selected && selected.clear) selected.clear();
+  _showAuthGate(true);
+  if (typeof renderGrid === 'function') renderGrid();
+}
+function _showAuthGate(show){
+  const g = document.getElementById('authGate');
+  const u = document.getElementById('userBar');
+  if (g) g.classList.toggle('hidden', !show);
+  if (u) u.style.display = show ? 'none' : 'flex';
+}
+async function _onAuthReady(user){
+  currentUser = user;
+  _showAuthGate(false);
+  const lbl = document.getElementById('userEmailLabel');
+  if (lbl) lbl.textContent = user.email || '';
+  if (typeof loadProducts === 'function') await loadProducts();
+}
+window.addEventListener('DOMContentLoaded', async function(){
+  const sb = _ensureSb();
+  if (!sb) { console.warn('Supabase SDK missing'); return; }
+  try {
+    const { data:{ session } } = await sb.auth.getSession();
+    if (session && session.user) await _onAuthReady(session.user);
+  } catch(e) { console.warn('getSession failed', e); }
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (session && session.user) {
+      await _onAuthReady(session.user);
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      if (typeof PRODUCTS !== 'undefined') PRODUCTS.length = 0;
+      _showAuthGate(true);
+      if (typeof renderGrid === 'function') renderGrid();
+    }
+  });
+});
+/* ==================== /Supabase + Auth ==================== */
+
 // ── Toast (스낵바) ────────────────────────────────────────────────────
 function toast(msg, type) {
   const wrap = document.getElementById('toastWrap');
@@ -1040,20 +1170,91 @@ function collapseAllCategories() {
   saveCollapsedCats();
   renderGrid();
 }
-const PRODUCTS_STORAGE_KEY = 'dseProducts_v1';
-let PRODUCTS = (function() {
+/* === Supabase products store (was localStorage) === */
+let PRODUCTS = [];
+function _supabaseToProduct(row){
+  return {
+    id: row.id,
+    name: row.name || '',
+    category: row.brand || '',                    // 브랜드/제품군 (기존 category 의미)
+    medCategory: row.category || 'skincare',      // 의료기기 분류 (피부미용/급여/비급여)
+    cost: Number(row.supply_price) || 0,
+    price: Number(row.sale_price) || 0,
+    leasePrice: Number(row.package_price) || 0,
+    procedurePrice: Number(row.procedure_price) || 0,
+    hiraCode: row.hira_code || '',
+    hiraName: row.hira_name || '',
+    hiraPrice: Number(row.hira_price) || 0,
+    sortOrder: row.sort_order || 0,
+    desc: ''
+  };
+}
+function _productToSupabase(p){
+  return {
+    id: p.id,
+    user_id: currentUser ? currentUser.id : null,
+    name: p.name || '',
+    brand: p.category || null,
+    category: p.medCategory || 'skincare',
+    supply_price: Number(p.cost) || 0,
+    sale_price: Number(p.price) || 0,
+    package_price: Number(p.leasePrice) || 0,
+    procedure_price: Number(p.procedurePrice) || 0,
+    hira_code: p.hiraCode || null,
+    hira_name: p.hiraName || null,
+    hira_price: p.hiraPrice ? Number(p.hiraPrice) : null,
+    sort_order: p.sortOrder || 0
+  };
+}
+async function loadProducts(){
+  if (!sbClient || !currentUser) return;
   try {
-    const raw = localStorage.getItem(PRODUCTS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch(e) { console.warn('PRODUCTS load failed', e); }
-  return DEFAULT_PRODUCTS.map(p => ({...p}));
-})();
-function saveProducts() {
-  try { localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(PRODUCTS)); }
-  catch(e) { console.warn('PRODUCTS save failed', e); }
+    const { data, error } = await sbClient.from('items')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    PRODUCTS.length = 0;
+    (data || []).forEach(row => PRODUCTS.push(_supabaseToProduct(row)));
+    PRODUCTS.forEach(p => {
+      promoByMode.lease[p.id]    = leaseSeed(p);
+      promoByMode.discount[p.id] = discountSeed(p);
+    });
+    if (typeof renderGrid === 'function') renderGrid();
+    if (typeof update === 'function') update();
+    if (typeof renderManageTable === 'function') renderManageTable();
+  } catch(e) {
+    console.error('loadProducts failed', e);
+    if (typeof toast === 'function') toast('품목 로드 실패: ' + (e.message || e), 'error');
+  }
+}
+let _saveTimer = null;
+function saveProducts(){
+  if (!sbClient || !currentUser) return;
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(_saveProductsNow, 250);
+}
+async function _saveProductsNow(){
+  if (!sbClient || !currentUser) return;
+  try {
+    if (PRODUCTS.length === 0) return;
+    const rows = PRODUCTS.map(_productToSupabase);
+    const { error } = await sbClient.from('items').upsert(rows, { onConflict: 'id' });
+    if (error) throw error;
+  } catch(e) {
+    console.error('saveProducts failed', e);
+    if (typeof toast === 'function') toast('저장 실패: ' + (e.message || e), 'error');
+  }
+}
+async function _deleteProductSb(id){
+  if (!sbClient || !currentUser || !id) return;
+  try {
+    const { error } = await sbClient.from('items').delete().eq('id', id);
+    if (error) throw error;
+  } catch(e) {
+    console.error('deleteProduct failed', e);
+    if (typeof toast === 'function') toast('삭제 실패: ' + (e.message || e), 'error');
+  }
 }
 
 const selected     = new Set();
@@ -1693,11 +1894,17 @@ function renderManageTable() {
     <tr data-idx="${idx}">
       <td><input type="text" class="mg-name" value="${(p.name || '').replace(/"/g,'&quot;')}" placeholder="품목명" aria-label="품목명"></td>
       <td><input type="text" class="mg-desc" value="${(p.desc || '').replace(/"/g,'&quot;')}" placeholder="설명(선택)" aria-label="설명"></td>
-      <td><select class="mg-cat" aria-label="카테고리">${catOptions(productCategory(p))}</select></td>
+      <td><select class="mg-medcat" aria-label="의료기기 분류">
+        <option value="skincare"${(p.medCategory||'skincare')==='skincare'?' selected':''}>피부미용</option>
+        <option value="general_paid"${p.medCategory==='general_paid'?' selected':''}>일반-급여</option>
+        <option value="general_unpaid"${p.medCategory==='general_unpaid'?' selected':''}>일반-비급여</option>
+      </select></td>
+      <td><select class="mg-cat" aria-label="브랜드">${catOptions(productCategory(p))}</select></td>
       <td><input type="text" inputmode="numeric" class="mg-cost num" value="${(p.cost || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="공급가"></td>
       <td><input type="text" inputmode="numeric" class="mg-price num" value="${(p.price || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="판매가"></td>
       <td>
         <div class="row-actions">
+          <button class="ic-btn" onclick="openHiraInput(${idx})" title="HIRA 한방수가 검색·입력" aria-label="한방수가 입력"${p.medCategory==='general_paid' ? '' : ' style="display:none"'}>🔎수가${p.hiraCode?' ✓':''}</button>
           <button class="ic-btn" onclick="moveProduct(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} aria-label="위로 이동">▲</button>
           <button class="ic-btn" onclick="moveProduct(${idx}, 1)"  ${idx === last ? 'disabled' : ''} aria-label="아래로 이동">▼</button>
           <button class="del-btn" onclick="deleteProduct(${idx})" aria-label="${p.name} 품목 삭제">삭제</button>
@@ -1709,15 +1916,17 @@ function renderManageTable() {
     const idx = parseInt(tr.dataset.idx);
     const n  = tr.querySelector('.mg-name');
     const d  = tr.querySelector('.mg-desc');
+    const mc = tr.querySelector('.mg-medcat');
     const ct = tr.querySelector('.mg-cat');
     const c  = tr.querySelector('.mg-cost');
     const pr = tr.querySelector('.mg-price');
     const commit = () => {
-      PRODUCTS[idx].name     = n.value;
-      PRODUCTS[idx].desc     = d.value;
-      PRODUCTS[idx].category = ct.value;
-      PRODUCTS[idx].cost     = parseIntInput(c);
-      PRODUCTS[idx].price    = parseIntInput(pr);
+      PRODUCTS[idx].name        = n.value;
+      PRODUCTS[idx].desc        = d.value;
+      PRODUCTS[idx].medCategory = mc.value;
+      PRODUCTS[idx].category    = ct.value;
+      PRODUCTS[idx].cost        = parseIntInput(c);
+      PRODUCTS[idx].price       = parseIntInput(pr);
       const id = PRODUCTS[idx].id;
       if (!manualByMode.lease.has(id))    promoByMode.lease[id]    = leaseSeed(PRODUCTS[idx]);
       if (!manualByMode.discount.has(id)) promoByMode.discount[id] = discountSeed(PRODUCTS[idx]);
@@ -1726,6 +1935,7 @@ function renderManageTable() {
     };
     n.addEventListener('input',  commit);
     d.addEventListener('input',  commit);
+    mc.addEventListener('change', () => { commit(); renderManageTable(); }); // 분류 바뀌면 한방수가 버튼 표시 갱신
     ct.addEventListener('change', commit);
     [c, pr].forEach(el => {
       bindCommaInput(el, () => commit());
@@ -1733,8 +1943,13 @@ function renderManageTable() {
   });
 }
 function addProduct() {
-  const newId = 'new' + Date.now().toString(36);
-  PRODUCTS.push({ id:newId, name:'새 품목', desc:'', category:DEFAULT_CATEGORY, cost:0, price:0, leasePrice:0 });
+  const newId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'new' + Date.now().toString(36);
+  PRODUCTS.push({
+    id:newId, name:'새 품목', desc:'',
+    category:DEFAULT_CATEGORY, medCategory:'skincare',
+    cost:0, price:0, leasePrice:0, procedurePrice:0,
+    hiraCode:'', hiraName:'', hiraPrice:0
+  });
   promoByMode.lease[newId]    = 0;
   promoByMode.discount[newId] = 0;
   saveProducts();
@@ -1745,15 +1960,33 @@ function deleteProduct(idx) {
   const p = PRODUCTS[idx];
   if (!p) return;
   if (!confirm(`"${p.name}" 품목을 삭제할까요?`)) return;
-  selected.delete(p.id);
-  delete promoByMode.lease[p.id];
-  delete promoByMode.discount[p.id];
-  manualByMode.lease.delete(p.id);
-  manualByMode.discount.delete(p.id);
+  const delId = p.id;
+  selected.delete(delId);
+  delete promoByMode.lease[delId];
+  delete promoByMode.discount[delId];
+  manualByMode.lease.delete(delId);
+  manualByMode.discount.delete(delId);
   PRODUCTS.splice(idx, 1);
-  saveProducts();
+  if (typeof _deleteProductSb === 'function') _deleteProductSb(delId);
   renderManageTable();
   toast(`"${p.name}" 삭제됨`, 'success');
+}
+function openHiraInput(idx){
+  const p = PRODUCTS[idx]; if (!p) return;
+  // HIRA biz 한방수가 검색용 새창 — 검색 후 코드/금액을 prompt에 입력
+  window.open('https://biz.hira.or.kr/index.do?sso=ok', '_blank', 'noopener');
+  const code  = prompt('HIRA biz 한방수가 탭에서 검색한 후, 수가 코드를 입력하세요', p.hiraCode || '');
+  if (code === null) return;
+  const name  = prompt('수가명(설명)을 입력하세요', p.hiraName || '');
+  if (name === null) return;
+  const priceStr = prompt('수가 금액(원)을 입력하세요 (숫자만)', p.hiraPrice || '');
+  if (priceStr === null) return;
+  p.hiraCode  = (code || '').trim();
+  p.hiraName  = (name || '').trim();
+  p.hiraPrice = Number(String(priceStr || '').replace(/[^0-9.\-]/g, '')) || 0;
+  saveProducts();
+  renderManageTable();
+  toast(`한방수가 저장: ${p.hiraName || p.hiraCode} (${(p.hiraPrice||0).toLocaleString('ko-KR')}원)`, 'success');
 }
 function resetProducts() {
   if (!confirm('기본값(초기 10종 품목)으로 되돌리시겠습니까?\n현재 추가/수정한 품목 정보는 사라집니다.')) return;
