@@ -13,6 +13,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
   :root {
     --bg:         #ffffff;
@@ -585,7 +586,74 @@
   .btn-primary:active, .png-btn:active, .share-btn:active { transform: translateY(1px); }
   .png-btn   { background:linear-gradient(135deg, var(--blue), #3b82f6); color:#fff; }
   .share-btn { background:linear-gradient(135deg, var(--green), #10b981); color:#fff; }
+  .quote-btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    background:linear-gradient(135deg, #059669, var(--green));
+    color:#fff; border:none; padding:9px 16px; border-radius:10px;
+    font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;
+    transition:opacity .15s, transform .1s;
+  }
+  .quote-btn:hover { opacity:.92; }
+  .quote-btn:active { transform:translateY(1px); }
+  .quote-btn:disabled { opacity:.5; cursor:not-allowed; }
   .png-btn:disabled, .share-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+  /* 견적서 모달 */
+  .qm-backdrop {
+    position:fixed; inset:0; background:rgba(15,23,42,.45);
+    display:none; align-items:center; justify-content:center;
+    z-index:1000; padding:20px;
+  }
+  .qm-backdrop.visible { display:flex; }
+  .qm-modal {
+    background:#fff; border-radius:14px; width:100%; max-width:480px;
+    box-shadow:0 20px 50px rgba(0,0,0,.2); overflow:hidden;
+    animation:qmIn .2s ease;
+  }
+  @keyframes qmIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .qm-head {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; border-bottom:1px solid var(--border);
+  }
+  .qm-head h3 { font-size:15px; font-weight:700; color:var(--text); }
+  .qm-close {
+    background:transparent; border:none; font-size:22px; line-height:1;
+    color:var(--text-3); cursor:pointer; padding:4px 8px;
+  }
+  .qm-close:hover { color:var(--text); }
+  .qm-body { padding:18px 20px; display:grid; gap:12px; }
+  .qm-field { display:flex; flex-direction:column; gap:4px; }
+  .qm-field label { font-size:12px; color:var(--text-2); font-weight:600; }
+  .qm-field input {
+    padding:9px 12px; border:1px solid var(--border); border-radius:8px;
+    font-family:inherit; font-size:13.5px; color:var(--text);
+    background:var(--surface-2); outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .qm-field input:focus { border-color:var(--primary); box-shadow:var(--focus); background:#fff; }
+  .qm-field .qm-required { color:var(--red); margin-left:2px; }
+  .qm-mode-tag {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:4px 10px; border-radius:999px;
+    font-size:11.5px; font-weight:700; letter-spacing:.02em;
+  }
+  .qm-mode-tag.lease    { background:var(--blue-soft);  color:var(--blue); }
+  .qm-mode-tag.discount { background:var(--green-soft); color:var(--green); }
+  .qm-foot {
+    display:flex; gap:8px; padding:14px 20px;
+    border-top:1px solid var(--border); background:var(--surface-2);
+  }
+  .qm-btn {
+    flex:1; padding:10px 14px; border-radius:8px;
+    font-size:13px; font-weight:700; cursor:pointer; border:none;
+    font-family:inherit; transition:opacity .15s, transform .1s;
+  }
+  .qm-btn:active { transform:translateY(1px); }
+  .qm-btn.cancel { background:#fff; color:var(--text-2); border:1px solid var(--border); }
+  .qm-btn.cancel:hover { color:var(--text); }
+  .qm-btn.submit { background:var(--primary); color:#fff; }
+  .qm-btn.submit:hover { opacity:.92; }
+  .qm-btn.submit:disabled { opacity:.5; cursor:not-allowed; }
 
   /* TOAST */
   .toast-wrap {
@@ -670,8 +738,8 @@
   <!-- HEADER -->
   <header class="header" role="banner">
     <div>
-      <div class="sub">턴키 장비</div>
-      <h1>리스 및 할인 <span>견적 시뮬레이터</span></h1>
+      <div class="sub">MEDISTREAM TURNKEY</div>
+      <h1>턴키 장비 <span>리스 및 할인 견적 시뮬레이터</span></h1>
     </div>
     <div class="badge-wrap">
       <div class="badge red"  role="status" aria-label="내부용 섹션 포함">🔒 내부용</div>
@@ -821,6 +889,7 @@
 
   <div class="sec-collapse" id="extCollapse">
   <div class="png-btn-wrap">
+    <button class="quote-btn" id="quoteBtn" onclick="openQuoteModal()" aria-label="견적서 엑셀 파일로 다운로드">📋 견적서 엑셀</button>
     <button class="png-btn" id="pngBtn" onclick="exportPng()" aria-label="견적서를 PNG 이미지로 저장">📥 PNG로 저장</button>
   </div>
 
@@ -2192,6 +2261,288 @@ function exportPng() {
   });
 }
 
+// ─────────────────────────────────────────────────────────
+// 견적서 엑셀 다운로드 (ExcelJS 기반, 노란색 fill 없음)
+// ─────────────────────────────────────────────────────────
+const QUOTE_FONT      = { name: '맑은 고딕', size: 9 };
+const QUOTE_FONT_BOLD = { name: '맑은 고딕', size: 9, bold: true };
+const QUOTE_HEADER_BG    = 'FF5E858C';
+const QUOTE_HEADER_LIGHT = 'FFDEE8E9';
+const QUOTE_TITLE_BG     = 'FFEB9952';
+const QUOTE_SUBTOTAL_BG  = 'FFF1BC8C';
+const QUOTE_LEASE_BG     = 'FFEAF1FF';
+const QUOTE_BORDER = (() => {
+  const t = { style: 'thin', color: { argb: 'FFBFBFBF' } };
+  return { top: t, left: t, bottom: t, right: t };
+})();
+const QUOTE_MAX_ITEMS = 14;
+
+function openQuoteModal() {
+  if (selected.size === 0) {
+    toast('품목을 1개 이상 선택해주세요', 'error');
+    return;
+  }
+  if (typeof ExcelJS === 'undefined') {
+    toast('엑셀 라이브러리 로드 실패. 새로고침 해주세요', 'error');
+    return;
+  }
+  const isLease = MODE === 'lease';
+  const tag = document.getElementById('qmModeTag');
+  tag.textContent = isLease ? '📋 리스 견적서' : '💰 할인 견적서';
+  tag.className = 'qm-mode-tag ' + (isLease ? 'lease' : 'discount');
+  const dRateEl = document.getElementById('discountInput');
+  document.getElementById('qmModeNote').textContent = isLease
+    ? `${getPeriod()}개월 · 보증금 ${getDeposit()}% · 선취수수료 ${(getFeeRate()*100).toFixed(2)}%`
+    : `추가 할인율 ${parseFloat(dRateEl?.value)||0}%`;
+  document.getElementById('qmDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('quoteModal').classList.add('visible');
+  setTimeout(() => document.getElementById('qmCustomer').focus(), 80);
+}
+
+function closeQuoteModal() {
+  document.getElementById('quoteModal').classList.remove('visible');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const m = document.getElementById('quoteModal');
+    if (m && m.classList.contains('visible')) closeQuoteModal();
+  }
+});
+
+async function downloadQuote() {
+  const customer = document.getElementById('qmCustomer').value.trim();
+  if (!customer) {
+    toast('고객명을 입력해주세요', 'error');
+    document.getElementById('qmCustomer').focus();
+    return;
+  }
+  const submitBtn = document.getElementById('qmSubmit');
+  submitBtn.disabled = true;
+  const origLabel = submitBtn.textContent;
+  submitBtn.textContent = '생성 중…';
+  try {
+    const info = {
+      customer,
+      date: document.getElementById('qmDate').value || new Date().toISOString().slice(0,10),
+      salesperson: document.getElementById('qmSalesperson').value.trim(),
+      salespersonPhone: document.getElementById('qmSalespersonPhone').value.trim(),
+    };
+    const buf = await buildQuoteWorkbook(info);
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const d = new Date(info.date);
+    const yymmdd = String(d.getFullYear()).slice(-2)
+      + String(d.getMonth()+1).padStart(2,'0')
+      + String(d.getDate()).padStart(2,'0');
+    const safe = customer.replace(/[\\/:*?"<>|]/g, '');
+    const tag = MODE === 'lease' ? '리스' : '할인';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `견적서(${tag})_${safe} 원장님_${yymmdd}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    closeQuoteModal();
+    toast('견적서가 다운로드되었습니다', 'success');
+  } catch (err) {
+    console.error('견적서 생성 실패:', err);
+    toast('견적서 생성 실패: ' + (err.message || err), 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = origLabel;
+  }
+}
+
+function qmCell(ws, ref, value, opts) {
+  opts = opts || {};
+  const c = ws.getCell(ref);
+  c.value = value === '' || value == null ? null : value;
+  c.font = Object.assign({}, QUOTE_FONT, opts.font || {});
+  c.alignment = { horizontal: opts.align || 'left', vertical: 'middle', wrapText: true };
+  c.border = QUOTE_BORDER;
+  if (opts.fill) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: opts.fill } };
+  if (opts.numFmt) c.numFmt = opts.numFmt;
+}
+
+async function buildQuoteWorkbook(info) {
+  const isLease = MODE === 'lease';
+  const items = PRODUCTS.filter(p => selected.has(p.id)).map(p => ({
+    name: p.name,
+    qty: 1,
+    unit_price: getPromo(p.id),
+  }));
+  const itemsSum = items.reduce((s, it) => s + it.qty * it.unit_price, 0);
+  let subtotal = itemsSum;
+  let leaseInfo = null;
+
+  if (MODE === 'discount') {
+    const dRate = (parseFloat(document.getElementById('discountInput').value) || 0) / 100;
+    subtotal = Math.round(itemsSum * (1 - dRate));
+  } else {
+    const months      = getPeriod();
+    const depositRate = getDeposit();
+    const feeRate     = getFeeRate() * 100;
+    const monthly     = Math.round(subtotal / Math.max(1, months));
+    const deposit     = Math.round(subtotal * (depositRate / 100));
+    const upfront     = Math.round(subtotal * (feeRate / 100));
+    const totalPaid   = monthly * months + deposit;
+    leaseInfo = { months, depositRate, feeRate, monthly, deposit, upfront, totalPaid };
+  }
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'MEDISTREAM TURNKEY';
+  wb.created = new Date();
+  const ws = wb.addWorksheet('견적서');
+
+  ws.pageSetup.paperSize = 9;
+  ws.pageSetup.orientation = 'portrait';
+  ws.pageSetup.margins = { left:.5, right:.5, top:.5, bottom:.5, header:.3, footer:.3 };
+
+  ws.getColumn(1).width = 2;
+  ws.getColumn(2).width = 30;
+  ws.getColumn(3).width = 8;
+  ws.getColumn(4).width = 16;
+  ws.getColumn(5).width = 22;
+  ws.getColumn(6).width = 2;
+
+  ws.getRow(2).height = 40;
+  qmCell(ws, 'B2', isLease ? '견적서 (리스)' : '견적서', {
+    font: { name:'맑은 고딕', size:24, bold:true, color:{argb:'FFFFFFFF'} },
+    align: 'left',
+    fill: QUOTE_TITLE_BG,
+  });
+  ws.mergeCells('B2:E2');
+
+  qmCell(ws, 'D3', '공급자', {
+    font: Object.assign({}, QUOTE_FONT_BOLD, { color:{argb:'FFFFFFFF'} }),
+    align: 'center', fill: QUOTE_HEADER_BG,
+  });
+  ws.mergeCells('D3:E3');
+  ws.getRow(3).height = 20;
+
+  qmCell(ws, 'B4', `           ${info.customer}  원장님 귀하`, { font: QUOTE_FONT_BOLD, align:'left' });
+  ws.mergeCells('B4:C4');
+  qmCell(ws, 'D4', '등록번호',     { fill: QUOTE_HEADER_LIGHT, align:'center' });
+  qmCell(ws, 'E4', '784-87-01184', { align: 'center' });
+
+  qmCell(ws, 'B5', '사업장 주소 : ', { align: 'left' });
+  ws.mergeCells('B5:C5');
+  qmCell(ws, 'D5', '상호(법인명)',         { fill: QUOTE_HEADER_LIGHT, align:'center' });
+  qmCell(ws, 'E5', '주식회사 인티그레이션', { align: 'center' });
+
+  qmCell(ws, 'B6', '전화번호 : 010-6500-1091', { align:'left' });
+  ws.mergeCells('B6:C6');
+  qmCell(ws, 'D6', '성명',   { fill: QUOTE_HEADER_LIGHT, align:'center' });
+  qmCell(ws, 'E6', '정희범', { align:'center' });
+
+  qmCell(ws, 'B7', '', { align:'left' });
+  ws.mergeCells('B7:C7');
+  qmCell(ws, 'D7', '주소', { fill: QUOTE_HEADER_LIGHT, align:'center' });
+  qmCell(ws, 'E7', '서울시 강남구 테헤란로 427, 2층', { align:'center' });
+
+  const d = new Date(info.date);
+  const dateStr = `견적일자 : ${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
+  qmCell(ws, 'B8', dateStr, { align:'left' });
+  ws.mergeCells('B8:C8');
+  qmCell(ws, 'D8', '업태/업종', { fill: QUOTE_HEADER_LIGHT, align:'center' });
+  qmCell(ws, 'E8', '도소매/의료기기 도매업 외', { align:'center' });
+
+  qmCell(ws, 'B9', '견적 유효 일자 : 견적일로 부터 30일 이내', { align:'left' });
+  ws.mergeCells('B9:C9');
+  qmCell(ws, 'D9', '전화', { fill: QUOTE_HEADER_LIGHT, align:'center' });
+  qmCell(ws, 'E9', '02-1599-9073', { align:'center' });
+
+  ws.getRow(11).height = 22;
+  const headOpts = {
+    font: Object.assign({}, QUOTE_FONT_BOLD, { color:{argb:'FFFFFFFF'} }),
+    align:'center', fill: QUOTE_HEADER_BG,
+  };
+  qmCell(ws, 'B11', '상 품 명',          headOpts);
+  qmCell(ws, 'C11', '수량',              headOpts);
+  qmCell(ws, 'D11', '단가',              headOpts);
+  qmCell(ws, 'E11', '상품 금액 (vat 포함)', headOpts);
+
+  const itemStart = 12;
+  for (let i = 0; i < QUOTE_MAX_ITEMS; i++) {
+    const row = itemStart + i;
+    const it = items[i];
+    qmCell(ws, `B${row}`, it ? it.name : '', { align:'left' });
+    qmCell(ws, `C${row}`, it ? it.qty : '',  { align:'center', numFmt:'#,##0' });
+    qmCell(ws, `D${row}`, it ? it.unit_price : '', { align:'right', numFmt:'#,##0' });
+    qmCell(ws, `E${row}`, it ? (it.qty * it.unit_price) : '', { align:'right', numFmt:'#,##0' });
+  }
+
+  const subRow = itemStart + QUOTE_MAX_ITEMS;
+  qmCell(ws, `B${subRow}`, isLease ? '패키지 금액 (할인 적용)' : '소계', {
+    fill: QUOTE_SUBTOTAL_BG, font: QUOTE_FONT_BOLD, align:'center',
+  });
+  ws.mergeCells(`B${subRow}:D${subRow}`);
+  qmCell(ws, `E${subRow}`, subtotal, {
+    fill: QUOTE_SUBTOTAL_BG, font: QUOTE_FONT_BOLD, align:'right', numFmt:'#,##0',
+  });
+  ws.getRow(subRow).height = 22;
+
+  let nextRow = subRow + 1;
+  if (leaseInfo) {
+    ws.getRow(nextRow).height = 22;
+    qmCell(ws, `B${nextRow}`, '📋 리스 결제 조건', {
+      fill: QUOTE_HEADER_BG,
+      font: Object.assign({}, QUOTE_FONT_BOLD, { color:{argb:'FFFFFFFF'}, size:10 }),
+      align: 'center',
+    });
+    ws.mergeCells(`B${nextRow}:E${nextRow}`);
+    nextRow++;
+
+    const rows = [
+      ['리스 기간',                              `${leaseInfo.months}개월`,        '무이자 분납'],
+      ['월 납입금',                              leaseInfo.monthly,                '패키지 금액 ÷ 기간'],
+      [`보증금 (${leaseInfo.depositRate}%)`,      leaseInfo.deposit,                '만기 시 환급'],
+      [`선취수수료 (${leaseInfo.feeRate.toFixed(2)}%)`, leaseInfo.upfront,           '회사 부담'],
+      ['총 납부액',                              leaseInfo.totalPaid,              '월납 × 기간 + 보증금'],
+    ];
+    for (let i = 0; i < rows.length; i++) {
+      const r = nextRow + i;
+      const [label, value, note] = rows[i];
+      qmCell(ws, `B${r}`, label, { fill: QUOTE_LEASE_BG, font: QUOTE_FONT_BOLD, align:'left' });
+      ws.mergeCells(`B${r}:C${r}`);
+      const isTotal = i === rows.length - 1;
+      qmCell(ws, `D${r}`, value, {
+        align: 'right',
+        numFmt: typeof value === 'number' ? '#,##0' : undefined,
+        font: isTotal ? Object.assign({}, QUOTE_FONT_BOLD, { color:{argb:'FF1D4ED8'} }) : QUOTE_FONT_BOLD,
+      });
+      qmCell(ws, `E${r}`, note, {
+        align: 'center',
+        font: Object.assign({}, QUOTE_FONT, { color:{argb:'FF64748B'} }),
+      });
+    }
+    nextRow += rows.length;
+  }
+
+  qmCell(ws, `B${nextRow}`, '이 견적서와 관련하여 문의 사항이 있다면 다음 연락처 정보를 사용하세요.', {
+    align:'left', font: Object.assign({}, QUOTE_FONT, { italic:true, color:{argb:'FF615A22'} }),
+  });
+  ws.mergeCells(`B${nextRow}:E${nextRow}`);
+  nextRow++;
+
+  const sp  = info.salesperson || '';
+  const sph = info.salespersonPhone || '';
+  qmCell(ws, `B${nextRow}`, `담당자 : ${sp}      연락처 : ${sph}`, {
+    align:'left', font: QUOTE_FONT_BOLD,
+  });
+  ws.mergeCells(`B${nextRow}:E${nextRow}`);
+  ws.getRow(nextRow).height = 20;
+  nextRow++;
+
+  qmCell(ws, `B${nextRow}`, '저희 서비스를 이용해 주셔서 감사합니다!', {
+    align:'center',
+    font: Object.assign({}, QUOTE_FONT_BOLD, { size:11, color:{argb:'FF5E858C'} }),
+  });
+  ws.mergeCells(`B${nextRow}:E${nextRow}`);
+  ws.getRow(nextRow).height = 22;
+
+  return await wb.xlsx.writeBuffer();
+}
+
 function exportRoiPng() {
   const area = document.getElementById('roiExportArea');
   const btn  = document.getElementById('roiPngBtn');
@@ -2267,5 +2618,40 @@ function exportRoiPng() {
   });
 }
 </script>
+<!-- 견적서 다운로드 모달 -->
+<div class="qm-backdrop" id="quoteModal" role="dialog" aria-modal="true" aria-labelledby="qmTitle">
+  <div class="qm-modal">
+    <div class="qm-head">
+      <h3 id="qmTitle">견적서 엑셀 다운로드</h3>
+      <button class="qm-close" type="button" onclick="closeQuoteModal()" aria-label="닫기">×</button>
+    </div>
+    <div class="qm-body">
+      <div>
+        <span class="qm-mode-tag" id="qmModeTag">📋 리스 견적서</span>
+        <span style="font-size:11.5px;color:var(--text-3);margin-left:6px" id="qmModeNote"></span>
+      </div>
+      <div class="qm-field">
+        <label for="qmCustomer">고객 원장님 이름<span class="qm-required">*</span></label>
+        <input type="text" id="qmCustomer" placeholder="예: 홍길동" autocomplete="off">
+      </div>
+      <div class="qm-field">
+        <label for="qmDate">견적일자</label>
+        <input type="date" id="qmDate">
+      </div>
+      <div class="qm-field">
+        <label for="qmSalesperson">담당자</label>
+        <input type="text" id="qmSalesperson" placeholder="예: 주봉현" autocomplete="off">
+      </div>
+      <div class="qm-field">
+        <label for="qmSalespersonPhone">담당자 연락처</label>
+        <input type="text" id="qmSalespersonPhone" placeholder="예: 010-0000-0000" autocomplete="off">
+      </div>
+    </div>
+    <div class="qm-foot">
+      <button class="qm-btn cancel" type="button" onclick="closeQuoteModal()">취소</button>
+      <button class="qm-btn submit" type="button" id="qmSubmit" onclick="downloadQuote()">엑셀 다운로드</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
