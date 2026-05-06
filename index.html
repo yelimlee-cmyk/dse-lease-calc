@@ -488,6 +488,14 @@
   @media (max-width:720px){ .roi-hira-grid { grid-template-columns:1fr; } }
   .roi-hira-grid .roi-field label { color:#9a3412; }
   .roi-hira-grid .roi-field input:focus { border-color:var(--orange); box-shadow:0 0 0 3px rgba(249,115,22,.18); }
+  .roi-hira-credit {
+    margin-top:6px;
+    display:inline-flex; align-items:center; gap:4px;
+    background:#fff; border:1px solid #fed7aa; border-radius:999px;
+    padding:3px 10px;
+    font-size:11px; font-weight:600; color:#9a3412; letter-spacing:.02em;
+    align-self:flex-start;
+  }
 
   .roi-inputs { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:18px; }
   .roi-field {
@@ -924,6 +932,7 @@
           <label for="roiHiraPrice">수가 금액</label>
           <input type="text" id="roiHiraPrice" placeholder="예: 12,540" inputmode="numeric">
           <div class="unit">원 / 1회 시술 → 환자당 시술 금액에 자동 반영</div>
+          <div class="roi-hira-credit">📑 HIRA 데이터 참조</div>
         </div>
       </div>
     </div>
