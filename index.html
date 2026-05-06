@@ -931,7 +931,7 @@
         <div class="roi-field">
           <label for="roiHiraPrice">수가 금액</label>
           <input type="text" id="roiHiraPrice" placeholder="예: 12,540" inputmode="numeric">
-          <div class="unit">원 / 1회 시술 → 환자당 시술 금액에 자동 반영</div>
+          <div class="unit">원 / 1회 시술 (참고용)</div>
           <div class="roi-hira-credit">📑 HIRA 데이터 참조</div>
         </div>
       </div>
@@ -2010,17 +2010,9 @@ function formatRoiInputs() {
   ['roiNewPatients','roiReturnPatients'].forEach(id => {
     document.getElementById(id).addEventListener('input', updateRoi);
   });
-  // HIRA 금액 입력 → 환자당 시술 금액에 자동 반영
+  // HIRA 금액 입력 (참고용 · 환자당 시술 금액과는 별도)
   const hiraPrice = document.getElementById('roiHiraPrice');
-  if (hiraPrice) {
-    bindCommaInput(hiraPrice, () => {
-      if (ROI_COVERAGE === 'ins') {
-        const charge = document.getElementById('roiChargePerPatient');
-        charge.value = hiraPrice.value;
-      }
-      updateRoi();
-    });
-  }
+  if (hiraPrice) bindCommaInput(hiraPrice, () => {});
 }
 
 // ROI 의료기기 분류 상태
@@ -2052,12 +2044,6 @@ function setRoiCoverage(cov) {
   document.getElementById('roiCovNon').setAttribute('aria-selected', cov === 'non');
   document.getElementById('roiCovIns').setAttribute('aria-selected', cov === 'ins');
   document.getElementById('roiHiraPanel').classList.toggle('visible', cov === 'ins');
-  // 급여 선택 시 HIRA 금액이 있으면 즉시 환자당 시술 금액에 반영
-  if (cov === 'ins') {
-    const hp = document.getElementById('roiHiraPrice').value;
-    if (hp) document.getElementById('roiChargePerPatient').value = hp;
-    updateRoi();
-  }
 }
 
 function updateRoi() {
