@@ -9,42 +9,45 @@
 <meta name="theme-color" content="#ffffff">
 <meta name="description" content="피부미용 턴키 장비 리스 견적 시뮬레이터">
 <title>피부미용 리스 시뮬레이터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
   :root {
-    --bg:         #f5f7fb;
+    --bg:         #ffffff;
     --surface:    #ffffff;
-    --surface-2:  #f8fafc;
-    --border:     #e2e8f0;
+    --surface-2:  #f7f8fa;
+    --border:     #e6e8ee;
     --border-2:   #cbd5e1;
     --text:       #0f172a;
     --text-2:     #475569;
     --text-3:     #64748b;
     --muted:      #94a3b8;
-    --primary:    #4f46e5;
-    --primary-2:  #6366f1;
-    --primary-soft:#eef2ff;
-    --red:        #dc2626;
+    --primary:    #2563eb;
+    --primary-2:  #1d4ed8;
+    --primary-soft:#eaf1ff;
+    --red:        #ef4444;
     --red-soft:   #fee2e2;
     --blue:       #2563eb;
     --blue-soft:  #dbeafe;
-    --green:      #059669;
-    --green-soft: #d1fae5;
-    --orange:     #ea580c;
-    --orange-soft:#ffedd5;
+    --green:      #10b981;
+    --green-soft: #e6f7ef;
+    --orange:     #f97316;
+    --orange-soft:#fff1e6;
     --amber:      #b45309;
     --pink:       #be185d;
     --pink-soft:  #fce7f3;
-    --shadow:     0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.06);
+    --shadow:     0 1px 2px rgba(15,23,42,.04), 0 1px 6px rgba(15,23,42,.04);
     --shadow-lg:  0 4px 12px rgba(15,23,42,.06), 0 2px 6px rgba(15,23,42,.04);
-    --focus:      0 0 0 3px rgba(79,70,229,.18);
+    --focus:      0 0 0 3px rgba(37,99,235,.12);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { background: var(--bg); }
   body {
-    font-family: 'Noto Sans KR','Malgun Gothic',sans-serif;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Malgun Gothic', sans-serif;
     color: var(--text); min-height:100vh; padding:24px 18px;
+    font-size:14px; line-height:1.55; letter-spacing:-.005em;
     -webkit-font-smoothing: antialiased;
   }
   .wrap { max-width:1040px; margin:0 auto; }
@@ -55,16 +58,16 @@
 
   /* HEADER */
   .header {
-    background:linear-gradient(120deg,#eef2ff,#e0e7ff);
-    border:1px solid #c7d2fe; border-radius:16px;
-    padding:20px 28px; margin-bottom:12px;
+    background:linear-gradient(120deg,#eaf1ff,#dbeafe);
+    border:1px solid #bfdbfe; border-radius:14px;
+    padding:22px 28px; margin-bottom:14px;
     display:flex; justify-content:space-between; align-items:center;
     box-shadow: var(--shadow);
     gap:14px; flex-wrap:wrap;
   }
-  .header h1 { font-size:21px; font-weight:900; color:#1e1b4b; }
+  .header h1 { font-size:24px; font-weight:800; color:#0f172a; letter-spacing:-.01em; line-height:1.25; }
   .header h1 span { color: var(--primary); }
-  .header .sub { font-size:11px; color: var(--primary); margin-bottom:3px; letter-spacing:.3px; font-weight:700; }
+  .header .sub { font-size:12px; color: var(--primary); margin-bottom:4px; letter-spacing:.04em; font-weight:600; }
   .badge-wrap { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .badge { font-size:10px; font-weight:800; padding:5px 13px; border-radius:20px; letter-spacing:1.2px; white-space:nowrap; }
   .badge.red  { background:var(--red-soft);  color:var(--red);  border:1px solid #fecaca; }
@@ -435,6 +438,50 @@
   /* ROI TAB */
   .roi-section { display:none; }
   .roi-section.visible { display:block; }
+
+  /* ROI 의료기기 분류 토글 */
+  .roi-cat-bar {
+    display:flex; flex-direction:column; gap:10px;
+    background:var(--surface-2); border:1px solid var(--border);
+    border-radius:12px; padding:14px 16px; margin-bottom:14px;
+  }
+  .roi-cat-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .roi-cat-label { font-size:12.5px; color:var(--text-2); font-weight:600; min-width:104px; }
+  .roi-toggle { display:inline-flex; background:#fff; border:1px solid var(--border); border-radius:10px; padding:3px; gap:2px; }
+  .roi-toggle button {
+    border:0; background:transparent; padding:7px 14px; border-radius:8px;
+    font:inherit; font-size:12.5px; color:var(--text-3); cursor:pointer; font-weight:600;
+    transition:all .15s; font-family:inherit;
+  }
+  .roi-toggle button.active { background:var(--primary); color:#fff; box-shadow:0 1px 2px rgba(15,23,42,.12); }
+  .roi-toggle.coverage button.active { background:var(--orange); color:#fff; }
+  .roi-cat-row.hidden { display:none; }
+
+  /* HIRA 패널 */
+  .roi-hira {
+    background:#fff7ed; border:1px solid #fed7aa; border-radius:12px;
+    padding:14px 16px; margin-bottom:14px;
+    display:none;
+  }
+  .roi-hira.visible { display:block; }
+  .roi-hira-head {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin-bottom:12px; flex-wrap:wrap;
+  }
+  .roi-hira-title { font-size:13px; font-weight:700; color:#9a3412; display:flex; align-items:center; gap:6px; }
+  .roi-hira-link {
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--orange); color:#fff;
+    padding:8px 14px; border-radius:8px;
+    font-size:12.5px; font-weight:600; text-decoration:none;
+    transition:transform .1s, opacity .15s;
+  }
+  .roi-hira-link:hover { opacity:.92; transform:translateY(-1px); }
+  .roi-hira-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
+  @media (max-width:720px){ .roi-hira-grid { grid-template-columns:1fr; } }
+  .roi-hira-grid .roi-field label { color:#9a3412; }
+  .roi-hira-grid .roi-field input:focus { border-color:var(--orange); box-shadow:0 0 0 3px rgba(249,115,22,.18); }
+
   .roi-inputs { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:18px; }
   .roi-field {
     background:var(--surface); border:1px solid var(--border); border-radius:12px;
@@ -465,7 +512,7 @@
     font-size:11px; color:var(--text-3); letter-spacing:1px;
     text-transform:uppercase; margin-bottom:8px; font-weight:800;
   }
-  .roi-card .rc-val { font-size:22px; font-weight:900; color:var(--text); line-height:1.25; }
+  .roi-card .rc-val { font-size:26px; font-weight:800; color:var(--text); line-height:1.25; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
   .roi-card.primary .rc-val { color:var(--orange); }
   .roi-card .rc-sub { font-size:12.5px; color:var(--text-2); margin-top:8px; line-height:1.6; font-weight:500; }
   .roi-card .rc-sub b { color:var(--orange); font-weight:800; font-size:13px; }
@@ -820,6 +867,52 @@
       투자 수익률 (ROI) 계산
       <span class="hint" tabindex="0" data-tip="장비 투자 대비 예상 매출·회수기간을 계산합니다. 제품 단가, 시술 금액, 월 신환·재환 수를 입력하세요.">?</span>
     </div>
+
+    <!-- 의료기기 분류 토글 -->
+    <div class="roi-cat-bar">
+      <div class="roi-cat-row">
+        <span class="roi-cat-label">의료기기 종류</span>
+        <div class="roi-toggle" role="tablist" aria-label="의료기기 종류">
+          <button type="button" class="active" id="roiCatSkin"     onclick="setRoiCategory('skin')"    role="tab" aria-selected="true">피부기기</button>
+          <button type="button"                id="roiCatGeneral" onclick="setRoiCategory('general')" role="tab" aria-selected="false">일반의료기기</button>
+        </div>
+      </div>
+      <div class="roi-cat-row hidden" id="roiCoverageRow">
+        <span class="roi-cat-label">수가 구분</span>
+        <div class="roi-toggle coverage" role="tablist" aria-label="수가 구분">
+          <button type="button" class="active" id="roiCovNon" onclick="setRoiCoverage('non')" role="tab" aria-selected="true">비급여</button>
+          <button type="button"                id="roiCovIns" onclick="setRoiCoverage('ins')" role="tab" aria-selected="false">급여</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HIRA 한방수가 패널 (급여 선택 시 노출) -->
+    <div class="roi-hira" id="roiHiraPanel">
+      <div class="roi-hira-head">
+        <div class="roi-hira-title">📘 HIRA 한방수가 조회 후 코드·금액 입력</div>
+        <a class="roi-hira-link" href="https://biz.hira.or.kr/index.do?sso=ok" target="_blank" rel="noopener noreferrer">
+          🔗 HIRA biz 새 창으로 열기
+        </a>
+      </div>
+      <div class="roi-hira-grid">
+        <div class="roi-field">
+          <label for="roiHiraCode">수가 코드</label>
+          <input type="text" id="roiHiraCode" placeholder="예: 40020" autocomplete="off">
+          <div class="unit">HIRA 한방수가 탭 조회</div>
+        </div>
+        <div class="roi-field">
+          <label for="roiHiraName">수가명 (설명)</label>
+          <input type="text" id="roiHiraName" placeholder="예: 침술-1부위" autocomplete="off">
+          <div class="unit">참고용 (선택)</div>
+        </div>
+        <div class="roi-field">
+          <label for="roiHiraPrice">수가 금액</label>
+          <input type="text" id="roiHiraPrice" placeholder="예: 12,540" inputmode="numeric">
+          <div class="unit">원 / 1회 시술 → 환자당 시술 금액에 자동 반영</div>
+        </div>
+      </div>
+    </div>
+
     <div class="roi-inputs">
       <div class="roi-field">
         <label for="roiCost">제품 단가 (장비 투자금액)
@@ -1893,6 +1986,54 @@ function formatRoiInputs() {
   ['roiNewPatients','roiReturnPatients'].forEach(id => {
     document.getElementById(id).addEventListener('input', updateRoi);
   });
+  // HIRA 금액 입력 → 환자당 시술 금액에 자동 반영
+  const hiraPrice = document.getElementById('roiHiraPrice');
+  if (hiraPrice) {
+    bindCommaInput(hiraPrice, () => {
+      if (ROI_COVERAGE === 'ins') {
+        const charge = document.getElementById('roiChargePerPatient');
+        charge.value = hiraPrice.value;
+      }
+      updateRoi();
+    });
+  }
+}
+
+// ROI 의료기기 분류 상태
+let ROI_CATEGORY = 'skin';      // 'skin' | 'general'
+let ROI_COVERAGE = 'non';       // 'non' | 'ins'
+
+function setRoiCategory(cat) {
+  ROI_CATEGORY = cat;
+  document.getElementById('roiCatSkin').classList.toggle('active', cat === 'skin');
+  document.getElementById('roiCatGeneral').classList.toggle('active', cat === 'general');
+  document.getElementById('roiCatSkin').setAttribute('aria-selected', cat === 'skin');
+  document.getElementById('roiCatGeneral').setAttribute('aria-selected', cat === 'general');
+  // 일반의료기기일 때만 급여/비급여 토글 노출
+  const covRow = document.getElementById('roiCoverageRow');
+  covRow.classList.toggle('hidden', cat !== 'general');
+  // 피부기기로 전환 시 HIRA 패널 숨김
+  if (cat !== 'general') {
+    document.getElementById('roiHiraPanel').classList.remove('visible');
+  } else {
+    // general 진입 시 현재 coverage에 맞춰 HIRA 패널 표시
+    document.getElementById('roiHiraPanel').classList.toggle('visible', ROI_COVERAGE === 'ins');
+  }
+}
+
+function setRoiCoverage(cov) {
+  ROI_COVERAGE = cov;
+  document.getElementById('roiCovNon').classList.toggle('active', cov === 'non');
+  document.getElementById('roiCovIns').classList.toggle('active', cov === 'ins');
+  document.getElementById('roiCovNon').setAttribute('aria-selected', cov === 'non');
+  document.getElementById('roiCovIns').setAttribute('aria-selected', cov === 'ins');
+  document.getElementById('roiHiraPanel').classList.toggle('visible', cov === 'ins');
+  // 급여 선택 시 HIRA 금액이 있으면 즉시 환자당 시술 금액에 반영
+  if (cov === 'ins') {
+    const hp = document.getElementById('roiHiraPrice').value;
+    if (hp) document.getElementById('roiChargePerPatient').value = hp;
+    updateRoi();
+  }
 }
 
 function updateRoi() {
