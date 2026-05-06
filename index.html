@@ -388,6 +388,7 @@
   .manage-btn.reset  { background:var(--surface); color:var(--text-2); border:1px solid var(--border-2); }
   .manage-btn.export { background:linear-gradient(135deg, var(--green), #10b981); color:#fff; }
   .manage-btn.import { background:linear-gradient(135deg, var(--blue), #3b82f6); color:#fff; }
+  .manage-btn.template { background:linear-gradient(135deg, var(--orange), #fb923c); color:#fff; }
   .manage-table-wrap {
     background:var(--surface); border:1px solid var(--border); border-radius:14px;
     overflow:hidden; margin-bottom:12px; box-shadow: var(--shadow);
@@ -1112,11 +1113,12 @@
         <span id="saveIndicator" style="font-size:11px;color:var(--green);font-weight:700;margin-left:10px;opacity:0;transition:opacity .3s">✓ 자동 저장됨</span>
       </div>
       <div class="mb-actions">
-        <button class="manage-btn add"    onclick="addProduct()"    aria-label="새 품목 추가">+ 품목 추가</button>
-        <button class="manage-btn export" onclick="exportProducts()" aria-label="품목 리스트를 JSON 파일로 내보내기">📤 내보내기</button>
-        <button class="manage-btn import" onclick="document.getElementById('importFile').click()" aria-label="JSON 파일에서 품목 리스트 불러오기">📥 가져오기</button>
-        <button class="manage-btn reset"  onclick="resetProducts()"  aria-label="기본 품목 리스트로 초기화">↺ 기본값</button>
-        <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importProducts(event)">
+        <button class="manage-btn add"      onclick="addProduct()"        aria-label="새 품목 추가">+ 품목 추가</button>
+        <button class="manage-btn template" onclick="downloadTemplate()"  aria-label="업로드용 엑셀 양식 다운로드">📋 업로드 양식</button>
+        <button class="manage-btn import"   onclick="document.getElementById('importFile').click()" aria-label="엑셀 또는 JSON 파일에서 품목 리스트 불러오기">📥 가져오기</button>
+        <button class="manage-btn export"   onclick="exportProducts()"    aria-label="품목 리스트를 JSON 파일로 내보내기">📤 내보내기</button>
+        <button class="manage-btn reset"    onclick="resetProducts()"     aria-label="품목 리스트 전체 삭제">🗑️ 전체 삭제</button>
+        <input type="file" id="importFile" accept=".xlsx,.json,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="importProducts(event)">
       </div>
     </div>
     <div class="manage-table-wrap">
@@ -1136,8 +1138,8 @@
     </div>
     <div class="manage-note">
       💡 품목 정보는 <b>이 브라우저</b>에 자동 저장됩니다 (localStorage).<br>
-      📤 <b>내보내기</b>: JSON 파일로 저장 → 다른 PC의 <b>📥 가져오기</b>로 복원 가능<br>
-      ↺ "기본값"을 누르면 초기 10종 품목 리스트로 되돌아갑니다.
+      📋 <b>업로드 양식</b>으로 엑셀 다운 → 채워서 <b>📥 가져오기</b>로 일괄 등록.<br>
+      📤 <b>내보내기</b>(JSON)는 다른 PC의 <b>📥 가져오기</b>로 복원할 때 사용합니다.
     </div>
   </div>
 
@@ -1180,18 +1182,7 @@ const CATEGORIES = [
   '소모품'
 ];
 const DEFAULT_CATEGORY = '기타 관리기기';
-const DEFAULT_PRODUCTS = [
-  { id:'impacq',   name:'ImpacQ Plus',       desc:'큐스위치 엔디야그',         category:'CO2 레이저/엔디야그', cost:22600000, price:32000000, leasePrice:0 },
-  { id:'janus',    name:'JANUS Pro sunlike', desc:'안면진단기기',               category:'안면 진단기',         cost:6820000,  price:8580000,  leasePrice:0 },
-  { id:'multixel', name:'Multixel',          desc:'프락셔널 CO2 (듀얼타입)',    category:'CO2 레이저/엔디야그', cost:7000000,  price:9900000,  leasePrice:0 },
-  { id:'ds40',     name:'DS-40UB',           desc:'보급형 CO2 레이저',          category:'CO2 레이저/엔디야그', cost:3900000,  price:4950000,  leasePrice:0 },
-  { id:'cotra',    name:'COTRA PLUS',        desc:'CO2 프락셔널 (프리미엄)',    category:'CO2 레이저/엔디야그', cost:11500000, price:18500000, leasePrice:0 },
-  { id:'neoject',  name:'NEOJECT',           desc:'인젝터 (니들 3bx 포함)',     category:'인젝터',              cost:3800000,  price:5500000,  leasePrice:0 },
-  { id:'ulkin',    name:'울킨',              desc:'전용 겔 포함',               category:'바디 관리기기',       cost:4400000,  price:7700000,  leasePrice:0 },
-  { id:'aquafill', name:'아쿠아필',          desc:'솔루션 포함',                category:'기타 관리기기',       cost:1800000,  price:2500000,  leasePrice:0 },
-  { id:'ssb',      name:'SSB-EVA',           desc:'의료용 석션기',              category:'기타 관리기기',       cost:880000,   price:1250000,  leasePrice:0 },
-  { id:'wellcomet', name:'웰코멧 LDM',       desc:'',                           category:'바디 관리기기',       cost:17000000, price:22000000, leasePrice:0 },
-];
+const DEFAULT_PRODUCTS = [];
 function productCategory(p) { return CATEGORIES.includes(p.category) ? p.category : DEFAULT_CATEGORY; }
 
 // 카테고리 접힘 상태 (localStorage 저장)
@@ -1942,21 +1933,16 @@ function deleteProduct(idx) {
   toast(`"${p.name}" 삭제됨`, 'success');
 }
 function resetProducts() {
-  if (!confirm('기본값(초기 10종 품목)으로 되돌리시겠습니까?\n현재 추가/수정한 품목 정보는 사라집니다.')) return;
+  if (!confirm('품목 리스트를 모두 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
   PRODUCTS.length = 0;
-  DEFAULT_PRODUCTS.forEach(p => PRODUCTS.push({...p}));
   Object.keys(promoByMode.lease).forEach(k => delete promoByMode.lease[k]);
   Object.keys(promoByMode.discount).forEach(k => delete promoByMode.discount[k]);
   manualByMode.lease.clear();
   manualByMode.discount.clear();
-  PRODUCTS.forEach(p => {
-    promoByMode.lease[p.id]    = leaseSeed(p);
-    promoByMode.discount[p.id] = discountSeed(p);
-  });
   selected.clear();
   saveProducts();
   renderManageTable();
-  toast('기본 품목으로 초기화되었습니다', 'success');
+  toast('품목 리스트가 비워졌습니다', 'success');
 }
 function moveProduct(idx, dir) {
   const newIdx = idx + dir;
@@ -1986,53 +1972,143 @@ function exportProducts() {
   URL.revokeObjectURL(url);
   toast('JSON 파일이 다운로드되었습니다', 'success');
 }
-function importProducts(event) {
+function _commitImported(cleaned) {
+  if (!confirm(`${cleaned.length}개 품목을 가져옵니다. 현재 리스트는 대체됩니다. 계속할까요?`)) return false;
+  PRODUCTS.length = 0;
+  cleaned.forEach(p => PRODUCTS.push(p));
+  Object.keys(promoByMode.lease).forEach(k => delete promoByMode.lease[k]);
+  Object.keys(promoByMode.discount).forEach(k => delete promoByMode.discount[k]);
+  manualByMode.lease.clear();
+  manualByMode.discount.clear();
+  PRODUCTS.forEach(p => {
+    promoByMode.lease[p.id]    = leaseSeed(p);
+    promoByMode.discount[p.id] = discountSeed(p);
+  });
+  selected.clear();
+  saveProducts();
+  renderManageTable();
+  toast(`✓ ${cleaned.length}개 품목을 불러왔습니다`, 'success');
+  return true;
+}
+
+function _normalizeProduct(p) {
+  return {
+    id:         p.id || makeId(p.name || '') || ('p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)),
+    name:       String(p.name || '새 품목'),
+    desc:       String(p.desc || ''),
+    category:   CATEGORIES.includes(p.category) ? p.category : DEFAULT_CATEGORY,
+    cost:       parseInt(p.cost)  || 0,
+    price:      parseInt(p.price) || 0,
+    leasePrice: parseInt(p.leasePrice) || 0,
+  };
+}
+
+async function _importFromXlsx(file) {
+  if (typeof ExcelJS === 'undefined') throw new Error('엑셀 라이브러리 로드 실패. 새로고침 후 다시 시도해주세요');
+  const buf = await file.arrayBuffer();
+  const wb  = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf);
+  const ws = wb.worksheets[0];
+  if (!ws) throw new Error('시트를 찾을 수 없습니다');
+  // 첫 행은 헤더로 간주, 컬럼 순서: 품목명 / 설명 / 카테고리 / 공급가 / 판매가
+  const list = [];
+  ws.eachRow((row, idx) => {
+    if (idx === 1) return;
+    const cell = (n) => {
+      const v = row.getCell(n).value;
+      if (v == null) return '';
+      if (typeof v === 'object' && 'result' in v) return v.result;
+      if (typeof v === 'object' && 'text' in v)   return v.text;
+      return v;
+    };
+    const name = String(cell(1) || '').trim();
+    if (!name) return;
+    list.push({
+      name,
+      desc:     String(cell(2) || '').trim(),
+      category: String(cell(3) || '').trim(),
+      cost:     Number(cell(4)) || 0,
+      price:    Number(cell(5)) || 0,
+    });
+  });
+  if (list.length === 0) throw new Error('읽을 수 있는 품목 행이 없습니다');
+  return list.map(_normalizeProduct);
+}
+
+async function _importFromJson(file) {
+  const text = await file.text();
+  const parsed = JSON.parse(text);
+  const list = Array.isArray(parsed) ? parsed : parsed.products;
+  if (!Array.isArray(list) || list.length === 0) throw new Error('품목 리스트가 비어있거나 잘못된 형식입니다');
+  return list.map(_normalizeProduct);
+}
+
+async function importProducts(event) {
   const file = event.target.files && event.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const parsed = JSON.parse(reader.result);
-      const list = Array.isArray(parsed) ? parsed : parsed.products;
-      if (!Array.isArray(list) || list.length === 0) throw new Error('품목 리스트가 비어있거나 잘못된 형식입니다');
-      const cleaned = list.map(p => ({
-        id:       p.id || makeId(p.name || '') || ('p'+Date.now().toString(36)),
-        name:     String(p.name || '새 품목'),
-        desc:     String(p.desc || ''),
-        category: CATEGORIES.includes(p.category) ? p.category : DEFAULT_CATEGORY,
-        cost:     parseInt(p.cost)  || 0,
-        price:    parseInt(p.price) || 0,
-        leasePrice: parseInt(p.leasePrice) || 0,
-      }));
-      if (!confirm(`${cleaned.length}개 품목을 가져옵니다. 현재 리스트는 대체됩니다. 계속할까요?`)) {
-        event.target.value = '';
-        return;
-      }
-      PRODUCTS.length = 0;
-      cleaned.forEach(p => PRODUCTS.push(p));
-      Object.keys(promoByMode.lease).forEach(k => delete promoByMode.lease[k]);
-      Object.keys(promoByMode.discount).forEach(k => delete promoByMode.discount[k]);
-      manualByMode.lease.clear();
-      manualByMode.discount.clear();
-      PRODUCTS.forEach(p => {
-        promoByMode.lease[p.id]    = leaseSeed(p);
-        promoByMode.discount[p.id] = discountSeed(p);
-      });
-      selected.clear();
-      saveProducts();
-      renderManageTable();
-      toast(`✓ ${cleaned.length}개 품목을 불러왔습니다`, 'success');
-    } catch(e) {
-      toast('JSON 파일을 읽을 수 없습니다: ' + e.message, 'error');
-      console.error(e);
-    }
+  const isXlsx = /\.xlsx$/i.test(file.name);
+  try {
+    const cleaned = isXlsx ? await _importFromXlsx(file) : await _importFromJson(file);
+    _commitImported(cleaned);
+  } catch(e) {
+    toast((isXlsx ? '엑셀' : 'JSON') + ' 파일을 읽을 수 없습니다: ' + e.message, 'error');
+    console.error(e);
+  } finally {
     event.target.value = '';
-  };
-  reader.onerror = () => {
-    toast('파일 읽기 실패', 'error');
-    event.target.value = '';
-  };
-  reader.readAsText(file);
+  }
+}
+
+async function downloadTemplate() {
+  if (typeof ExcelJS === 'undefined') {
+    toast('엑셀 라이브러리 로드 실패. 새로고침 해주세요', 'error');
+    return;
+  }
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'MEDISTREAM TURNKEY';
+  wb.created = new Date();
+  const ws = wb.addWorksheet('품목');
+
+  ws.getColumn(1).width = 22;
+  ws.getColumn(2).width = 28;
+  ws.getColumn(3).width = 20;
+  ws.getColumn(4).width = 14;
+  ws.getColumn(5).width = 14;
+
+  const head = ws.addRow(['품목명', '설명', '카테고리', '공급가', '판매가']);
+  head.font = { name:'맑은 고딕', size:10, bold:true, color:{argb:'FFFFFFFF'} };
+  head.alignment = { horizontal:'center', vertical:'middle' };
+  head.height = 24;
+  head.eachCell(c => {
+    c.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FF2563EB'} };
+    c.border = {
+      top:    { style:'thin', color:{argb:'FFCBD5E1'} },
+      left:   { style:'thin', color:{argb:'FFCBD5E1'} },
+      bottom: { style:'thin', color:{argb:'FFCBD5E1'} },
+      right:  { style:'thin', color:{argb:'FFCBD5E1'} },
+    };
+  });
+
+  // 카테고리 가능 값을 안내 시트로
+  const help = wb.addWorksheet('카테고리');
+  help.getColumn(1).width = 28;
+  help.addRow(['사용 가능한 카테고리']).font = { bold:true };
+  CATEGORIES.forEach(c => help.addRow([c]));
+
+  // 예시 행 1줄 (참고용)
+  const sample = ws.addRow(['예시: 펜레이저 P1', 'CO2 레이저 (예시 — 삭제 후 입력)', CATEGORIES[0] || '기타 관리기기', 12000000, 18000000]);
+  sample.font = { name:'맑은 고딕', size:10, italic:true, color:{argb:'FF94A3B8'} };
+  sample.alignment = { vertical:'middle' };
+  sample.getCell(4).numFmt = '#,##0';
+  sample.getCell(5).numFmt = '#,##0';
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '품목_업로드_양식.xlsx';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('업로드 양식이 다운로드되었습니다', 'success');
 }
 
 renderGrid();
@@ -2365,18 +2441,20 @@ function qmCell(ws, ref, value, opts) {
 
 async function buildQuoteWorkbook(info) {
   const isLease = MODE === 'lease';
-  const items = PRODUCTS.filter(p => selected.has(p.id)).map(p => ({
-    name: p.name,
-    qty: 1,
-    unit_price: getPromo(p.id),
-  }));
+  const dRate = MODE === 'discount'
+    ? (parseFloat(document.getElementById('discountInput').value) || 0) / 100
+    : 0;
+  const items = PRODUCTS.filter(p => selected.has(p.id)).map(p => {
+    const promo = getPromo(p.id);
+    const unit  = MODE === 'discount' ? Math.round(promo * (1 - dRate)) : promo;
+    return { name: p.name, qty: 1, unit_price: unit };
+  });
   const itemsSum = items.reduce((s, it) => s + it.qty * it.unit_price, 0);
   let subtotal = itemsSum;
   let leaseInfo = null;
 
   if (MODE === 'discount') {
-    const dRate = (parseFloat(document.getElementById('discountInput').value) || 0) / 100;
-    subtotal = Math.round(itemsSum * (1 - dRate));
+    // subtotal already reflects discount via per-item unit_price
   } else {
     const months      = getPeriod();
     const depositRate = getDeposit();
@@ -2493,11 +2571,10 @@ async function buildQuoteWorkbook(info) {
     nextRow++;
 
     const rows = [
-      ['리스 기간',                              `${leaseInfo.months}개월`,        '무이자 분납'],
-      ['월 납입금',                              leaseInfo.monthly,                '패키지 금액 ÷ 기간'],
-      [`보증금 (${leaseInfo.depositRate}%)`,      leaseInfo.deposit,                '만기 시 환급'],
-      [`선취수수료 (${leaseInfo.feeRate.toFixed(2)}%)`, leaseInfo.upfront,           '회사 부담'],
-      ['총 납부액',                              leaseInfo.totalPaid,              '월납 × 기간 + 보증금'],
+      ['리스 기간',                          `${leaseInfo.months}개월`, '무이자 분납'],
+      ['월 납입금',                          leaseInfo.monthly,         '패키지 금액 ÷ 기간'],
+      [`보증금 (${leaseInfo.depositRate}%)`, leaseInfo.deposit,         '만기 시 환급'],
+      ['총 납부액',                          leaseInfo.totalPaid,       '월납 × 기간 + 보증금'],
     ];
     for (let i = 0; i < rows.length; i++) {
       const r = nextRow + i;
