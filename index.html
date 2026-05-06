@@ -632,7 +632,6 @@ window.SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhY
     <input id="authPassword" type="password" autocomplete="current-password" placeholder="6자 이상" onkeydown="if(event.key==='Enter')authPrimary()">
     <div class="btns">
       <button class="auth-primary" id="authPrimaryBtn" type="button" onclick="authPrimary()">로그인</button>
-      <button class="auth-ghost" id="authToggleBtn" type="button" onclick="toggleAuthMode()">회원가입으로</button>
     </div>
     <div class="auth-msg" id="authMsg"></div>
   </div>
@@ -1043,17 +1042,10 @@ async function authPrimary(){
   const email = (document.getElementById('authEmail').value || '').trim();
   const password = document.getElementById('authPassword').value || '';
   if (!email || !password) { _setAuthMsg('이메일/비밀번호를 입력하세요','err'); return; }
-  if (password.length < 6)  { _setAuthMsg('비밀번호는 6자 이상','err'); return; }
   _setAuthMsg('처리 중...','');
   try {
-    if (_authMode === 'signin') {
-      const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-    } else {
-      const { error } = await sb.auth.signUp({ email, password });
-      if (error) throw error;
-      _setAuthMsg('가입 완료. (이메일 확인이 켜져 있으면 메일 확인)','ok');
-    }
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
   } catch(e) { _setAuthMsg(e.message || '오류','err'); }
 }
 async function authSignOut(){
