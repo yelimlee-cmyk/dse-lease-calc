@@ -477,6 +477,13 @@
     transition:transform .1s, opacity .15s;
   }
   .roi-hira-link:hover { opacity:.92; transform:translateY(-1px); }
+  .roi-hira-path {
+    background:#fff; border:1px dashed #fed7aa; border-radius:8px;
+    padding:9px 12px; margin-bottom:12px;
+    font-size:12px; color:#9a3412; line-height:1.5;
+  }
+  .roi-hira-path b { font-weight:700; color:#7c2d12; }
+  .roi-hira-path span { color:#fdba74; margin:0 4px; font-weight:700; }
   .roi-hira-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
   @media (max-width:720px){ .roi-hira-grid { grid-template-columns:1fr; } }
   .roi-hira-grid .roi-field label { color:#9a3412; }
@@ -893,6 +900,14 @@
         <a class="roi-hira-link" href="https://biz.hira.or.kr/index.do?sso=ok" target="_blank" rel="noopener noreferrer">
           🔗 HIRA biz 새 창으로 열기
         </a>
+      </div>
+      <div class="roi-hira-path">
+        이동 경로 :
+        <b>자동차보험</b> <span>›</span>
+        <b>정보방</b> <span>›</span>
+        <b>청구관련코드조회</b> <span>›</span>
+        <b>수가</b> <span>›</span>
+        <b>한방수가</b> 탭
       </div>
       <div class="roi-hira-grid">
         <div class="roi-field">
