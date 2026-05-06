@@ -810,6 +810,12 @@
 
   <!-- ═══ ROI 계산기 ═══ -->
   <div class="roi-section" id="roiSection" role="tabpanel" aria-labelledby="tabRoi">
+    <div class="png-btn-wrap">
+      <button class="png-btn" id="roiPngBtn" onclick="exportRoiPng()" aria-label="ROI 분석을 PNG 이미지로 저장">📥 PNG로 저장</button>
+    </div>
+
+    <!-- 캡처 영역 시작 -->
+    <div id="roiExportArea">
     <div class="section-label" style="margin-top:4px">
       투자 수익률 (ROI) 계산
       <span class="hint" tabindex="0" data-tip="장비 투자 대비 예상 매출·회수기간을 계산합니다. 제품 단가, 시술 금액, 월 신환·재환 수를 입력하세요.">?</span>
@@ -910,6 +916,7 @@
       </table>
       </div>
     </div>
+    </div><!-- 캡처 영역 끝 -->
   </div>
 
   <!-- ═══ 품목 관리 ═══ -->
@@ -2027,6 +2034,81 @@ function exportPng() {
     toast('PNG 이미지가 저장되었습니다', 'success');
   }).catch(err => {
     console.error('PNG 저장 실패:', err);
+    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+    btn.disabled = false;
+    btn.textContent = origText;
+    toast('PNG 저장 중 오류가 발생했습니다', 'error');
+  });
+}
+
+function exportRoiPng() {
+  const area = document.getElementById('roiExportArea');
+  const btn  = document.getElementById('roiPngBtn');
+  const cost        = parseRoiInput('roiCost');
+  const chargePerPt = parseRoiInput('roiChargePerPatient');
+  const newPt       = parseInt(document.getElementById('roiNewPatients').value) || 0;
+  const retPt       = parseInt(document.getElementById('roiReturnPatients').value) || 0;
+  if (cost <= 0 || chargePerPt <= 0 || (newPt + retPt) <= 0) {
+    toast('제품 단가·시술 금액·환자 수를 입력해주세요', 'error');
+    return;
+  }
+  btn.disabled = true;
+  const origText = btn.textContent;
+  btn.textContent = '⏳ 저장 중...';
+
+  const baseW = area.getBoundingClientRect().width || area.offsetWidth || 960;
+  const padX  = 24;
+  const wrapW = Math.round(baseW + padX * 2);
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText =
+    `background:#ffffff;padding:${padX}px;border-radius:16px;` +
+    `width:${wrapW}px;box-sizing:border-box;` +
+    `position:fixed;top:0;left:-99999px;`;
+  const clone = area.cloneNode(true);
+  clone.style.width = baseW + 'px';
+  // input 값을 캡처본에 고정 표시 (html2canvas는 input value를 일부 환경에서 안 그림)
+  clone.querySelectorAll('input').forEach(inp => {
+    const orig = document.getElementById(inp.id);
+    const val = orig ? (orig.value || '') : (inp.value || '');
+    const replacement = document.createElement('div');
+    const cs = window.getComputedStyle(inp);
+    replacement.textContent = val || (inp.getAttribute('placeholder') || '');
+    replacement.style.cssText =
+      `width:100%;box-sizing:border-box;` +
+      `padding:${cs.padding};` +
+      `border:${cs.border};` +
+      `border-radius:${cs.borderRadius};` +
+      `background:${cs.backgroundColor};` +
+      `color:${val ? cs.color : '#94a3b8'};` +
+      `font-size:${cs.fontSize};font-weight:${cs.fontWeight};` +
+      `font-family:${cs.fontFamily};line-height:${cs.lineHeight};` +
+      `text-align:${cs.textAlign || 'left'};`;
+    inp.parentNode.replaceChild(replacement, inp);
+  });
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  html2canvas(wrapper, {
+    backgroundColor: '#ffffff',
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    width:       wrapW,
+    height:      wrapper.offsetHeight,
+    windowWidth: wrapW,
+  }).then(canvas => {
+    const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const link = document.createElement('a');
+    link.download = `DSE_ROI분석_${today}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    document.body.removeChild(wrapper);
+    btn.disabled = false;
+    btn.textContent = origText;
+    toast('ROI 이미지가 저장되었습니다', 'success');
+  }).catch(err => {
+    console.error('ROI PNG 저장 실패:', err);
     if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
     btn.disabled = false;
     btn.textContent = origText;
