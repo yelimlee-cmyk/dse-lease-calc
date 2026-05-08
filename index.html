@@ -1252,12 +1252,13 @@
         <thead>
           <tr>
             <th style="width:4%;text-align:center">선택</th>
-            <th style="width:14%">품목명</th>
-            <th style="width:18%">설명</th>
-            <th style="width:14%">카테고리</th>
-            <th style="width:12%;text-align:right">공급가</th>
-            <th style="width:12%;text-align:right">판매가</th>
-            <th style="width:26%;text-align:right">순서/삭제</th>
+            <th style="width:13%">품목명</th>
+            <th style="width:11%">공급업체</th>
+            <th style="width:16%">설명</th>
+            <th style="width:12%">카테고리</th>
+            <th style="width:11%;text-align:right">공급가</th>
+            <th style="width:11%;text-align:right">판매가</th>
+            <th style="width:22%;text-align:right">순서/삭제</th>
           </tr>
         </thead>
         <tbody id="manageBody"></tbody>
@@ -2200,6 +2201,7 @@ function renderManageTable() {
     <tr data-idx="${idx}" data-pid="${p.id}">
       <td class="check-cell"><input type="checkbox" class="row-check"${checked} aria-label="${(p.name||'').replace(/"/g,'&quot;')} 선택"></td>
       <td><input type="text" class="mg-name" value="${(p.name || '').replace(/"/g,'&quot;')}" placeholder="품목명" aria-label="품목명"></td>
+      <td><input type="text" class="mg-supplier" value="${(p.supplier || '').replace(/"/g,'&quot;')}" placeholder="—" aria-label="공급업체"></td>
       <td><input type="text" class="mg-desc" value="${(p.desc || '').replace(/"/g,'&quot;')}" placeholder="설명(선택)" aria-label="설명"></td>
       <td><select class="mg-cat" aria-label="카테고리">${catOptions(productCategory(p))}</select></td>
       <td><input type="text" inputmode="numeric" class="mg-cost num" value="${(p.cost || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="공급가"></td>
@@ -2225,7 +2227,7 @@ function renderManageTable() {
       const someChecked = checkedCount > 0 && !allChecked;
       html += `
         <tr class="supplier-row${collapsed ? ' collapsed' : ''}" data-supplier="${supplier.replace(/"/g,'&quot;')}">
-          <td colspan="7">
+          <td colspan="8">
             <input type="checkbox" class="supplier-check" data-supplier="${supplier.replace(/"/g,'&quot;')}" ${allChecked ? 'checked' : ''} ${someChecked ? 'data-indeterminate="1"' : ''} aria-label="${supplier} 전체 선택">
             <span class="sr-toggle" data-collapse="${supplier.replace(/"/g,'&quot;')}">▼</span>
             <span class="sr-name" data-collapse="${supplier.replace(/"/g,'&quot;')}">${supplier}</span>
@@ -2260,6 +2262,7 @@ function renderManageTable() {
     const pid = tr.dataset.pid;
     const cb = tr.querySelector('.row-check');
     const n  = tr.querySelector('.mg-name');
+    const sp = tr.querySelector('.mg-supplier');
     const d  = tr.querySelector('.mg-desc');
     const ct = tr.querySelector('.mg-cat');
     const c  = tr.querySelector('.mg-cost');
@@ -2271,6 +2274,7 @@ function renderManageTable() {
     });
     const commit = () => {
       PRODUCTS[idx].name     = n.value;
+      PRODUCTS[idx].supplier = sp.value;
       PRODUCTS[idx].desc     = d.value;
       PRODUCTS[idx].category = ct.value;
       PRODUCTS[idx].cost     = parseIntInput(c);
@@ -2282,6 +2286,7 @@ function renderManageTable() {
       flashSaved();
     };
     n.addEventListener('input',  commit);
+    sp.addEventListener('input', commit);
     d.addEventListener('input',  commit);
     ct.addEventListener('change', commit);
     [c, pr].forEach(el => {
