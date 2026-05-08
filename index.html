@@ -1215,8 +1215,9 @@
       </div>
       <div class="mb-actions">
         <div class="promo-mode-toggle" role="group" aria-label="할인 입력 모드">
-          <button type="button" class="pmt-btn active" id="pmtAmount" onclick="setPromoInputMode('amount')" aria-pressed="true">₩ 금액</button>
-          <button type="button" class="pmt-btn"        id="pmtRate"   onclick="setPromoInputMode('rate')"   aria-pressed="false">% 할인율</button>
+          <button type="button" class="pmt-btn active" id="pmtAmount"   onclick="setPromoInputMode('amount')"   aria-pressed="true">₩ 최종가</button>
+          <button type="button" class="pmt-btn"        id="pmtRate"     onclick="setPromoInputMode('rate')"     aria-pressed="false">% 할인율</button>
+          <button type="button" class="pmt-btn"        id="pmtDiscount" onclick="setPromoInputMode('discount')" aria-pressed="false">₩ 할인액</button>
         </div>
       </div>
     </div>
@@ -1263,7 +1264,7 @@
     </div>
     <div class="manage-note">
       💡 <b>정가</b>·<b>공급가</b>는 품목 관리 탭과 공유됩니다. 여기서 수정하면 다른 탭에도 반영됩니다.<br>
-      🔁 상단 <b>₩ 금액 / % 할인율</b> 토글로 프로모션가·스팟할인가 입력 방식을 전환할 수 있습니다 (정가 기준).<br>
+      🔁 상단 <b>₩ 최종가 / % 할인율 / ₩ 할인액</b> 토글로 입력 방식 전환 — 어떤 모드로 입력하든 정가를 기준으로 자동 환산되어 같은 값이 저장됩니다.<br>
       📐 <b>마진</b> = (가격 − 공급가) ÷ 가격 · <b>vs 시장가</b> = (가격 − 공급가) ÷ 시장가 (시장가 기준 마진율)<br>
       📊 <b>회수 횟수</b> = 공급가 ÷ 1회 시술비 (간이 ROI). 자세한 ROI는 우측 <b>📊</b> 버튼으로 확인하세요.
     </div>
@@ -2279,7 +2280,7 @@ async function downloadTemplate() {
 }
 
 // ── 가격/프로모션 관리 탭 ─────────────────────────────────────────────
-let PROMO_INPUT_MODE = 'amount'; // 'amount' | 'rate'
+let PROMO_INPUT_MODE = 'amount'; // 'amount' | 'rate' | 'discount'
 let _promoSaveFlashTimer = null;
 function flashPromoSaved() {
   const el = document.getElementById('promoSaveIndicator');
@@ -2289,16 +2290,30 @@ function flashPromoSaved() {
   _promoSaveFlashTimer = setTimeout(() => { el.style.opacity = '0'; }, 1200);
 }
 function setPromoInputMode(mode) {
-  PROMO_INPUT_MODE = (mode === 'rate') ? 'rate' : 'amount';
-  const btnA = document.getElementById('pmtAmount');
-  const btnR = document.getElementById('pmtRate');
-  if (btnA && btnR) {
-    btnA.classList.toggle('active', PROMO_INPUT_MODE === 'amount');
-    btnR.classList.toggle('active', PROMO_INPUT_MODE === 'rate');
-    btnA.setAttribute('aria-pressed', PROMO_INPUT_MODE === 'amount' ? 'true' : 'false');
-    btnR.setAttribute('aria-pressed', PROMO_INPUT_MODE === 'rate'   ? 'true' : 'false');
-  }
+  const valid = ['amount','rate','discount'];
+  PROMO_INPUT_MODE = valid.includes(mode) ? mode : 'amount';
+  const btns = {
+    amount:   document.getElementById('pmtAmount'),
+    rate:     document.getElementById('pmtRate'),
+    discount: document.getElementById('pmtDiscount'),
+  };
+  Object.entries(btns).forEach(([k, el]) => {
+    if (!el) return;
+    const on = PROMO_INPUT_MODE === k;
+    el.classList.toggle('active', on);
+    el.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
   renderPromoTable();
+}
+function discountAmount(promoPrice, listPrice) {
+  if (!listPrice || listPrice <= 0) return 0;
+  if (!promoPrice || promoPrice <= 0) return 0;
+  return Math.max(0, listPrice - promoPrice);
+}
+function priceFromDiscount(discount, listPrice) {
+  if (!listPrice || listPrice <= 0) return 0;
+  const d = Math.max(0, parseInt(String(discount).replace(/[^0-9]/g,'')) || 0);
+  return Math.max(0, listPrice - d);
 }
 function pctStr(n) {
   if (!isFinite(n)) return '—';
@@ -2331,20 +2346,29 @@ function renderPromoTable() {
     body.innerHTML = `<tr><td colspan="15" class="promo-empty">품목 관리 탭에서 먼저 품목을 추가해주세요</td></tr>`;
     return;
   }
-  const isRate = PROMO_INPUT_MODE === 'rate';
+  const mode = PROMO_INPUT_MODE; // 'amount' | 'rate' | 'discount'
+  const isRate     = mode === 'rate';
+  const isDiscount = mode === 'discount';
   body.innerHTML = PRODUCTS.map((p, idx) => {
     const promoPrice = p.promoPrice || 0;
     const spotPrice  = p.spotPrice  || 0;
-    const promoVal = isRate
-      ? (promoPrice > 0 ? discountRate(promoPrice, p.price).toFixed(1) : '')
-      : (promoPrice > 0 ? promoPrice.toLocaleString('ko-KR') : '');
-    const spotVal = isRate
-      ? (spotPrice > 0 ? discountRate(spotPrice, p.price).toFixed(1) : '')
-      : (spotPrice > 0 ? spotPrice.toLocaleString('ko-KR') : '');
-    const promoPlaceholder = isRate ? '0.0' : '0';
-    const spotPlaceholder  = isRate ? '0.0' : '0';
-    const promoSuffix = isRate ? '%' : '';
-    const spotSuffix  = isRate ? '%' : '';
+    let promoVal, spotVal, promoPlaceholder, spotPlaceholder, promoSuffix, spotSuffix;
+    if (isRate) {
+      promoVal = promoPrice > 0 ? discountRate(promoPrice, p.price).toFixed(1) : '';
+      spotVal  = spotPrice  > 0 ? discountRate(spotPrice,  p.price).toFixed(1) : '';
+      promoPlaceholder = spotPlaceholder = '0.0';
+      promoSuffix = spotSuffix = '%';
+    } else if (isDiscount) {
+      promoVal = promoPrice > 0 ? discountAmount(promoPrice, p.price).toLocaleString('ko-KR') : '';
+      spotVal  = spotPrice  > 0 ? discountAmount(spotPrice,  p.price).toLocaleString('ko-KR') : '';
+      promoPlaceholder = spotPlaceholder = '0';
+      promoSuffix = spotSuffix = '↓';
+    } else {
+      promoVal = promoPrice > 0 ? promoPrice.toLocaleString('ko-KR') : '';
+      spotVal  = spotPrice  > 0 ? spotPrice.toLocaleString('ko-KR')  : '';
+      promoPlaceholder = spotPlaceholder = '0';
+      promoSuffix = spotSuffix = '';
+    }
     const mList         = marginPct(p.price,      p.cost);
     const mPromo        = marginPct(promoPrice,   p.cost);
     const mSpot         = marginPct(spotPrice,    p.cost);
@@ -2442,6 +2466,18 @@ function renderPromoTable() {
         bindCommaInput(el, () => {
           if (i === 0) p.promoPrice = parseIntInput(pm);
           else         p.spotPrice  = parseIntInput(sp);
+          saveProducts();
+          recalcMargins();
+          flashPromoSaved();
+        });
+      });
+    } else if (PROMO_INPUT_MODE === 'discount') {
+      // discount amount mode — user enters discount in won, we compute final price
+      [pm, sp].forEach((el, i) => {
+        bindCommaInput(el, () => {
+          const d = parseIntInput(el);
+          if (i === 0) p.promoPrice = priceFromDiscount(d, p.price);
+          else         p.spotPrice  = priceFromDiscount(d, p.price);
           saveProducts();
           recalcMargins();
           flashPromoSaved();
