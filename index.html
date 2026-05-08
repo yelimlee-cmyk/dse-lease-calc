@@ -440,6 +440,28 @@
 
   /* 공급업체별 그룹화 + 일괄 선택 */
   .manage-btn.delete { background:linear-gradient(135deg, var(--red), #b91c1c); color:#fff; }
+  .mb-search {
+    position:relative; flex:1 1 280px; max-width:420px; min-width:200px;
+  }
+  .mb-search input {
+    width:100%; height:40px; box-sizing:border-box;
+    padding:0 36px 0 14px; border:1px solid var(--border-2); border-radius:10px;
+    background:var(--surface); color:var(--text);
+    font-family:inherit; font-size:13px; font-weight:500; outline:none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .mb-search input::placeholder { color:var(--muted); font-weight:400; }
+  .mb-search input:focus { border-color:#6d28d9; box-shadow: 0 0 0 3px rgba(109,40,217,.15); }
+  .mb-search-clear {
+    position:absolute; right:6px; top:50%; transform:translateY(-50%);
+    background:transparent; border:none; cursor:pointer;
+    width:28px; height:28px; border-radius:6px;
+    color:var(--muted); font-size:13px; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    transition:all .15s; font-family:inherit;
+  }
+  .mb-search-clear:hover { background:var(--surface-2); color:var(--red); }
+  .mb-search input:placeholder-shown ~ .mb-search-clear { display:none; }
   .group-toggle {
     display:inline-flex; align-items:center; gap:6px;
     background:var(--surface); border:1px solid var(--border-2);
@@ -1227,6 +1249,10 @@
       <div class="mb-title">품목 리스트 · <span class="mb-count" id="manageCount">0</span>종
         <span id="saveIndicator" style="font-size:11px;color:var(--green);font-weight:700;margin-left:10px;opacity:0;transition:opacity .3s">✓ 자동 저장됨</span>
       </div>
+      <div class="mb-search">
+        <input type="search" id="searchManage" placeholder="🔍 품목명·공급업체·설명·카테고리 검색" oninput="setProductFilter(this.value)" autocomplete="off">
+        <button type="button" class="mb-search-clear" onclick="clearProductFilter()" aria-label="검색어 지우기" title="지우기">✕</button>
+      </div>
       <div class="mb-actions">
         <label class="group-toggle" title="공급업체별로 행을 그룹화하여 표시">
           <input type="checkbox" id="groupBySupplierManage" onchange="toggleGroupBySupplier(this.checked)">
@@ -1276,6 +1302,10 @@
     <div class="manage-bar">
       <div class="mb-title">가격 · 프로모션 관리 · <span class="mb-count" id="promoCount">0</span>종
         <span id="promoSaveIndicator" style="font-size:11px;color:var(--green);font-weight:700;margin-left:10px;opacity:0;transition:opacity .3s">✓ 자동 저장됨</span>
+      </div>
+      <div class="mb-search">
+        <input type="search" id="searchPromo" placeholder="🔍 품목명·공급업체·설명·카테고리 검색" oninput="setProductFilter(this.value)" autocomplete="off">
+        <button type="button" class="mb-search-clear" onclick="clearProductFilter()" aria-label="검색어 지우기" title="지우기">✕</button>
       </div>
       <div class="mb-actions">
         <label class="group-toggle" title="공급업체별로 행을 그룹화하여 표시">
@@ -1478,14 +1508,42 @@ const COLLAPSED_SUPPLIERS = new Set();  // 접힌 공급업체명
 function getSupplierLabel(p) {
   return (p.supplier && String(p.supplier).trim()) || '(공급업체 미지정)';
 }
-function buildSupplierGroups() {
+function buildSupplierGroups(items) {
+  const list = items || PRODUCTS.map((p, idx) => ({ p, idx }));
   const groups = new Map();
-  PRODUCTS.forEach((p, idx) => {
+  list.forEach(({ p, idx }) => {
     const key = getSupplierLabel(p);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push({ p, idx });
   });
   return Array.from(groups.entries()).map(([supplier, items]) => ({ supplier, items }));
+}
+let PRODUCT_FILTER = '';
+function matchesProductQuery(p, q) {
+  if (!q) return true;
+  const ql = q.toLowerCase();
+  const norm = (s) => String(s || '').toLowerCase();
+  return norm(p.name).includes(ql)
+      || norm(p.supplier).includes(ql)
+      || norm(p.desc).includes(ql)
+      || norm(p.category).includes(ql);
+}
+function getFilteredProductItems() {
+  const all = PRODUCTS.map((p, idx) => ({ p, idx }));
+  if (!PRODUCT_FILTER) return all;
+  return all.filter(({ p }) => matchesProductQuery(p, PRODUCT_FILTER));
+}
+function setProductFilter(query) {
+  PRODUCT_FILTER = String(query || '').trim();
+  ['searchManage', 'searchPromo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.value !== PRODUCT_FILTER) el.value = PRODUCT_FILTER;
+  });
+  if (typeof renderManageTable === 'function') renderManageTable();
+  if (typeof renderPromoTable  === 'function') renderPromoTable();
+}
+function clearProductFilter() {
+  setProductFilter('');
 }
 function toggleGroupBySupplier(checked) {
   GROUP_BY_SUPPLIER = !!checked;
@@ -2188,9 +2246,16 @@ function flashSaved() {
 function renderManageTable() {
   const body = document.getElementById('manageBody');
   if (!body) return;
-  document.getElementById('manageCount').textContent = PRODUCTS.length;
+  const filtered = getFilteredProductItems();
+  const countEl = document.getElementById('manageCount');
+  if (countEl) {
+    countEl.textContent = PRODUCT_FILTER && filtered.length !== PRODUCTS.length
+      ? `${filtered.length}/${PRODUCTS.length}` : PRODUCTS.length;
+  }
   const groupCheck = document.getElementById('groupBySupplierManage');
   if (groupCheck) groupCheck.checked = GROUP_BY_SUPPLIER;
+  const searchInput = document.getElementById('searchManage');
+  if (searchInput && searchInput.value !== PRODUCT_FILTER) searchInput.value = PRODUCT_FILTER;
   updateBulkBars();
 
   const last = PRODUCTS.length - 1;
@@ -2219,8 +2284,10 @@ function renderManageTable() {
   };
 
   let html = '';
-  if (GROUP_BY_SUPPLIER) {
-    const groups = buildSupplierGroups();
+  if (filtered.length === 0) {
+    html = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted);font-size:13px">${PRODUCT_FILTER ? `"${PRODUCT_FILTER}"에 일치하는 품목이 없습니다` : '품목이 없습니다. 위쪽 + 품목 추가 또는 📥 가져오기를 사용하세요.'}</td></tr>`;
+  } else if (GROUP_BY_SUPPLIER) {
+    const groups = buildSupplierGroups(filtered);
     groups.forEach(({ supplier, items }) => {
       const collapsed = COLLAPSED_SUPPLIERS.has(supplier);
       const supplierIds = items.map(it => it.p.id);
@@ -2241,7 +2308,7 @@ function renderManageTable() {
       }
     });
   } else {
-    PRODUCTS.forEach((p, idx) => { html += productRow(p, idx); });
+    filtered.forEach(({ p, idx }) => { html += productRow(p, idx); });
   }
   body.innerHTML = html;
 
@@ -2576,13 +2643,24 @@ function priceFromRate(rate, listPrice) {
 function renderPromoTable() {
   const body = document.getElementById('promoBody');
   if (!body) return;
-  document.getElementById('promoCount').textContent = PRODUCTS.length;
+  const filtered = getFilteredProductItems();
+  const countEl = document.getElementById('promoCount');
+  if (countEl) {
+    countEl.textContent = PRODUCT_FILTER && filtered.length !== PRODUCTS.length
+      ? `${filtered.length}/${PRODUCTS.length}` : PRODUCTS.length;
+  }
   const groupCheck = document.getElementById('groupBySupplierPromo');
   if (groupCheck) groupCheck.checked = GROUP_BY_SUPPLIER;
+  const searchInput = document.getElementById('searchPromo');
+  if (searchInput && searchInput.value !== PRODUCT_FILTER) searchInput.value = PRODUCT_FILTER;
   updateBulkBars();
 
   if (PRODUCTS.length === 0) {
     body.innerHTML = `<tr><td colspan="17" class="promo-empty">품목 관리 탭에서 먼저 품목을 추가해주세요</td></tr>`;
+    return;
+  }
+  if (filtered.length === 0) {
+    body.innerHTML = `<tr><td colspan="17" class="promo-empty">"${PRODUCT_FILTER}"에 일치하는 품목이 없습니다</td></tr>`;
     return;
   }
   const mode = PROMO_INPUT_MODE; // 'amount' | 'rate' | 'discount'
@@ -2647,7 +2725,7 @@ function renderPromoTable() {
 
   let html = '';
   if (GROUP_BY_SUPPLIER) {
-    const groups = buildSupplierGroups();
+    const groups = buildSupplierGroups(filtered);
     groups.forEach(({ supplier, items }) => {
       const collapsed = COLLAPSED_SUPPLIERS.has(supplier);
       const supplierIds = items.map(it => it.p.id);
@@ -2666,7 +2744,7 @@ function renderPromoTable() {
       if (!collapsed) items.forEach(({ p, idx }) => { html += productRow(p, idx); });
     });
   } else {
-    PRODUCTS.forEach((p, idx) => { html += productRow(p, idx); });
+    filtered.forEach(({ p, idx }) => { html += productRow(p, idx); });
   }
   body.innerHTML = html;
 
