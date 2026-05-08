@@ -1300,27 +1300,29 @@
       <table class="promo-table" aria-label="가격/프로모션 관리 테이블">
         <colgroup>
           <col style="width:3%">
+          <col style="width:8%">
+          <col style="width:6%">
           <col style="width:9%">
-          <col style="width:6.5%">
-          <col style="width:6.5%">
-          <col style="width:6.5%">
-          <col style="width:6.5%">
-          <col style="width:7.5%">
-          <col style="width:7.5%">
-          <col style="width:6.5%">
-          <col style="width:5%">
-          <col style="width:5%">
-          <col style="width:5%">
-          <col style="width:5.75%">
-          <col style="width:5.75%">
           <col style="width:5.5%">
-          <col style="width:4.5%">
+          <col style="width:5.5%">
+          <col style="width:5.5%">
+          <col style="width:7%">
+          <col style="width:7%">
+          <col style="width:5.5%">
+          <col style="width:5%">
+          <col style="width:5%">
+          <col style="width:5%">
+          <col style="width:5.5%">
+          <col style="width:5.5%">
+          <col style="width:5%">
+          <col style="width:4%">
         </colgroup>
         <thead>
           <tr>
             <th style="text-align:center">선택</th>
             <th>제품명</th>
             <th>공급업체</th>
+            <th>설명</th>
             <th class="num-col">공급가</th>
             <th class="num-col">시장가</th>
             <th class="num-col">정가</th>
@@ -2580,7 +2582,7 @@ function renderPromoTable() {
   updateBulkBars();
 
   if (PRODUCTS.length === 0) {
-    body.innerHTML = `<tr><td colspan="16" class="promo-empty">품목 관리 탭에서 먼저 품목을 추가해주세요</td></tr>`;
+    body.innerHTML = `<tr><td colspan="17" class="promo-empty">품목 관리 탭에서 먼저 품목을 추가해주세요</td></tr>`;
     return;
   }
   const mode = PROMO_INPUT_MODE; // 'amount' | 'rate' | 'discount'
@@ -2626,6 +2628,7 @@ function renderPromoTable() {
       <td class="check-cell"><input type="checkbox" class="row-check"${checked} aria-label="${(p.name||'').replace(/"/g,'&quot;')} 선택"></td>
       <td><input type="text" class="pm-name" value="${(p.name || '').replace(/"/g,'&quot;')}" placeholder="제품명" aria-label="제품명"></td>
       <td><input type="text" class="pm-supplier" value="${(p.supplier || '').replace(/"/g,'&quot;')}" placeholder="—" aria-label="공급업체"></td>
+      <td><input type="text" class="pm-desc" value="${(p.desc || '').replace(/"/g,'&quot;')}" placeholder="설명(선택)" aria-label="설명"></td>
       <td><input type="text" inputmode="numeric" class="pm-cost num" value="${(p.cost || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="공급가"></td>
       <td><input type="text" inputmode="numeric" class="pm-market num" value="${(p.marketPrice || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="시장가"></td>
       <td><input type="text" inputmode="numeric" class="pm-price num" value="${(p.price || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="정가"></td>
@@ -2653,7 +2656,7 @@ function renderPromoTable() {
       const someChecked = checkedCount > 0 && !allChecked;
       html += `
         <tr class="supplier-row${collapsed ? ' collapsed' : ''}" data-supplier="${supplier.replace(/"/g,'&quot;')}">
-          <td colspan="16">
+          <td colspan="17">
             <input type="checkbox" class="supplier-check" ${allChecked ? 'checked' : ''} ${someChecked ? 'data-indeterminate="1"' : ''} aria-label="${supplier} 전체 선택">
             <span class="sr-toggle" data-collapse="1">▼</span>
             <span class="sr-name" data-collapse="1">${supplier}</span>
@@ -2689,6 +2692,7 @@ function renderPromoTable() {
     });
     const n  = tr.querySelector('.pm-name');
     const s  = tr.querySelector('.pm-supplier');
+    const dc = tr.querySelector('.pm-desc');
     const c  = tr.querySelector('.pm-cost');
     const mk = tr.querySelector('.pm-market');
     const pr = tr.querySelector('.pm-price');
@@ -2721,11 +2725,13 @@ function renderPromoTable() {
     const commitMeta = () => {
       p.name     = n.value;
       p.supplier = s.value;
+      p.desc     = dc.value;
       saveProducts();
       flashPromoSaved();
     };
     n.addEventListener('input',  commitMeta);
     s.addEventListener('input',  commitMeta);
+    dc.addEventListener('input', commitMeta);
 
     [c, mk, pr, tf].forEach(el => {
       bindCommaInput(el, () => {
