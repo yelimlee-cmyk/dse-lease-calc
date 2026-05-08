@@ -47,7 +47,8 @@
     color: var(--text); min-height:100vh; padding:24px 18px;
     -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width:1040px; margin:0 auto; }
+  .wrap { max-width:1040px; margin:0 auto; transition: max-width .2s; }
+  body.mode-promo .wrap { max-width: min(1600px, 96vw); }
   button { font-family: inherit; }
   button:focus-visible, input:focus-visible, select:focus-visible, [role=button]:focus-visible {
     outline: none; box-shadow: var(--focus);
@@ -361,6 +362,7 @@
   .mode-tab.active.discount { background:var(--green-soft);   color:var(--green);   border-bottom:2px solid var(--green); }
   .mode-tab.active.roi      { background:var(--orange-soft);  color:var(--orange);  border-bottom:2px solid var(--orange); }
   .mode-tab.active.manage   { background:var(--pink-soft);    color:var(--pink);    border-bottom:2px solid var(--pink); }
+  .mode-tab.active.promo    { background:#ede9fe;             color:#6d28d9;       border-bottom:2px solid #6d28d9; }
 
   /* MANAGE TAB */
   .manage-section { display:none; }
@@ -431,6 +433,67 @@
     border-radius:10px;
   }
   .manage-note b { color:var(--text); }
+
+  /* PROMO / PRICE MANAGEMENT TAB */
+  .promo-section { display:none; }
+  .promo-section.visible { display:block; }
+  .promo-mode-toggle {
+    display:inline-flex; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:10px; padding:3px; gap:2px;
+  }
+  .pmt-btn {
+    background:transparent; border:none; padding:7px 14px; border-radius:8px;
+    font-family:inherit; font-size:12px; font-weight:700; color:var(--text-3);
+    cursor:pointer; transition:all .15s;
+  }
+  .pmt-btn:hover { color:#6d28d9; }
+  .pmt-btn.active { background:#6d28d9; color:#fff; box-shadow: 0 1px 2px rgba(109,40,217,.25); }
+  .promo-table-wrap {
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    overflow-x:auto; margin-bottom:12px; box-shadow: var(--shadow);
+  }
+  .promo-table { width:100%; border-collapse:collapse; table-layout:fixed; }
+  .promo-table thead th {
+    padding:9px 6px; font-size:10.5px; color:var(--text-3); font-weight:800;
+    text-align:left; border-bottom:1px solid var(--border); letter-spacing:.2px;
+    background:var(--surface-2); white-space:nowrap;
+  }
+  .promo-table thead th.num-col { text-align:right; }
+  .promo-table thead th.promo-col { color:#6d28d9; }
+  .promo-table thead th.calc-col { color:var(--text-3); background:#fafafa; }
+  .promo-table tbody td { padding:5px 5px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  .promo-table tbody tr:last-child td { border-bottom:none; }
+  .promo-table tbody tr:hover { background:#faf5ff; }
+  .promo-table input {
+    width:100%; background:#fff; border:1px solid var(--border-2); border-radius:6px;
+    color:var(--text); font-size:11.5px; font-weight:600; padding:5px 6px;
+    font-family:inherit; outline:none; transition:border-color .15s, box-shadow .15s;
+    min-height:30px;
+  }
+  .promo-table input.num { text-align:right; color:var(--primary); }
+  .promo-table input.promo-input { color:#6d28d9; background:#faf5ff; }
+  .promo-table input:focus { border-color:#6d28d9; box-shadow: 0 0 0 3px rgba(109,40,217,.15); }
+  .promo-table .calc-cell {
+    font-size:11.5px; font-weight:800; text-align:right; color:var(--text-2);
+    padding-right:8px; white-space:nowrap;
+  }
+  .promo-table .calc-cell.pos { color:var(--green); }
+  .promo-table .calc-cell.neg { color:var(--red); }
+  .promo-table .calc-cell.muted { color:var(--muted); font-weight:600; }
+  .promo-table .roi-link-btn {
+    background:linear-gradient(135deg,#f59e0b,#ea580c); color:#fff; border:none;
+    border-radius:7px; padding:6px 10px; font-size:11px; font-weight:700;
+    cursor:pointer; font-family:inherit; transition:opacity .15s, transform .1s;
+    min-height:30px; white-space:nowrap;
+  }
+  .promo-table .roi-link-btn:hover { opacity:.9; }
+  .promo-table .roi-link-btn:active { transform: translateY(1px); }
+  .promo-table .roi-link-btn:disabled {
+    background:var(--surface-2); color:var(--muted); cursor:not-allowed; opacity:.6;
+  }
+  .promo-empty {
+    text-align:center; padding:30px 14px; color:var(--muted); font-size:13px;
+  }
 
   /* ROI TAB */
   .roi-section { display:none; }
@@ -625,6 +688,7 @@
     <div class="mode-tab discount"      id="tabDiscount" role="tab" tabindex="0" aria-selected="false" aria-controls="calcArea" onclick="setMode('discount')" onkeydown="tabKey(event,'discount')">🏷️ 할인 적용</div>
     <div class="mode-tab roi"           id="tabRoi"      role="tab" tabindex="0" aria-selected="false" aria-controls="roiSection" onclick="setMode('roi')"     onkeydown="tabKey(event,'roi')">📊 ROI 계산</div>
     <div class="mode-tab manage"        id="tabManage"   role="tab" tabindex="0" aria-selected="false" aria-controls="manageSection" onclick="setMode('manage')" onkeydown="tabKey(event,'manage')">📦 품목 관리</div>
+    <div class="mode-tab promo"         id="tabPromo"    role="tab" tabindex="0" aria-selected="false" aria-controls="promoSection" onclick="setMode('promo')"   onkeydown="tabKey(event,'promo')">💰 가격/프로모션</div>
   </div>
 
   <!-- PARAMS -->
@@ -948,6 +1012,68 @@
     </div>
   </div>
 
+  <!-- ═══ 가격 / 프로모션 관리 ═══ -->
+  <div class="promo-section" id="promoSection" role="tabpanel" aria-labelledby="tabPromo">
+    <div class="manage-bar">
+      <div class="mb-title">가격 · 프로모션 관리 · <span class="mb-count" id="promoCount">0</span>종
+        <span id="promoSaveIndicator" style="font-size:11px;color:var(--green);font-weight:700;margin-left:10px;opacity:0;transition:opacity .3s">✓ 자동 저장됨</span>
+      </div>
+      <div class="mb-actions">
+        <div class="promo-mode-toggle" role="group" aria-label="할인 입력 모드">
+          <button type="button" class="pmt-btn active" id="pmtAmount" onclick="setPromoInputMode('amount')" aria-pressed="true">₩ 금액</button>
+          <button type="button" class="pmt-btn"        id="pmtRate"   onclick="setPromoInputMode('rate')"   aria-pressed="false">% 할인율</button>
+        </div>
+      </div>
+    </div>
+    <div class="promo-table-wrap">
+      <table class="promo-table" aria-label="가격/프로모션 관리 테이블">
+        <colgroup>
+          <col style="width:9.5%">
+          <col style="width:7%">
+          <col style="width:7%">
+          <col style="width:7%">
+          <col style="width:7%">
+          <col style="width:8%">
+          <col style="width:8%">
+          <col style="width:7%">
+          <col style="width:5.5%">
+          <col style="width:5.5%">
+          <col style="width:5.5%">
+          <col style="width:6%">
+          <col style="width:6%">
+          <col style="width:6%">
+          <col style="width:5%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>제품명</th>
+            <th>공급업체</th>
+            <th class="num-col">공급가</th>
+            <th class="num-col">시장가</th>
+            <th class="num-col">정가</th>
+            <th class="num-col promo-col">프로모션가</th>
+            <th class="num-col promo-col">스팟할인가</th>
+            <th class="num-col">1회 시술비</th>
+            <th class="num-col calc-col">정가<br>마진</th>
+            <th class="num-col calc-col">프로모<br>마진</th>
+            <th class="num-col calc-col">스팟<br>마진</th>
+            <th class="num-col calc-col" title="(프로모션가 − 공급가) ÷ 시장가">프로모<br><span style="color:#0891b2">vs시장가</span></th>
+            <th class="num-col calc-col" title="(스팟할인가 − 공급가) ÷ 시장가">스팟<br><span style="color:#0891b2">vs시장가</span></th>
+            <th class="num-col calc-col">회수<br>횟수</th>
+            <th style="text-align:center">ROI</th>
+          </tr>
+        </thead>
+        <tbody id="promoBody"></tbody>
+      </table>
+    </div>
+    <div class="manage-note">
+      💡 <b>정가</b>·<b>공급가</b>는 품목 관리 탭과 공유됩니다. 여기서 수정하면 다른 탭에도 반영됩니다.<br>
+      🔁 상단 <b>₩ 금액 / % 할인율</b> 토글로 프로모션가·스팟할인가 입력 방식을 전환할 수 있습니다 (정가 기준).<br>
+      📐 <b>마진</b> = (가격 − 공급가) ÷ 가격 · <b>vs 시장가</b> = (가격 − 공급가) ÷ 시장가 (시장가 기준 마진율)<br>
+      📊 <b>회수 횟수</b> = 공급가 ÷ 1회 시술비 (간이 ROI). 자세한 ROI는 우측 <b>📊</b> 버튼으로 확인하세요.
+    </div>
+  </div>
+
   <div class="note-bar" role="contentinfo">
     <span>🔒 내부: 패키지 할인가 기준 · 리스마진율 = (패키지 할인가 - 공급가) / 패키지 할인가</span>
     <span>📋 외부: 패키지 할인가 기준 · 보증금 10% (만기 환급) · 무이자 분납</span>
@@ -988,16 +1114,16 @@ const CATEGORIES = [
 ];
 const DEFAULT_CATEGORY = '기타 관리기기';
 const DEFAULT_PRODUCTS = [
-  { id:'impacq',   name:'ImpacQ Plus',       desc:'큐스위치 엔디야그',         category:'CO2 레이저/엔디야그', cost:22600000, price:32000000, leasePrice:0 },
-  { id:'janus',    name:'JANUS Pro sunlike', desc:'안면진단기기',               category:'안면 진단기',         cost:6820000,  price:8580000,  leasePrice:0 },
-  { id:'multixel', name:'Multixel',          desc:'프락셔널 CO2 (듀얼타입)',    category:'CO2 레이저/엔디야그', cost:7000000,  price:9900000,  leasePrice:0 },
-  { id:'ds40',     name:'DS-40UB',           desc:'보급형 CO2 레이저',          category:'CO2 레이저/엔디야그', cost:3900000,  price:4950000,  leasePrice:0 },
-  { id:'cotra',    name:'COTRA PLUS',        desc:'CO2 프락셔널 (프리미엄)',    category:'CO2 레이저/엔디야그', cost:11500000, price:18500000, leasePrice:0 },
-  { id:'neoject',  name:'NEOJECT',           desc:'인젝터 (니들 3bx 포함)',     category:'인젝터',              cost:3800000,  price:5500000,  leasePrice:0 },
-  { id:'ulkin',    name:'울킨',              desc:'전용 겔 포함',               category:'바디 관리기기',       cost:4400000,  price:7700000,  leasePrice:0 },
-  { id:'aquafill', name:'아쿠아필',          desc:'솔루션 포함',                category:'기타 관리기기',       cost:1800000,  price:2500000,  leasePrice:0 },
-  { id:'ssb',      name:'SSB-EVA',           desc:'의료용 석션기',              category:'기타 관리기기',       cost:880000,   price:1250000,  leasePrice:0 },
-  { id:'wellcomet', name:'웰코멧 LDM',       desc:'',                           category:'바디 관리기기',       cost:17000000, price:22000000, leasePrice:0 },
+  { id:'impacq',   name:'ImpacQ Plus',       desc:'큐스위치 엔디야그',         category:'CO2 레이저/엔디야그', cost:22600000, price:32000000, leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
+  { id:'janus',    name:'JANUS Pro sunlike', desc:'안면진단기기',               category:'안면 진단기',         cost:6820000,  price:8580000,  leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
+  { id:'multixel', name:'Multixel',          desc:'프락셔널 CO2 (듀얼타입)',    category:'CO2 레이저/엔디야그', cost:7000000,  price:9900000,  leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
+  { id:'ds40',     name:'DS-40UB',           desc:'보급형 CO2 레이저',          category:'CO2 레이저/엔디야그', cost:3900000,  price:4950000,  leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
+  { id:'cotra',    name:'COTRA PLUS',        desc:'CO2 프락셔널 (프리미엄)',    category:'CO2 레이저/엔디야그', cost:11500000, price:18500000, leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
+  { id:'neoject',  name:'NEOJECT',           desc:'인젝터 (니들 3bx 포함)',     category:'인젝터',              cost:3800000,  price:5500000,  leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
+  { id:'ulkin',    name:'울킨',              desc:'전용 겔 포함',               category:'바디 관리기기',       cost:4400000,  price:7700000,  leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
+  { id:'aquafill', name:'아쿠아필',          desc:'솔루션 포함',                category:'기타 관리기기',       cost:1800000,  price:2500000,  leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
+  { id:'ssb',      name:'SSB-EVA',           desc:'의료용 석션기',              category:'기타 관리기기',       cost:880000,   price:1250000,  leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
+  { id:'wellcomet', name:'웰코멧 LDM',       desc:'',                           category:'바디 관리기기',       cost:17000000, price:22000000, leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
 ];
 function productCategory(p) { return CATEGORIES.includes(p.category) ? p.category : DEFAULT_CATEGORY; }
 
@@ -1033,13 +1159,39 @@ function collapseAllCategories() {
   saveCollapsedCats();
   renderGrid();
 }
-const PRODUCTS_STORAGE_KEY = 'dseProducts_v1';
+const PRODUCTS_STORAGE_KEY    = 'dseProducts_v2';
+const PRODUCTS_STORAGE_KEY_V1 = 'dseProducts_v1';
+function migrateProduct(p) {
+  return {
+    id:           p.id,
+    name:         p.name || '',
+    desc:         p.desc || '',
+    category:     p.category || DEFAULT_CATEGORY,
+    cost:         parseInt(p.cost)         || 0,
+    price:        parseInt(p.price)        || 0,
+    leasePrice:   parseInt(p.leasePrice)   || 0,
+    supplier:     p.supplier || '',
+    marketPrice:  parseInt(p.marketPrice)  || 0,
+    promoPrice:   parseInt(p.promoPrice)   || 0,
+    spotPrice:    parseInt(p.spotPrice)    || 0,
+    treatmentFee: parseInt(p.treatmentFee) || 0,
+  };
+}
 let PRODUCTS = (function() {
   try {
     const raw = localStorage.getItem(PRODUCTS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed.map(migrateProduct);
+    }
+    const rawV1 = localStorage.getItem(PRODUCTS_STORAGE_KEY_V1);
+    if (rawV1) {
+      const parsedV1 = JSON.parse(rawV1);
+      if (Array.isArray(parsedV1) && parsedV1.length > 0) {
+        const migrated = parsedV1.map(migrateProduct);
+        try { localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(migrated)); } catch(_) {}
+        return migrated;
+      }
     }
   } catch(e) { console.warn('PRODUCTS load failed', e); }
   return DEFAULT_PRODUCTS.map(p => ({...p}));
@@ -1081,19 +1233,23 @@ function setMode(m) {
   const td = document.getElementById('tabDiscount');
   const tr = document.getElementById('tabRoi');
   const tm = document.getElementById('tabManage');
-  const tabs = {lease:tl, discount:td, roi:tr, manage:tm};
-  ['lease','discount','roi','manage'].forEach(k => {
+  const tp = document.getElementById('tabPromo');
+  const tabs = {lease:tl, discount:td, roi:tr, manage:tm, promo:tp};
+  ['lease','discount','roi','manage','promo'].forEach(k => {
     tabs[k].className = 'mode-tab ' + k + (m === k ? ' active' : '');
     tabs[k].setAttribute('aria-selected', m === k ? 'true' : 'false');
   });
   document.getElementById('leaseParams').style.display    = m === 'lease'    ? 'flex' : 'none';
   document.getElementById('discountParams').style.display = m === 'discount' ? 'flex' : 'none';
 
-  const calcMode = (m === 'lease' || m === 'discount');
-  const roiMode  = m === 'roi';
-  const mgMode   = m === 'manage';
-  document.getElementById('roiSection').className    = 'roi-section'    + (roiMode ? ' visible' : '');
-  document.getElementById('manageSection').className = 'manage-section' + (mgMode  ? ' visible' : '');
+  const calcMode  = (m === 'lease' || m === 'discount');
+  const roiMode   = m === 'roi';
+  const mgMode    = m === 'manage';
+  const promoMode = m === 'promo';
+  document.body.classList.toggle('mode-promo', promoMode);
+  document.getElementById('roiSection').className    = 'roi-section'    + (roiMode   ? ' visible' : '');
+  document.getElementById('manageSection').className = 'manage-section' + (mgMode    ? ' visible' : '');
+  document.getElementById('promoSection').className  = 'promo-section'  + (promoMode ? ' visible' : '');
   document.getElementById('productSectionLabel').style.display = calcMode ? '' : 'none';
   document.getElementById('productGrid').style.display = calcMode ? '' : 'none';
   const ps = document.getElementById('productSearch');
@@ -1102,13 +1258,14 @@ function setMode(m) {
   document.getElementById('intCollapse').style.display = calcMode ? '' : 'none';
   document.getElementById('extCollapse').style.display = calcMode ? '' : 'none';
 
-  if (roiMode)      { updateRoi(); }
-  else if (mgMode)  { renderManageTable(); }
-  else              { renderGrid(); update(); }
+  if (roiMode)         { updateRoi(); }
+  else if (mgMode)     { renderManageTable(); }
+  else if (promoMode)  { renderPromoTable(); }
+  else                 { renderGrid(); update(); }
 }
 
 function tabKey(e, current) {
-  const order = ['lease','discount','roi','manage'];
+  const order = ['lease','discount','roi','manage','promo'];
   const idx = order.indexOf(current);
   if (e.key === 'ArrowRight') { e.preventDefault(); setMode(order[(idx+1)%order.length]); document.getElementById('tab'+cap(order[(idx+1)%order.length])).focus(); }
   else if (e.key === 'ArrowLeft') { e.preventDefault(); setMode(order[(idx-1+order.length)%order.length]); document.getElementById('tab'+cap(order[(idx-1+order.length)%order.length])).focus(); }
@@ -1775,12 +1932,17 @@ function moveProduct(idx, dir) {
 }
 function exportProducts() {
   const data = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     products: PRODUCTS.map(p => ({
       id: p.id, name: p.name, desc: p.desc || '',
       category: productCategory(p),
-      cost: p.cost || 0, price: p.price || 0, leasePrice: p.leasePrice || 0
+      cost: p.cost || 0, price: p.price || 0, leasePrice: p.leasePrice || 0,
+      supplier:     p.supplier || '',
+      marketPrice:  p.marketPrice  || 0,
+      promoPrice:   p.promoPrice   || 0,
+      spotPrice:    p.spotPrice    || 0,
+      treatmentFee: p.treatmentFee || 0,
     }))
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1810,6 +1972,11 @@ function importProducts(event) {
         cost:     parseInt(p.cost)  || 0,
         price:    parseInt(p.price) || 0,
         leasePrice: parseInt(p.leasePrice) || 0,
+        supplier:     String(p.supplier || ''),
+        marketPrice:  parseInt(p.marketPrice)  || 0,
+        promoPrice:   parseInt(p.promoPrice)   || 0,
+        spotPrice:    parseInt(p.spotPrice)    || 0,
+        treatmentFee: parseInt(p.treatmentFee) || 0,
       }));
       if (!confirm(`${cleaned.length}개 품목을 가져옵니다. 현재 리스트는 대체됩니다. 계속할까요?`)) {
         event.target.value = '';
@@ -1840,6 +2007,210 @@ function importProducts(event) {
     event.target.value = '';
   };
   reader.readAsText(file);
+}
+
+// ── 가격/프로모션 관리 탭 ─────────────────────────────────────────────
+let PROMO_INPUT_MODE = 'amount'; // 'amount' | 'rate'
+let _promoSaveFlashTimer = null;
+function flashPromoSaved() {
+  const el = document.getElementById('promoSaveIndicator');
+  if (!el) return;
+  el.style.opacity = '1';
+  clearTimeout(_promoSaveFlashTimer);
+  _promoSaveFlashTimer = setTimeout(() => { el.style.opacity = '0'; }, 1200);
+}
+function setPromoInputMode(mode) {
+  PROMO_INPUT_MODE = (mode === 'rate') ? 'rate' : 'amount';
+  const btnA = document.getElementById('pmtAmount');
+  const btnR = document.getElementById('pmtRate');
+  if (btnA && btnR) {
+    btnA.classList.toggle('active', PROMO_INPUT_MODE === 'amount');
+    btnR.classList.toggle('active', PROMO_INPUT_MODE === 'rate');
+    btnA.setAttribute('aria-pressed', PROMO_INPUT_MODE === 'amount' ? 'true' : 'false');
+    btnR.setAttribute('aria-pressed', PROMO_INPUT_MODE === 'rate'   ? 'true' : 'false');
+  }
+  renderPromoTable();
+}
+function pctStr(n) {
+  if (!isFinite(n)) return '—';
+  return (n >= 0 ? '' : '−') + Math.abs(n).toFixed(1) + '%';
+}
+function marginPct(price, cost) {
+  if (!price || price <= 0) return null;
+  return ((price - cost) / price) * 100;
+}
+function marginVsMarket(price, cost, marketPrice) {
+  if (!price || price <= 0) return null;
+  if (!marketPrice || marketPrice <= 0) return null;
+  return ((price - cost) / marketPrice) * 100;
+}
+function discountRate(promoPrice, listPrice) {
+  if (!listPrice || listPrice <= 0) return 0;
+  if (!promoPrice || promoPrice <= 0) return 0;
+  return ((listPrice - promoPrice) / listPrice) * 100;
+}
+function priceFromRate(rate, listPrice) {
+  if (!listPrice || listPrice <= 0) return 0;
+  const r = Math.max(0, Math.min(100, parseFloat(rate) || 0));
+  return Math.round(listPrice * (1 - r / 100));
+}
+function renderPromoTable() {
+  const body = document.getElementById('promoBody');
+  if (!body) return;
+  document.getElementById('promoCount').textContent = PRODUCTS.length;
+  if (PRODUCTS.length === 0) {
+    body.innerHTML = `<tr><td colspan="15" class="promo-empty">품목 관리 탭에서 먼저 품목을 추가해주세요</td></tr>`;
+    return;
+  }
+  const isRate = PROMO_INPUT_MODE === 'rate';
+  body.innerHTML = PRODUCTS.map((p, idx) => {
+    const promoPrice = p.promoPrice || 0;
+    const spotPrice  = p.spotPrice  || 0;
+    const promoVal = isRate
+      ? (promoPrice > 0 ? discountRate(promoPrice, p.price).toFixed(1) : '')
+      : (promoPrice > 0 ? promoPrice.toLocaleString('ko-KR') : '');
+    const spotVal = isRate
+      ? (spotPrice > 0 ? discountRate(spotPrice, p.price).toFixed(1) : '')
+      : (spotPrice > 0 ? spotPrice.toLocaleString('ko-KR') : '');
+    const promoPlaceholder = isRate ? '0.0' : '0';
+    const spotPlaceholder  = isRate ? '0.0' : '0';
+    const promoSuffix = isRate ? '%' : '';
+    const spotSuffix  = isRate ? '%' : '';
+    const mList         = marginPct(p.price,      p.cost);
+    const mPromo        = marginPct(promoPrice,   p.cost);
+    const mSpot         = marginPct(spotPrice,    p.cost);
+    const mPromoMarket  = marginVsMarket(promoPrice, p.cost, p.marketPrice);
+    const mSpotMarket   = marginVsMarket(spotPrice,  p.cost, p.marketPrice);
+    const breakEven = (p.treatmentFee && p.treatmentFee > 0 && p.cost > 0)
+      ? Math.ceil(p.cost / p.treatmentFee) : null;
+    const cellClass = (m) => {
+      if (m == null) return 'calc-cell muted';
+      if (m >= 30) return 'calc-cell pos';
+      if (m < 0)   return 'calc-cell neg';
+      return 'calc-cell';
+    };
+    const cellTxt = (m) => (m == null ? '—' : pctStr(m));
+    return `
+    <tr data-idx="${idx}">
+      <td class="sticky-col"><input type="text" class="pm-name" value="${(p.name || '').replace(/"/g,'&quot;')}" placeholder="제품명" aria-label="제품명"></td>
+      <td><input type="text" class="pm-supplier" value="${(p.supplier || '').replace(/"/g,'&quot;')}" placeholder="—" aria-label="공급업체"></td>
+      <td><input type="text" inputmode="numeric" class="pm-cost num" value="${(p.cost || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="공급가"></td>
+      <td><input type="text" inputmode="numeric" class="pm-market num" value="${(p.marketPrice || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="시장가"></td>
+      <td><input type="text" inputmode="numeric" class="pm-price num" value="${(p.price || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="정가"></td>
+      <td><input type="text" inputmode="${isRate ? 'decimal' : 'numeric'}" class="pm-promo num promo-input" value="${promoVal}" placeholder="${promoPlaceholder}" aria-label="프로모션가${promoSuffix}" data-suffix="${promoSuffix}"></td>
+      <td><input type="text" inputmode="${isRate ? 'decimal' : 'numeric'}" class="pm-spot num promo-input" value="${spotVal}" placeholder="${spotPlaceholder}" aria-label="스팟할인가${spotSuffix}" data-suffix="${spotSuffix}"></td>
+      <td><input type="text" inputmode="numeric" class="pm-treat num" value="${(p.treatmentFee || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="1회 시술비"></td>
+      <td class="${cellClass(mList)}">${cellTxt(mList)}</td>
+      <td class="${cellClass(mPromo)}">${cellTxt(mPromo)}</td>
+      <td class="${cellClass(mSpot)}">${cellTxt(mSpot)}</td>
+      <td class="${cellClass(mPromoMarket)}">${cellTxt(mPromoMarket)}</td>
+      <td class="${cellClass(mSpotMarket)}">${cellTxt(mSpotMarket)}</td>
+      <td class="calc-cell">${breakEven == null ? '—' : breakEven.toLocaleString('ko-KR') + '회'}</td>
+      <td style="text-align:center"><button class="roi-link-btn" onclick="openRoiForProduct(${idx})" aria-label="${p.name} ROI 자세히 보기">📊</button></td>
+    </tr>`;
+  }).join('');
+
+  // bind events
+  body.querySelectorAll('tr').forEach(tr => {
+    const idx = parseInt(tr.dataset.idx);
+    const p   = PRODUCTS[idx];
+    if (!p) return;
+    const n  = tr.querySelector('.pm-name');
+    const s  = tr.querySelector('.pm-supplier');
+    const c  = tr.querySelector('.pm-cost');
+    const mk = tr.querySelector('.pm-market');
+    const pr = tr.querySelector('.pm-price');
+    const pm = tr.querySelector('.pm-promo');
+    const sp = tr.querySelector('.pm-spot');
+    const tf = tr.querySelector('.pm-treat');
+
+    const recalcMargins = () => {
+      const cells = tr.querySelectorAll('.calc-cell');
+      // [0] 정가마진 [1] 프로모마진 [2] 스팟마진 [3] 프로모(시장가) [4] 스팟(시장가) [5] 회수횟수
+      const mList   = marginPct(p.price,    p.cost);
+      const mPromo  = marginPct(p.promoPrice, p.cost);
+      const mSpot   = marginPct(p.spotPrice,  p.cost);
+      const mPromoM = marginVsMarket(p.promoPrice, p.cost, p.marketPrice);
+      const mSpotM  = marginVsMarket(p.spotPrice,  p.cost, p.marketPrice);
+      const be = (p.treatmentFee && p.treatmentFee > 0 && p.cost > 0) ? Math.ceil(p.cost / p.treatmentFee) : null;
+      const apply = (cell, m) => {
+        if (!cell) return;
+        cell.textContent = (m == null) ? '—' : pctStr(m);
+        cell.className = 'calc-cell' + (m == null ? ' muted' : (m >= 30 ? ' pos' : (m < 0 ? ' neg' : '')));
+      };
+      apply(cells[0], mList);
+      apply(cells[1], mPromo);
+      apply(cells[2], mSpot);
+      apply(cells[3], mPromoM);
+      apply(cells[4], mSpotM);
+      if (cells[5]) cells[5].textContent = (be == null) ? '—' : be.toLocaleString('ko-KR') + '회';
+    };
+
+    const commitMeta = () => {
+      p.name     = n.value;
+      p.supplier = s.value;
+      saveProducts();
+      flashPromoSaved();
+    };
+    n.addEventListener('input',  commitMeta);
+    s.addEventListener('input',  commitMeta);
+
+    [c, mk, pr, tf].forEach(el => {
+      bindCommaInput(el, () => {
+        p.cost         = parseIntInput(c);
+        p.marketPrice  = parseIntInput(mk);
+        p.price        = parseIntInput(pr);
+        p.treatmentFee = parseIntInput(tf);
+        // 정가가 바뀌면 같은 행의 promo/spot 표시값(% 모드일 때)도 갱신해야 하나, 금액은 그대로 두고 마진만 갱신
+        saveProducts();
+        recalcMargins();
+        flashPromoSaved();
+      });
+    });
+
+    if (PROMO_INPUT_MODE === 'amount') {
+      [pm, sp].forEach((el, i) => {
+        bindCommaInput(el, () => {
+          if (i === 0) p.promoPrice = parseIntInput(pm);
+          else         p.spotPrice  = parseIntInput(sp);
+          saveProducts();
+          recalcMargins();
+          flashPromoSaved();
+        });
+      });
+    } else {
+      // rate mode - decimal % input
+      const onRateInput = (el, isPromo) => {
+        const raw = (el.value || '').replace(/[^0-9.]/g,'');
+        const rate = parseFloat(raw);
+        if (isPromo) p.promoPrice = isNaN(rate) ? 0 : priceFromRate(rate, p.price);
+        else         p.spotPrice  = isNaN(rate) ? 0 : priceFromRate(rate, p.price);
+        saveProducts();
+        recalcMargins();
+        flashPromoSaved();
+      };
+      pm.addEventListener('input', () => onRateInput(pm, true));
+      sp.addEventListener('input', () => onRateInput(sp, false));
+    }
+  });
+}
+
+function openRoiForProduct(idx) {
+  const p = PRODUCTS[idx];
+  if (!p) return;
+  setMode('roi');
+  const costEl = document.getElementById('roiCost');
+  const chargeEl = document.getElementById('roiChargePerPatient');
+  if (costEl) {
+    costEl.value = (p.cost || 0).toLocaleString('ko-KR');
+    costEl.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  if (chargeEl && p.treatmentFee) {
+    chargeEl.value = (p.treatmentFee || 0).toLocaleString('ko-KR');
+    chargeEl.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  if (typeof updateRoi === 'function') updateRoi();
+  toast(`"${p.name}" ROI 시뮬레이션 준비됨`, 'success');
 }
 
 renderGrid();
