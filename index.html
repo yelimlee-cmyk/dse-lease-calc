@@ -51,8 +51,7 @@
     font-size:14px; line-height:1.55; letter-spacing:-.005em;
     -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width:1040px; margin:0 auto; transition: max-width .2s; }
-  body.mode-promo .wrap { max-width: min(1600px, 96vw); }
+  .wrap { max-width: min(1600px, 96vw); margin:0 auto; }
   button { font-family: inherit; }
   button:focus-visible, input:focus-visible, select:focus-visible, [role=button]:focus-visible {
     outline: none; box-shadow: var(--focus);
@@ -1431,7 +1430,6 @@ function setMode(m) {
   const roiMode   = m === 'roi';
   const mgMode    = m === 'manage';
   const promoMode = m === 'promo';
-  document.body.classList.toggle('mode-promo', promoMode);
   document.getElementById('roiSection').className    = 'roi-section'    + (roiMode   ? ' visible' : '');
   document.getElementById('manageSection').className = 'manage-section' + (mgMode    ? ' visible' : '');
   document.getElementById('promoSection').className  = 'promo-section'  + (promoMode ? ' visible' : '');
