@@ -169,7 +169,7 @@
     cursor:pointer; font-family:inherit; font-weight:700; transition:all .15s;
   }
   .pinned-head .pn-clear:hover { background:var(--red); color:#fff; border-color:var(--red); }
-  .pinned-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .pinned-cards { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
   .pinned-cards .product-card.selected { background:#fff; border-color:#f59e0b; }
 
   .empty-search {
@@ -204,7 +204,7 @@
     border-radius:5px; color:var(--primary); font-size:12px; font-weight:900; line-height:1;
   }
   .cat-title .cat-count { color:var(--text-3); font-weight:700; font-size:10.5px; margin-left:auto; }
-  .cat-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .cat-cards { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
   .cat-group.collapsed .cat-cards { display:none; }
   .cat-group.collapsed .cat-title { margin-bottom:0; }
   .cat-bulk-actions { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
@@ -437,6 +437,52 @@
     border-radius:10px;
   }
   .manage-note b { color:var(--text); }
+
+  /* 공급업체별 그룹화 + 일괄 선택 */
+  .manage-btn.delete { background:linear-gradient(135deg, var(--red), #b91c1c); color:#fff; }
+  .group-toggle {
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--surface); border:1px solid var(--border-2);
+    border-radius:10px; padding:8px 12px;
+    font-size:12px; font-weight:700; color:var(--text-2);
+    cursor:pointer; user-select:none; min-height:40px;
+  }
+  .group-toggle input { width:14px; height:14px; cursor:pointer; accent-color:#6d28d9; }
+  .group-toggle:hover { border-color:#6d28d9; color:#6d28d9; }
+  .bulk-bar {
+    display:flex; justify-content:space-between; align-items:center;
+    background:#eef2ff; border:1px solid #c7d2fe; border-radius:10px;
+    padding:10px 14px; margin-bottom:12px; font-size:12.5px; color:#3730a3;
+    font-weight:700;
+  }
+  .bulk-bar .bulk-count { color:#4338ca; font-weight:900; }
+  .bulk-bar .bulk-actions { display:flex; gap:8px; }
+  .bulk-bar .manage-btn { min-height:34px; padding:7px 14px; font-size:12px; }
+
+  /* 행 체크박스 / 공급업체 그룹 헤더 */
+  .row-check { width:14px; height:14px; cursor:pointer; accent-color:#6d28d9; }
+  .check-cell { text-align:center; padding-left:10px !important; padding-right:6px !important; }
+  .supplier-row td {
+    background:linear-gradient(90deg, #faf5ff, #fdfcff);
+    border-top:2px solid #ddd6fe !important;
+    border-bottom:1px solid #ddd6fe !important;
+    padding:9px 12px !important;
+    font-size:12.5px; font-weight:800; color:#5b21b6;
+    cursor:pointer; user-select:none;
+  }
+  .supplier-row td .sr-toggle {
+    display:inline-block; width:14px; transition:transform .15s;
+    color:#7c3aed;
+  }
+  .supplier-row.collapsed td .sr-toggle { transform:rotate(-90deg); }
+  .supplier-row .sr-name { margin:0 6px 0 4px; }
+  .supplier-row .sr-count {
+    font-size:11px; font-weight:700; color:#6d28d9; background:#ede9fe;
+    padding:2px 8px; border-radius:10px; margin-left:4px;
+  }
+  .supplier-row input[type="checkbox"] {
+    margin-right:8px; accent-color:#6d28d9;
+  }
 
   /* PROMO / PRICE MANAGEMENT TAB */
   .promo-section { display:none; }
@@ -752,6 +798,12 @@
   .skip-link:focus { top:0; outline:none; }
 
   /* 모바일 반응형 */
+  @media (max-width: 1280px) {
+    .cat-cards, .pinned-cards { grid-template-columns:repeat(4,1fr); }
+  }
+  @media (max-width: 1080px) {
+    .cat-cards, .pinned-cards { grid-template-columns:repeat(3,1fr); }
+  }
   @media (max-width: 960px) {
     .cat-cards, .pinned-cards { grid-template-columns:repeat(2,1fr); }
     .int-summary { grid-template-columns:repeat(2,1fr); }
@@ -1176,6 +1228,10 @@
         <span id="saveIndicator" style="font-size:11px;color:var(--green);font-weight:700;margin-left:10px;opacity:0;transition:opacity .3s">✓ 자동 저장됨</span>
       </div>
       <div class="mb-actions">
+        <label class="group-toggle" title="공급업체별로 행을 그룹화하여 표시">
+          <input type="checkbox" id="groupBySupplierManage" onchange="toggleGroupBySupplier(this.checked)">
+          <span>공급업체별 그룹화</span>
+        </label>
         <button class="manage-btn add"      onclick="addProduct()"        aria-label="새 품목 추가">+ 품목 추가</button>
         <button class="manage-btn template" onclick="downloadTemplate()"  aria-label="업로드용 엑셀 양식 다운로드">📋 업로드 양식</button>
         <button class="manage-btn import"   onclick="document.getElementById('importFile').click()" aria-label="엑셀 또는 JSON 파일에서 품목 리스트 불러오기">📥 가져오기</button>
@@ -1184,16 +1240,24 @@
         <input type="file" id="importFile" accept=".xlsx,.json,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="importProducts(event)">
       </div>
     </div>
+    <div class="bulk-bar" id="bulkBarManage" style="display:none">
+      <span><b class="bulk-count">0</b>개 선택됨</span>
+      <div class="bulk-actions">
+        <button class="manage-btn reset"  type="button" onclick="clearSelectedPids()">선택 해제</button>
+        <button class="manage-btn delete" type="button" onclick="deleteSelectedProducts()">🗑️ 선택 삭제</button>
+      </div>
+    </div>
     <div class="manage-table-wrap">
       <table class="manage-table" aria-label="품목 관리 테이블">
         <thead>
           <tr>
-            <th style="width:16%">품목명</th>
-            <th style="width:20%">설명</th>
-            <th style="width:16%">카테고리</th>
-            <th style="width:13%;text-align:right">공급가</th>
-            <th style="width:13%;text-align:right">판매가</th>
-            <th style="width:22%;text-align:right">순서/삭제</th>
+            <th style="width:4%;text-align:center">선택</th>
+            <th style="width:14%">품목명</th>
+            <th style="width:18%">설명</th>
+            <th style="width:14%">카테고리</th>
+            <th style="width:12%;text-align:right">공급가</th>
+            <th style="width:12%;text-align:right">판매가</th>
+            <th style="width:26%;text-align:right">순서/삭제</th>
           </tr>
         </thead>
         <tbody id="manageBody"></tbody>
@@ -1213,6 +1277,10 @@
         <span id="promoSaveIndicator" style="font-size:11px;color:var(--green);font-weight:700;margin-left:10px;opacity:0;transition:opacity .3s">✓ 자동 저장됨</span>
       </div>
       <div class="mb-actions">
+        <label class="group-toggle" title="공급업체별로 행을 그룹화하여 표시">
+          <input type="checkbox" id="groupBySupplierPromo" onchange="toggleGroupBySupplier(this.checked)">
+          <span>공급업체별 그룹화</span>
+        </label>
         <div class="promo-mode-toggle" role="group" aria-label="할인 입력 모드">
           <button type="button" class="pmt-btn active" id="pmtAmount"   onclick="setPromoInputMode('amount')"   aria-pressed="true">₩ 최종가</button>
           <button type="button" class="pmt-btn"        id="pmtRate"     onclick="setPromoInputMode('rate')"     aria-pressed="false">% 할인율</button>
@@ -1220,27 +1288,36 @@
         </div>
       </div>
     </div>
+    <div class="bulk-bar" id="bulkBarPromo" style="display:none">
+      <span><b class="bulk-count">0</b>개 선택됨</span>
+      <div class="bulk-actions">
+        <button class="manage-btn reset"  type="button" onclick="clearSelectedPids()">선택 해제</button>
+        <button class="manage-btn delete" type="button" onclick="deleteSelectedProducts()">🗑️ 선택 삭제</button>
+      </div>
+    </div>
     <div class="promo-table-wrap">
       <table class="promo-table" aria-label="가격/프로모션 관리 테이블">
         <colgroup>
-          <col style="width:9.5%">
-          <col style="width:7%">
-          <col style="width:7%">
-          <col style="width:7%">
-          <col style="width:7%">
-          <col style="width:8%">
-          <col style="width:8%">
-          <col style="width:7%">
-          <col style="width:5.5%">
-          <col style="width:5.5%">
-          <col style="width:5.5%">
-          <col style="width:6%">
-          <col style="width:6%">
-          <col style="width:6%">
+          <col style="width:3%">
+          <col style="width:9%">
+          <col style="width:6.5%">
+          <col style="width:6.5%">
+          <col style="width:6.5%">
+          <col style="width:6.5%">
+          <col style="width:7.5%">
+          <col style="width:7.5%">
+          <col style="width:6.5%">
           <col style="width:5%">
+          <col style="width:5%">
+          <col style="width:5%">
+          <col style="width:5.75%">
+          <col style="width:5.75%">
+          <col style="width:5.5%">
+          <col style="width:4.5%">
         </colgroup>
         <thead>
           <tr>
+            <th style="text-align:center">선택</th>
             <th>제품명</th>
             <th>공급업체</th>
             <th class="num-col">공급가</th>
@@ -1383,6 +1460,96 @@ let PRODUCTS = (function() {
 function saveProducts() {
   try { localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(PRODUCTS)); }
   catch(e) { console.warn('PRODUCTS save failed', e); }
+}
+
+// 공급업체별 그룹화 / 다중 선택 상태 (품목관리 + 가격프로모션 탭 공유)
+const SUPPLIER_GROUP_KEY = 'dseSupplierGroup_v1';
+let GROUP_BY_SUPPLIER = (function() {
+  try { return localStorage.getItem(SUPPLIER_GROUP_KEY) === '1'; } catch(_) { return false; }
+})();
+function saveGroupBySupplier() {
+  try { localStorage.setItem(SUPPLIER_GROUP_KEY, GROUP_BY_SUPPLIER ? '1' : '0'); } catch(_) {}
+}
+const SELECTED_PIDS = new Set();        // 체크된 품목 id
+const COLLAPSED_SUPPLIERS = new Set();  // 접힌 공급업체명
+function getSupplierLabel(p) {
+  return (p.supplier && String(p.supplier).trim()) || '(공급업체 미지정)';
+}
+function buildSupplierGroups() {
+  const groups = new Map();
+  PRODUCTS.forEach((p, idx) => {
+    const key = getSupplierLabel(p);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push({ p, idx });
+  });
+  return Array.from(groups.entries()).map(([supplier, items]) => ({ supplier, items }));
+}
+function toggleGroupBySupplier(checked) {
+  GROUP_BY_SUPPLIER = !!checked;
+  saveGroupBySupplier();
+  // 두 탭 토글 체크박스 동기화
+  ['groupBySupplierManage', 'groupBySupplierPromo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.checked = GROUP_BY_SUPPLIER;
+  });
+  if (typeof renderManageTable === 'function') renderManageTable();
+  if (typeof renderPromoTable  === 'function') renderPromoTable();
+}
+function toggleSupplierCollapsed(supplier) {
+  if (COLLAPSED_SUPPLIERS.has(supplier)) COLLAPSED_SUPPLIERS.delete(supplier);
+  else                                    COLLAPSED_SUPPLIERS.add(supplier);
+  if (typeof renderManageTable === 'function') renderManageTable();
+  if (typeof renderPromoTable  === 'function') renderPromoTable();
+}
+function togglePidSelected(id, checked) {
+  if (checked) SELECTED_PIDS.add(id);
+  else         SELECTED_PIDS.delete(id);
+  updateBulkBars();
+}
+function toggleSupplierAll(supplier, checked) {
+  PRODUCTS.forEach(p => {
+    if (getSupplierLabel(p) === supplier) {
+      if (checked) SELECTED_PIDS.add(p.id);
+      else         SELECTED_PIDS.delete(p.id);
+    }
+  });
+  if (typeof renderManageTable === 'function') renderManageTable();
+  if (typeof renderPromoTable  === 'function') renderPromoTable();
+}
+function clearSelectedPids() {
+  SELECTED_PIDS.clear();
+  if (typeof renderManageTable === 'function') renderManageTable();
+  if (typeof renderPromoTable  === 'function') renderPromoTable();
+}
+function deleteSelectedProducts() {
+  if (SELECTED_PIDS.size === 0) return;
+  if (!confirm(`선택한 ${SELECTED_PIDS.size}개 품목을 삭제하시겠습니까? 되돌릴 수 없습니다.`)) return;
+  for (let i = PRODUCTS.length - 1; i >= 0; i--) {
+    const p = PRODUCTS[i];
+    if (SELECTED_PIDS.has(p.id)) {
+      selected.delete(p.id);
+      delete promoByMode.lease[p.id];
+      delete promoByMode.discount[p.id];
+      manualByMode.lease.delete(p.id);
+      manualByMode.discount.delete(p.id);
+      PRODUCTS.splice(i, 1);
+    }
+  }
+  SELECTED_PIDS.clear();
+  saveProducts();
+  if (typeof renderManageTable === 'function') renderManageTable();
+  if (typeof renderPromoTable  === 'function') renderPromoTable();
+  toast('선택한 품목이 삭제되었습니다', 'success');
+}
+function updateBulkBars() {
+  const n = SELECTED_PIDS.size;
+  ['bulkBarManage', 'bulkBarPromo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = n > 0 ? '' : 'none';
+    const cnt = el.querySelector('.bulk-count');
+    if (cnt) cnt.textContent = n;
+  });
 }
 
 const selected     = new Set();
@@ -2017,13 +2184,21 @@ function flashSaved() {
 }
 function renderManageTable() {
   const body = document.getElementById('manageBody');
+  if (!body) return;
   document.getElementById('manageCount').textContent = PRODUCTS.length;
+  const groupCheck = document.getElementById('groupBySupplierManage');
+  if (groupCheck) groupCheck.checked = GROUP_BY_SUPPLIER;
+  updateBulkBars();
+
   const last = PRODUCTS.length - 1;
   const catOptions = (selCat) => CATEGORIES.map(c =>
     `<option value="${c}"${c === selCat ? ' selected' : ''}>${c}</option>`
   ).join('');
-  body.innerHTML = PRODUCTS.map((p, idx) => `
-    <tr data-idx="${idx}">
+  const productRow = (p, idx) => {
+    const checked = SELECTED_PIDS.has(p.id) ? ' checked' : '';
+    return `
+    <tr data-idx="${idx}" data-pid="${p.id}">
+      <td class="check-cell"><input type="checkbox" class="row-check"${checked} aria-label="${(p.name||'').replace(/"/g,'&quot;')} 선택"></td>
       <td><input type="text" class="mg-name" value="${(p.name || '').replace(/"/g,'&quot;')}" placeholder="품목명" aria-label="품목명"></td>
       <td><input type="text" class="mg-desc" value="${(p.desc || '').replace(/"/g,'&quot;')}" placeholder="설명(선택)" aria-label="설명"></td>
       <td><select class="mg-cat" aria-label="카테고리">${catOptions(productCategory(p))}</select></td>
@@ -2031,20 +2206,69 @@ function renderManageTable() {
       <td><input type="text" inputmode="numeric" class="mg-price num" value="${(p.price || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="판매가"></td>
       <td>
         <div class="row-actions">
-          <button class="ic-btn" onclick="moveProduct(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} aria-label="위로 이동">▲</button>
-          <button class="ic-btn" onclick="moveProduct(${idx}, 1)"  ${idx === last ? 'disabled' : ''} aria-label="아래로 이동">▼</button>
-          <button class="del-btn" onclick="deleteProduct(${idx})" aria-label="${p.name} 품목 삭제">삭제</button>
+          <button class="ic-btn" onclick="moveProduct(${idx}, -1)" ${(idx === 0 || GROUP_BY_SUPPLIER) ? 'disabled' : ''} aria-label="위로 이동">▲</button>
+          <button class="ic-btn" onclick="moveProduct(${idx}, 1)"  ${(idx === last || GROUP_BY_SUPPLIER) ? 'disabled' : ''} aria-label="아래로 이동">▼</button>
+          <button class="del-btn" onclick="deleteProduct(${idx})" aria-label="${(p.name||'').replace(/"/g,'&quot;')} 품목 삭제">삭제</button>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  };
 
-  body.querySelectorAll('tr').forEach(tr => {
+  let html = '';
+  if (GROUP_BY_SUPPLIER) {
+    const groups = buildSupplierGroups();
+    groups.forEach(({ supplier, items }) => {
+      const collapsed = COLLAPSED_SUPPLIERS.has(supplier);
+      const supplierIds = items.map(it => it.p.id);
+      const checkedCount = supplierIds.filter(id => SELECTED_PIDS.has(id)).length;
+      const allChecked = supplierIds.length > 0 && checkedCount === supplierIds.length;
+      const someChecked = checkedCount > 0 && !allChecked;
+      html += `
+        <tr class="supplier-row${collapsed ? ' collapsed' : ''}" data-supplier="${supplier.replace(/"/g,'&quot;')}">
+          <td colspan="7">
+            <input type="checkbox" class="supplier-check" data-supplier="${supplier.replace(/"/g,'&quot;')}" ${allChecked ? 'checked' : ''} ${someChecked ? 'data-indeterminate="1"' : ''} aria-label="${supplier} 전체 선택">
+            <span class="sr-toggle" data-collapse="${supplier.replace(/"/g,'&quot;')}">▼</span>
+            <span class="sr-name" data-collapse="${supplier.replace(/"/g,'&quot;')}">${supplier}</span>
+            <span class="sr-count">${items.length}종</span>
+          </td>
+        </tr>`;
+      if (!collapsed) {
+        items.forEach(({ p, idx }) => { html += productRow(p, idx); });
+      }
+    });
+  } else {
+    PRODUCTS.forEach((p, idx) => { html += productRow(p, idx); });
+  }
+  body.innerHTML = html;
+
+  // 그룹 헤더 indeterminate 상태 적용
+  body.querySelectorAll('.supplier-check[data-indeterminate]').forEach(cb => { cb.indeterminate = true; });
+
+  // 그룹 헤더 이벤트
+  body.querySelectorAll('.supplier-row').forEach(tr => {
+    const supplier = tr.dataset.supplier;
+    const cb = tr.querySelector('.supplier-check');
+    if (cb) cb.addEventListener('change', (e) => { e.stopPropagation(); toggleSupplierAll(supplier, cb.checked); });
+    tr.querySelectorAll('[data-collapse]').forEach(el => {
+      el.addEventListener('click', () => toggleSupplierCollapsed(supplier));
+    });
+  });
+
+  // 행 이벤트
+  body.querySelectorAll('tr[data-idx]').forEach(tr => {
     const idx = parseInt(tr.dataset.idx);
+    const pid = tr.dataset.pid;
+    const cb = tr.querySelector('.row-check');
     const n  = tr.querySelector('.mg-name');
     const d  = tr.querySelector('.mg-desc');
     const ct = tr.querySelector('.mg-cat');
     const c  = tr.querySelector('.mg-cost');
     const pr = tr.querySelector('.mg-price');
+    if (cb) cb.addEventListener('change', () => {
+      togglePidSelected(pid, cb.checked);
+      // 그룹 헤더 상태 갱신을 위해 그룹 모드일 때 재렌더 필요
+      if (GROUP_BY_SUPPLIER) renderManageTable();
+    });
     const commit = () => {
       PRODUCTS[idx].name     = n.value;
       PRODUCTS[idx].desc     = d.value;
@@ -2079,6 +2303,7 @@ function deleteProduct(idx) {
   if (!p) return;
   if (!confirm(`"${p.name}" 품목을 삭제할까요?`)) return;
   selected.delete(p.id);
+  SELECTED_PIDS.delete(p.id);
   delete promoByMode.lease[p.id];
   delete promoByMode.discount[p.id];
   manualByMode.lease.delete(p.id);
@@ -2086,6 +2311,7 @@ function deleteProduct(idx) {
   PRODUCTS.splice(idx, 1);
   saveProducts();
   renderManageTable();
+  if (typeof renderPromoTable === 'function') renderPromoTable();
   toast(`"${p.name}" 삭제됨`, 'success');
 }
 function resetProducts() {
@@ -2096,8 +2322,10 @@ function resetProducts() {
   manualByMode.lease.clear();
   manualByMode.discount.clear();
   selected.clear();
+  SELECTED_PIDS.clear();
   saveProducts();
   renderManageTable();
+  if (typeof renderPromoTable === 'function') renderPromoTable();
   toast('품목 리스트가 비워졌습니다', 'success');
 }
 function moveProduct(idx, dir) {
@@ -2146,8 +2374,10 @@ function _commitImported(cleaned) {
     promoByMode.discount[p.id] = discountSeed(p);
   });
   selected.clear();
+  SELECTED_PIDS.clear();
   saveProducts();
   renderManageTable();
+  if (typeof renderPromoTable === 'function') renderPromoTable();
   toast(`✓ ${cleaned.length}개 품목을 불러왔습니다`, 'success');
   return true;
 }
@@ -2340,14 +2570,25 @@ function renderPromoTable() {
   const body = document.getElementById('promoBody');
   if (!body) return;
   document.getElementById('promoCount').textContent = PRODUCTS.length;
+  const groupCheck = document.getElementById('groupBySupplierPromo');
+  if (groupCheck) groupCheck.checked = GROUP_BY_SUPPLIER;
+  updateBulkBars();
+
   if (PRODUCTS.length === 0) {
-    body.innerHTML = `<tr><td colspan="15" class="promo-empty">품목 관리 탭에서 먼저 품목을 추가해주세요</td></tr>`;
+    body.innerHTML = `<tr><td colspan="16" class="promo-empty">품목 관리 탭에서 먼저 품목을 추가해주세요</td></tr>`;
     return;
   }
   const mode = PROMO_INPUT_MODE; // 'amount' | 'rate' | 'discount'
   const isRate     = mode === 'rate';
   const isDiscount = mode === 'discount';
-  body.innerHTML = PRODUCTS.map((p, idx) => {
+  const cellClass = (m) => {
+    if (m == null) return 'calc-cell muted';
+    if (m >= 30) return 'calc-cell pos';
+    if (m < 0)   return 'calc-cell neg';
+    return 'calc-cell';
+  };
+  const cellTxt = (m) => (m == null ? '—' : pctStr(m));
+  const productRow = (p, idx) => {
     const promoPrice = p.promoPrice || 0;
     const spotPrice  = p.spotPrice  || 0;
     let promoVal, spotVal, promoPlaceholder, spotPlaceholder, promoSuffix, spotSuffix;
@@ -2374,16 +2615,11 @@ function renderPromoTable() {
     const mSpotMarket   = marginVsMarket(spotPrice,  p.cost, p.marketPrice);
     const breakEven = (p.treatmentFee && p.treatmentFee > 0 && p.cost > 0)
       ? Math.ceil(p.cost / p.treatmentFee) : null;
-    const cellClass = (m) => {
-      if (m == null) return 'calc-cell muted';
-      if (m >= 30) return 'calc-cell pos';
-      if (m < 0)   return 'calc-cell neg';
-      return 'calc-cell';
-    };
-    const cellTxt = (m) => (m == null ? '—' : pctStr(m));
+    const checked = SELECTED_PIDS.has(p.id) ? ' checked' : '';
     return `
-    <tr data-idx="${idx}">
-      <td class="sticky-col"><input type="text" class="pm-name" value="${(p.name || '').replace(/"/g,'&quot;')}" placeholder="제품명" aria-label="제품명"></td>
+    <tr data-idx="${idx}" data-pid="${p.id}">
+      <td class="check-cell"><input type="checkbox" class="row-check"${checked} aria-label="${(p.name||'').replace(/"/g,'&quot;')} 선택"></td>
+      <td><input type="text" class="pm-name" value="${(p.name || '').replace(/"/g,'&quot;')}" placeholder="제품명" aria-label="제품명"></td>
       <td><input type="text" class="pm-supplier" value="${(p.supplier || '').replace(/"/g,'&quot;')}" placeholder="—" aria-label="공급업체"></td>
       <td><input type="text" inputmode="numeric" class="pm-cost num" value="${(p.cost || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="공급가"></td>
       <td><input type="text" inputmode="numeric" class="pm-market num" value="${(p.marketPrice || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="시장가"></td>
@@ -2397,15 +2633,55 @@ function renderPromoTable() {
       <td class="${cellClass(mPromoMarket)}">${cellTxt(mPromoMarket)}</td>
       <td class="${cellClass(mSpotMarket)}">${cellTxt(mSpotMarket)}</td>
       <td class="calc-cell">${breakEven == null ? '—' : breakEven.toLocaleString('ko-KR') + '회'}</td>
-      <td style="text-align:center"><button class="roi-link-btn" onclick="openRoiForProduct(${idx})" aria-label="${p.name} ROI 자세히 보기">📊</button></td>
+      <td style="text-align:center"><button class="roi-link-btn" onclick="openRoiForProduct(${idx})" aria-label="${(p.name||'').replace(/"/g,'&quot;')} ROI 자세히 보기">📊</button></td>
     </tr>`;
-  }).join('');
+  };
+
+  let html = '';
+  if (GROUP_BY_SUPPLIER) {
+    const groups = buildSupplierGroups();
+    groups.forEach(({ supplier, items }) => {
+      const collapsed = COLLAPSED_SUPPLIERS.has(supplier);
+      const supplierIds = items.map(it => it.p.id);
+      const checkedCount = supplierIds.filter(id => SELECTED_PIDS.has(id)).length;
+      const allChecked  = supplierIds.length > 0 && checkedCount === supplierIds.length;
+      const someChecked = checkedCount > 0 && !allChecked;
+      html += `
+        <tr class="supplier-row${collapsed ? ' collapsed' : ''}" data-supplier="${supplier.replace(/"/g,'&quot;')}">
+          <td colspan="16">
+            <input type="checkbox" class="supplier-check" ${allChecked ? 'checked' : ''} ${someChecked ? 'data-indeterminate="1"' : ''} aria-label="${supplier} 전체 선택">
+            <span class="sr-toggle" data-collapse="1">▼</span>
+            <span class="sr-name" data-collapse="1">${supplier}</span>
+            <span class="sr-count">${items.length}종</span>
+          </td>
+        </tr>`;
+      if (!collapsed) items.forEach(({ p, idx }) => { html += productRow(p, idx); });
+    });
+  } else {
+    PRODUCTS.forEach((p, idx) => { html += productRow(p, idx); });
+  }
+  body.innerHTML = html;
+
+  body.querySelectorAll('.supplier-check[data-indeterminate]').forEach(cb => { cb.indeterminate = true; });
+  body.querySelectorAll('.supplier-row').forEach(tr => {
+    const supplier = tr.dataset.supplier;
+    const cb = tr.querySelector('.supplier-check');
+    if (cb) cb.addEventListener('change', (e) => { e.stopPropagation(); toggleSupplierAll(supplier, cb.checked); });
+    tr.querySelectorAll('[data-collapse]').forEach(el => {
+      el.addEventListener('click', () => toggleSupplierCollapsed(supplier));
+    });
+  });
 
   // bind events
-  body.querySelectorAll('tr').forEach(tr => {
+  body.querySelectorAll('tr[data-idx]').forEach(tr => {
     const idx = parseInt(tr.dataset.idx);
     const p   = PRODUCTS[idx];
     if (!p) return;
+    const cb = tr.querySelector('.row-check');
+    if (cb) cb.addEventListener('change', () => {
+      togglePidSelected(p.id, cb.checked);
+      if (GROUP_BY_SUPPLIER) renderPromoTable();
+    });
     const n  = tr.querySelector('.pm-name');
     const s  = tr.querySelector('.pm-supplier');
     const c  = tr.querySelector('.pm-cost');
