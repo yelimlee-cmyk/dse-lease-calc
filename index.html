@@ -7,44 +7,48 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="theme-color" content="#ffffff">
-<meta name="description" content="피부미용 턴키 장비 리스 견적 시뮬레이터">
-<title>피부미용 리스 시뮬레이터</title>
+<meta name="description" content="턴키 장비 리스 및 할인 견적 시뮬레이터">
+<title>턴키 장비 리스 및 할인 견적 시뮬레이터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
   :root {
-    --bg:         #f5f7fb;
+    --bg:         #ffffff;
     --surface:    #ffffff;
-    --surface-2:  #f8fafc;
-    --border:     #e2e8f0;
+    --surface-2:  #f7f8fa;
+    --border:     #e6e8ee;
     --border-2:   #cbd5e1;
     --text:       #0f172a;
     --text-2:     #475569;
     --text-3:     #64748b;
     --muted:      #94a3b8;
-    --primary:    #4f46e5;
-    --primary-2:  #6366f1;
-    --primary-soft:#eef2ff;
-    --red:        #dc2626;
+    --primary:    #2563eb;
+    --primary-2:  #1d4ed8;
+    --primary-soft:#eaf1ff;
+    --red:        #ef4444;
     --red-soft:   #fee2e2;
     --blue:       #2563eb;
     --blue-soft:  #dbeafe;
-    --green:      #059669;
-    --green-soft: #d1fae5;
-    --orange:     #ea580c;
-    --orange-soft:#ffedd5;
+    --green:      #10b981;
+    --green-soft: #e6f7ef;
+    --orange:     #f97316;
+    --orange-soft:#fff1e6;
     --amber:      #b45309;
     --pink:       #be185d;
     --pink-soft:  #fce7f3;
-    --shadow:     0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.06);
+    --shadow:     0 1px 2px rgba(15,23,42,.04), 0 1px 6px rgba(15,23,42,.04);
     --shadow-lg:  0 4px 12px rgba(15,23,42,.06), 0 2px 6px rgba(15,23,42,.04);
-    --focus:      0 0 0 3px rgba(79,70,229,.18);
+    --focus:      0 0 0 3px rgba(37,99,235,.12);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { background: var(--bg); }
   body {
-    font-family: 'Noto Sans KR','Malgun Gothic',sans-serif;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Malgun Gothic', sans-serif;
     color: var(--text); min-height:100vh; padding:24px 18px;
+    font-size:14px; line-height:1.55; letter-spacing:-.005em;
     -webkit-font-smoothing: antialiased;
   }
   .wrap { max-width:1040px; margin:0 auto; transition: max-width .2s; }
@@ -56,16 +60,16 @@
 
   /* HEADER */
   .header {
-    background:linear-gradient(120deg,#eef2ff,#e0e7ff);
-    border:1px solid #c7d2fe; border-radius:16px;
-    padding:20px 28px; margin-bottom:12px;
+    background:linear-gradient(120deg,#eaf1ff,#dbeafe);
+    border:1px solid #bfdbfe; border-radius:14px;
+    padding:22px 28px; margin-bottom:14px;
     display:flex; justify-content:space-between; align-items:center;
     box-shadow: var(--shadow);
     gap:14px; flex-wrap:wrap;
   }
-  .header h1 { font-size:21px; font-weight:900; color:#1e1b4b; }
+  .header h1 { font-size:24px; font-weight:800; color:#0f172a; letter-spacing:-.01em; line-height:1.25; }
   .header h1 span { color: var(--primary); }
-  .header .sub { font-size:11px; color: var(--primary); margin-bottom:3px; letter-spacing:.3px; font-weight:700; }
+  .header .sub { font-size:12px; color: var(--primary); margin-bottom:4px; letter-spacing:.04em; font-weight:600; }
   .badge-wrap { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .badge { font-size:10px; font-weight:800; padding:5px 13px; border-radius:20px; letter-spacing:1.2px; white-space:nowrap; }
   .badge.red  { background:var(--red-soft);  color:var(--red);  border:1px solid #fecaca; }
@@ -386,6 +390,7 @@
   .manage-btn.reset  { background:var(--surface); color:var(--text-2); border:1px solid var(--border-2); }
   .manage-btn.export { background:linear-gradient(135deg, var(--green), #10b981); color:#fff; }
   .manage-btn.import { background:linear-gradient(135deg, var(--blue), #3b82f6); color:#fff; }
+  .manage-btn.template { background:linear-gradient(135deg, var(--orange), #fb923c); color:#fff; }
   .manage-table-wrap {
     background:var(--surface); border:1px solid var(--border); border-radius:14px;
     overflow:hidden; margin-bottom:12px; box-shadow: var(--shadow);
@@ -498,6 +503,65 @@
   /* ROI TAB */
   .roi-section { display:none; }
   .roi-section.visible { display:block; }
+
+  /* ROI 의료기기 분류 토글 */
+  .roi-cat-bar {
+    display:flex; flex-direction:column; gap:10px;
+    background:var(--surface-2); border:1px solid var(--border);
+    border-radius:12px; padding:14px 16px; margin-bottom:14px;
+  }
+  .roi-cat-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .roi-cat-label { font-size:12.5px; color:var(--text-2); font-weight:600; min-width:104px; }
+  .roi-toggle { display:inline-flex; background:#fff; border:1px solid var(--border); border-radius:10px; padding:3px; gap:2px; }
+  .roi-toggle button {
+    border:0; background:transparent; padding:7px 14px; border-radius:8px;
+    font:inherit; font-size:12.5px; color:var(--text-3); cursor:pointer; font-weight:600;
+    transition:all .15s; font-family:inherit;
+  }
+  .roi-toggle button.active { background:var(--primary); color:#fff; box-shadow:0 1px 2px rgba(15,23,42,.12); }
+  .roi-toggle.coverage button.active { background:var(--orange); color:#fff; }
+  .roi-cat-row.hidden { display:none; }
+
+  /* HIRA 패널 */
+  .roi-hira {
+    background:#fff7ed; border:1px solid #fed7aa; border-radius:12px;
+    padding:14px 16px; margin-bottom:14px;
+    display:none;
+  }
+  .roi-hira.visible { display:block; }
+  .roi-hira-head {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin-bottom:12px; flex-wrap:wrap;
+  }
+  .roi-hira-title { font-size:13px; font-weight:700; color:#9a3412; display:flex; align-items:center; gap:6px; }
+  .roi-hira-link {
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--orange); color:#fff;
+    padding:8px 14px; border-radius:8px;
+    font-size:12.5px; font-weight:600; text-decoration:none;
+    transition:transform .1s, opacity .15s;
+  }
+  .roi-hira-link:hover { opacity:.92; transform:translateY(-1px); }
+  .roi-hira-path {
+    background:#fff; border:1px dashed #fed7aa; border-radius:8px;
+    padding:9px 12px; margin-bottom:12px;
+    font-size:12px; color:#9a3412; line-height:1.5;
+  }
+  .roi-hira-path b { font-weight:700; color:#7c2d12; }
+  .roi-hira-path span { color:#fdba74; margin:0 4px; font-weight:700; }
+  .roi-hira-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
+  @media (max-width:720px){ .roi-hira-grid { grid-template-columns:1fr; } }
+  .roi-hira-grid .roi-field label { color:#9a3412; }
+  .roi-hira-grid .roi-field input:focus { border-color:var(--orange); box-shadow:0 0 0 3px rgba(249,115,22,.18); }
+  .roi-hira-credit {
+    margin-top:6px;
+    display:inline-flex; align-items:center; gap:4px;
+    background:#fff; border:1px solid #fed7aa; border-radius:999px;
+    padding:3px 10px;
+    font-size:11px; font-weight:600; color:#9a3412; letter-spacing:.02em;
+    align-self:flex-start;
+  }
+
   .roi-inputs { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:18px; }
   .roi-field {
     background:var(--surface); border:1px solid var(--border); border-radius:12px;
@@ -528,7 +592,7 @@
     font-size:11px; color:var(--text-3); letter-spacing:1px;
     text-transform:uppercase; margin-bottom:8px; font-weight:800;
   }
-  .roi-card .rc-val { font-size:22px; font-weight:900; color:var(--text); line-height:1.25; }
+  .roi-card .rc-val { font-size:21px; font-weight:800; color:var(--text); line-height:1.25; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
   .roi-card.primary .rc-val { color:var(--orange); }
   .roi-card .rc-sub { font-size:12.5px; color:var(--text-2); margin-top:8px; line-height:1.6; font-weight:500; }
   .roi-card .rc-sub b { color:var(--orange); font-weight:800; font-size:13px; }
@@ -586,7 +650,74 @@
   .btn-primary:active, .png-btn:active, .share-btn:active { transform: translateY(1px); }
   .png-btn   { background:linear-gradient(135deg, var(--blue), #3b82f6); color:#fff; }
   .share-btn { background:linear-gradient(135deg, var(--green), #10b981); color:#fff; }
+  .quote-btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    background:linear-gradient(135deg, #059669, var(--green));
+    color:#fff; border:none; padding:9px 16px; border-radius:10px;
+    font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;
+    transition:opacity .15s, transform .1s;
+  }
+  .quote-btn:hover { opacity:.92; }
+  .quote-btn:active { transform:translateY(1px); }
+  .quote-btn:disabled { opacity:.5; cursor:not-allowed; }
   .png-btn:disabled, .share-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+  /* 견적서 모달 */
+  .qm-backdrop {
+    position:fixed; inset:0; background:rgba(15,23,42,.45);
+    display:none; align-items:center; justify-content:center;
+    z-index:1000; padding:20px;
+  }
+  .qm-backdrop.visible { display:flex; }
+  .qm-modal {
+    background:#fff; border-radius:14px; width:100%; max-width:480px;
+    box-shadow:0 20px 50px rgba(0,0,0,.2); overflow:hidden;
+    animation:qmIn .2s ease;
+  }
+  @keyframes qmIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .qm-head {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; border-bottom:1px solid var(--border);
+  }
+  .qm-head h3 { font-size:15px; font-weight:700; color:var(--text); }
+  .qm-close {
+    background:transparent; border:none; font-size:22px; line-height:1;
+    color:var(--text-3); cursor:pointer; padding:4px 8px;
+  }
+  .qm-close:hover { color:var(--text); }
+  .qm-body { padding:18px 20px; display:grid; gap:12px; }
+  .qm-field { display:flex; flex-direction:column; gap:4px; }
+  .qm-field label { font-size:12px; color:var(--text-2); font-weight:600; }
+  .qm-field input {
+    padding:9px 12px; border:1px solid var(--border); border-radius:8px;
+    font-family:inherit; font-size:13.5px; color:var(--text);
+    background:var(--surface-2); outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .qm-field input:focus { border-color:var(--primary); box-shadow:var(--focus); background:#fff; }
+  .qm-field .qm-required { color:var(--red); margin-left:2px; }
+  .qm-mode-tag {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:4px 10px; border-radius:999px;
+    font-size:11.5px; font-weight:700; letter-spacing:.02em;
+  }
+  .qm-mode-tag.lease    { background:var(--blue-soft);  color:var(--blue); }
+  .qm-mode-tag.discount { background:var(--green-soft); color:var(--green); }
+  .qm-foot {
+    display:flex; gap:8px; padding:14px 20px;
+    border-top:1px solid var(--border); background:var(--surface-2);
+  }
+  .qm-btn {
+    flex:1; padding:10px 14px; border-radius:8px;
+    font-size:13px; font-weight:700; cursor:pointer; border:none;
+    font-family:inherit; transition:opacity .15s, transform .1s;
+  }
+  .qm-btn:active { transform:translateY(1px); }
+  .qm-btn.cancel { background:#fff; color:var(--text-2); border:1px solid var(--border); }
+  .qm-btn.cancel:hover { color:var(--text); }
+  .qm-btn.submit { background:var(--primary); color:#fff; }
+  .qm-btn.submit:hover { opacity:.92; }
+  .qm-btn.submit:disabled { opacity:.5; cursor:not-allowed; }
 
   /* TOAST */
   .toast-wrap {
@@ -671,8 +802,8 @@
   <!-- HEADER -->
   <header class="header" role="banner">
     <div>
-      <div class="sub">피부미용 턴키 장비</div>
-      <h1>리스 <span>견적 시뮬레이터</span></h1>
+      <div class="sub">MEDISTREAM TURNKEY</div>
+      <h1>턴키 장비 <span>리스 및 할인 견적 시뮬레이터</span></h1>
     </div>
     <div class="badge-wrap">
       <div class="badge red"  role="status" aria-label="내부용 섹션 포함">🔒 내부용</div>
@@ -823,6 +954,7 @@
 
   <div class="sec-collapse" id="extCollapse">
   <div class="png-btn-wrap">
+    <button class="quote-btn" id="quoteBtn" onclick="openQuoteModal()" aria-label="견적서 엑셀 파일로 다운로드">📋 견적서 엑셀</button>
     <button class="png-btn" id="pngBtn" onclick="exportPng()" aria-label="견적서를 PNG 이미지로 저장">📥 PNG로 저장</button>
   </div>
 
@@ -874,10 +1006,71 @@
 
   <!-- ═══ ROI 계산기 ═══ -->
   <div class="roi-section" id="roiSection" role="tabpanel" aria-labelledby="tabRoi">
+    <div class="png-btn-wrap">
+      <button class="png-btn" id="roiPngBtn" onclick="exportRoiPng()" aria-label="ROI 분석을 PNG 이미지로 저장">📥 PNG로 저장</button>
+    </div>
+
+    <!-- 캡처 영역 시작 -->
+    <div id="roiExportArea">
     <div class="section-label" style="margin-top:4px">
       투자 수익률 (ROI) 계산
       <span class="hint" tabindex="0" data-tip="장비 투자 대비 예상 매출·회수기간을 계산합니다. 제품 단가, 시술 금액, 월 신환·재환 수를 입력하세요.">?</span>
     </div>
+
+    <!-- 의료기기 분류 토글 -->
+    <div class="roi-cat-bar">
+      <div class="roi-cat-row">
+        <span class="roi-cat-label">의료기기 종류</span>
+        <div class="roi-toggle" role="tablist" aria-label="의료기기 종류">
+          <button type="button" class="active" id="roiCatSkin"     onclick="setRoiCategory('skin')"    role="tab" aria-selected="true">피부기기</button>
+          <button type="button"                id="roiCatGeneral" onclick="setRoiCategory('general')" role="tab" aria-selected="false">일반의료기기</button>
+        </div>
+      </div>
+      <div class="roi-cat-row hidden" id="roiCoverageRow">
+        <span class="roi-cat-label">수가 구분</span>
+        <div class="roi-toggle coverage" role="tablist" aria-label="수가 구분">
+          <button type="button" class="active" id="roiCovNon" onclick="setRoiCoverage('non')" role="tab" aria-selected="true">비급여</button>
+          <button type="button"                id="roiCovIns" onclick="setRoiCoverage('ins')" role="tab" aria-selected="false">급여</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HIRA 한방수가 패널 (급여 선택 시 노출) -->
+    <div class="roi-hira" id="roiHiraPanel">
+      <div class="roi-hira-head">
+        <div class="roi-hira-title">📘 HIRA 한방수가 조회 후 코드·금액 입력</div>
+        <a class="roi-hira-link" href="https://biz.hira.or.kr/index.do?sso=ok" target="_blank" rel="noopener noreferrer">
+          🔗 HIRA biz 새 창으로 열기
+        </a>
+      </div>
+      <div class="roi-hira-path">
+        이동 경로 :
+        <b>자동차보험</b> <span>›</span>
+        <b>정보방</b> <span>›</span>
+        <b>청구관련코드조회</b> <span>›</span>
+        <b>수가</b> <span>›</span>
+        <b>한방수가</b> 탭
+      </div>
+      <div class="roi-hira-grid">
+        <div class="roi-field">
+          <label for="roiHiraCode">수가 코드</label>
+          <input type="text" id="roiHiraCode" placeholder="예: 40020" autocomplete="off">
+          <div class="unit">HIRA 한방수가 탭 조회</div>
+        </div>
+        <div class="roi-field">
+          <label for="roiHiraName">수가명 (설명)</label>
+          <input type="text" id="roiHiraName" placeholder="예: 침술-1부위" autocomplete="off">
+          <div class="unit">참고용 (선택)</div>
+        </div>
+        <div class="roi-field">
+          <label for="roiHiraPrice">수가 금액</label>
+          <input type="text" id="roiHiraPrice" placeholder="예: 12,540" inputmode="numeric">
+          <div class="unit">원 / 1회 시술 (참고용)</div>
+          <div class="roi-hira-credit">📑 HIRA 데이터 참조</div>
+        </div>
+      </div>
+    </div>
+
     <div class="roi-inputs">
       <div class="roi-field">
         <label for="roiCost">제품 단가 (장비 투자금액)
@@ -974,6 +1167,7 @@
       </table>
       </div>
     </div>
+    </div><!-- 캡처 영역 끝 -->
   </div>
 
   <!-- ═══ 품목 관리 ═══ -->
@@ -983,11 +1177,12 @@
         <span id="saveIndicator" style="font-size:11px;color:var(--green);font-weight:700;margin-left:10px;opacity:0;transition:opacity .3s">✓ 자동 저장됨</span>
       </div>
       <div class="mb-actions">
-        <button class="manage-btn add"    onclick="addProduct()"    aria-label="새 품목 추가">+ 품목 추가</button>
-        <button class="manage-btn export" onclick="exportProducts()" aria-label="품목 리스트를 JSON 파일로 내보내기">📤 내보내기</button>
-        <button class="manage-btn import" onclick="document.getElementById('importFile').click()" aria-label="JSON 파일에서 품목 리스트 불러오기">📥 가져오기</button>
-        <button class="manage-btn reset"  onclick="resetProducts()"  aria-label="기본 품목 리스트로 초기화">↺ 기본값</button>
-        <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importProducts(event)">
+        <button class="manage-btn add"      onclick="addProduct()"        aria-label="새 품목 추가">+ 품목 추가</button>
+        <button class="manage-btn template" onclick="downloadTemplate()"  aria-label="업로드용 엑셀 양식 다운로드">📋 업로드 양식</button>
+        <button class="manage-btn import"   onclick="document.getElementById('importFile').click()" aria-label="엑셀 또는 JSON 파일에서 품목 리스트 불러오기">📥 가져오기</button>
+        <button class="manage-btn export"   onclick="exportProducts()"    aria-label="품목 리스트를 JSON 파일로 내보내기">📤 내보내기</button>
+        <button class="manage-btn reset"    onclick="resetProducts()"     aria-label="품목 리스트 전체 삭제">🗑️ 전체 삭제</button>
+        <input type="file" id="importFile" accept=".xlsx,.json,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="importProducts(event)">
       </div>
     </div>
     <div class="manage-table-wrap">
@@ -1007,8 +1202,8 @@
     </div>
     <div class="manage-note">
       💡 품목 정보는 <b>이 브라우저</b>에 자동 저장됩니다 (localStorage).<br>
-      📤 <b>내보내기</b>: JSON 파일로 저장 → 다른 PC의 <b>📥 가져오기</b>로 복원 가능<br>
-      ↺ "기본값"을 누르면 초기 10종 품목 리스트로 되돌아갑니다.
+      📋 <b>업로드 양식</b>으로 엑셀 다운 → 채워서 <b>📥 가져오기</b>로 일괄 등록.<br>
+      📤 <b>내보내기</b>(JSON)는 다른 PC의 <b>📥 가져오기</b>로 복원할 때 사용합니다.
     </div>
   </div>
 
@@ -1113,18 +1308,7 @@ const CATEGORIES = [
   '소모품'
 ];
 const DEFAULT_CATEGORY = '기타 관리기기';
-const DEFAULT_PRODUCTS = [
-  { id:'impacq',   name:'ImpacQ Plus',       desc:'큐스위치 엔디야그',         category:'CO2 레이저/엔디야그', cost:22600000, price:32000000, leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
-  { id:'janus',    name:'JANUS Pro sunlike', desc:'안면진단기기',               category:'안면 진단기',         cost:6820000,  price:8580000,  leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
-  { id:'multixel', name:'Multixel',          desc:'프락셔널 CO2 (듀얼타입)',    category:'CO2 레이저/엔디야그', cost:7000000,  price:9900000,  leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
-  { id:'ds40',     name:'DS-40UB',           desc:'보급형 CO2 레이저',          category:'CO2 레이저/엔디야그', cost:3900000,  price:4950000,  leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
-  { id:'cotra',    name:'COTRA PLUS',        desc:'CO2 프락셔널 (프리미엄)',    category:'CO2 레이저/엔디야그', cost:11500000, price:18500000, leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
-  { id:'neoject',  name:'NEOJECT',           desc:'인젝터 (니들 3bx 포함)',     category:'인젝터',              cost:3800000,  price:5500000,  leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
-  { id:'ulkin',    name:'울킨',              desc:'전용 겔 포함',               category:'바디 관리기기',       cost:4400000,  price:7700000,  leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
-  { id:'aquafill', name:'아쿠아필',          desc:'솔루션 포함',                category:'기타 관리기기',       cost:1800000,  price:2500000,  leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
-  { id:'ssb',      name:'SSB-EVA',           desc:'의료용 석션기',              category:'기타 관리기기',       cost:880000,   price:1250000,  leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
-  { id:'wellcomet', name:'웰코멧 LDM',       desc:'',                           category:'바디 관리기기',       cost:17000000, price:22000000, leasePrice:0, supplier:'', marketPrice:0, promoPrice:0, spotPrice:0, treatmentFee:0 },
-];
+const DEFAULT_PRODUCTS = [];
 function productCategory(p) { return CATEGORIES.includes(p.category) ? p.category : DEFAULT_CATEGORY; }
 
 // 카테고리 접힘 상태 (localStorage 저장)
@@ -1906,21 +2090,16 @@ function deleteProduct(idx) {
   toast(`"${p.name}" 삭제됨`, 'success');
 }
 function resetProducts() {
-  if (!confirm('기본값(초기 10종 품목)으로 되돌리시겠습니까?\n현재 추가/수정한 품목 정보는 사라집니다.')) return;
+  if (!confirm('품목 리스트를 모두 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
   PRODUCTS.length = 0;
-  DEFAULT_PRODUCTS.forEach(p => PRODUCTS.push({...p}));
   Object.keys(promoByMode.lease).forEach(k => delete promoByMode.lease[k]);
   Object.keys(promoByMode.discount).forEach(k => delete promoByMode.discount[k]);
   manualByMode.lease.clear();
   manualByMode.discount.clear();
-  PRODUCTS.forEach(p => {
-    promoByMode.lease[p.id]    = leaseSeed(p);
-    promoByMode.discount[p.id] = discountSeed(p);
-  });
   selected.clear();
   saveProducts();
   renderManageTable();
-  toast('기본 품목으로 초기화되었습니다', 'success');
+  toast('품목 리스트가 비워졌습니다', 'success');
 }
 function moveProduct(idx, dir) {
   const newIdx = idx + dir;
@@ -1955,58 +2134,148 @@ function exportProducts() {
   URL.revokeObjectURL(url);
   toast('JSON 파일이 다운로드되었습니다', 'success');
 }
-function importProducts(event) {
+function _commitImported(cleaned) {
+  if (!confirm(`${cleaned.length}개 품목을 가져옵니다. 현재 리스트는 대체됩니다. 계속할까요?`)) return false;
+  PRODUCTS.length = 0;
+  cleaned.forEach(p => PRODUCTS.push(p));
+  Object.keys(promoByMode.lease).forEach(k => delete promoByMode.lease[k]);
+  Object.keys(promoByMode.discount).forEach(k => delete promoByMode.discount[k]);
+  manualByMode.lease.clear();
+  manualByMode.discount.clear();
+  PRODUCTS.forEach(p => {
+    promoByMode.lease[p.id]    = leaseSeed(p);
+    promoByMode.discount[p.id] = discountSeed(p);
+  });
+  selected.clear();
+  saveProducts();
+  renderManageTable();
+  toast(`✓ ${cleaned.length}개 품목을 불러왔습니다`, 'success');
+  return true;
+}
+
+function _normalizeProduct(p) {
+  return {
+    id:         p.id || makeId(p.name || '') || ('p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)),
+    name:       String(p.name || '새 품목'),
+    desc:       String(p.desc || ''),
+    category:   CATEGORIES.includes(p.category) ? p.category : DEFAULT_CATEGORY,
+    cost:       parseInt(p.cost)  || 0,
+    price:      parseInt(p.price) || 0,
+    leasePrice: parseInt(p.leasePrice) || 0,
+    supplier:     String(p.supplier || ''),
+    marketPrice:  parseInt(p.marketPrice)  || 0,
+    promoPrice:   parseInt(p.promoPrice)   || 0,
+    spotPrice:    parseInt(p.spotPrice)    || 0,
+    treatmentFee: parseInt(p.treatmentFee) || 0,
+  };
+}
+
+async function _importFromXlsx(file) {
+  if (typeof ExcelJS === 'undefined') throw new Error('엑셀 라이브러리 로드 실패. 새로고침 후 다시 시도해주세요');
+  const buf = await file.arrayBuffer();
+  const wb  = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf);
+  const ws = wb.worksheets[0];
+  if (!ws) throw new Error('시트를 찾을 수 없습니다');
+  // 첫 행은 헤더로 간주, 컬럼 순서: 품목명 / 설명 / 카테고리 / 공급가 / 판매가
+  const list = [];
+  ws.eachRow((row, idx) => {
+    if (idx === 1) return;
+    const cell = (n) => {
+      const v = row.getCell(n).value;
+      if (v == null) return '';
+      if (typeof v === 'object' && 'result' in v) return v.result;
+      if (typeof v === 'object' && 'text' in v)   return v.text;
+      return v;
+    };
+    const name = String(cell(1) || '').trim();
+    if (!name) return;
+    list.push({
+      name,
+      desc:     String(cell(2) || '').trim(),
+      category: String(cell(3) || '').trim(),
+      cost:     Number(cell(4)) || 0,
+      price:    Number(cell(5)) || 0,
+    });
+  });
+  if (list.length === 0) throw new Error('읽을 수 있는 품목 행이 없습니다');
+  return list.map(_normalizeProduct);
+}
+
+async function _importFromJson(file) {
+  const text = await file.text();
+  const parsed = JSON.parse(text);
+  const list = Array.isArray(parsed) ? parsed : parsed.products;
+  if (!Array.isArray(list) || list.length === 0) throw new Error('품목 리스트가 비어있거나 잘못된 형식입니다');
+  return list.map(_normalizeProduct);
+}
+
+async function importProducts(event) {
   const file = event.target.files && event.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const parsed = JSON.parse(reader.result);
-      const list = Array.isArray(parsed) ? parsed : parsed.products;
-      if (!Array.isArray(list) || list.length === 0) throw new Error('품목 리스트가 비어있거나 잘못된 형식입니다');
-      const cleaned = list.map(p => ({
-        id:       p.id || makeId(p.name || '') || ('p'+Date.now().toString(36)),
-        name:     String(p.name || '새 품목'),
-        desc:     String(p.desc || ''),
-        category: CATEGORIES.includes(p.category) ? p.category : DEFAULT_CATEGORY,
-        cost:     parseInt(p.cost)  || 0,
-        price:    parseInt(p.price) || 0,
-        leasePrice: parseInt(p.leasePrice) || 0,
-        supplier:     String(p.supplier || ''),
-        marketPrice:  parseInt(p.marketPrice)  || 0,
-        promoPrice:   parseInt(p.promoPrice)   || 0,
-        spotPrice:    parseInt(p.spotPrice)    || 0,
-        treatmentFee: parseInt(p.treatmentFee) || 0,
-      }));
-      if (!confirm(`${cleaned.length}개 품목을 가져옵니다. 현재 리스트는 대체됩니다. 계속할까요?`)) {
-        event.target.value = '';
-        return;
-      }
-      PRODUCTS.length = 0;
-      cleaned.forEach(p => PRODUCTS.push(p));
-      Object.keys(promoByMode.lease).forEach(k => delete promoByMode.lease[k]);
-      Object.keys(promoByMode.discount).forEach(k => delete promoByMode.discount[k]);
-      manualByMode.lease.clear();
-      manualByMode.discount.clear();
-      PRODUCTS.forEach(p => {
-        promoByMode.lease[p.id]    = leaseSeed(p);
-        promoByMode.discount[p.id] = discountSeed(p);
-      });
-      selected.clear();
-      saveProducts();
-      renderManageTable();
-      toast(`✓ ${cleaned.length}개 품목을 불러왔습니다`, 'success');
-    } catch(e) {
-      toast('JSON 파일을 읽을 수 없습니다: ' + e.message, 'error');
-      console.error(e);
-    }
+  const isXlsx = /\.xlsx$/i.test(file.name);
+  try {
+    const cleaned = isXlsx ? await _importFromXlsx(file) : await _importFromJson(file);
+    _commitImported(cleaned);
+  } catch(e) {
+    toast((isXlsx ? '엑셀' : 'JSON') + ' 파일을 읽을 수 없습니다: ' + e.message, 'error');
+    console.error(e);
+  } finally {
     event.target.value = '';
-  };
-  reader.onerror = () => {
-    toast('파일 읽기 실패', 'error');
-    event.target.value = '';
-  };
-  reader.readAsText(file);
+  }
+}
+
+async function downloadTemplate() {
+  if (typeof ExcelJS === 'undefined') {
+    toast('엑셀 라이브러리 로드 실패. 새로고침 해주세요', 'error');
+    return;
+  }
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'MEDISTREAM TURNKEY';
+  wb.created = new Date();
+  const ws = wb.addWorksheet('품목');
+
+  ws.getColumn(1).width = 22;
+  ws.getColumn(2).width = 28;
+  ws.getColumn(3).width = 20;
+  ws.getColumn(4).width = 14;
+  ws.getColumn(5).width = 14;
+
+  const head = ws.addRow(['품목명', '설명', '카테고리', '공급가', '판매가']);
+  head.font = { name:'맑은 고딕', size:10, bold:true, color:{argb:'FFFFFFFF'} };
+  head.alignment = { horizontal:'center', vertical:'middle' };
+  head.height = 24;
+  head.eachCell(c => {
+    c.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FF2563EB'} };
+    c.border = {
+      top:    { style:'thin', color:{argb:'FFCBD5E1'} },
+      left:   { style:'thin', color:{argb:'FFCBD5E1'} },
+      bottom: { style:'thin', color:{argb:'FFCBD5E1'} },
+      right:  { style:'thin', color:{argb:'FFCBD5E1'} },
+    };
+  });
+
+  // 카테고리 가능 값을 안내 시트로
+  const help = wb.addWorksheet('카테고리');
+  help.getColumn(1).width = 28;
+  help.addRow(['사용 가능한 카테고리']).font = { bold:true };
+  CATEGORIES.forEach(c => help.addRow([c]));
+
+  // 예시 행 1줄 (참고용)
+  const sample = ws.addRow(['예시: 펜레이저 P1', 'CO2 레이저 (예시 — 삭제 후 입력)', CATEGORIES[0] || '기타 관리기기', 12000000, 18000000]);
+  sample.font = { name:'맑은 고딕', size:10, italic:true, color:{argb:'FF94A3B8'} };
+  sample.alignment = { vertical:'middle' };
+  sample.getCell(4).numFmt = '#,##0';
+  sample.getCell(5).numFmt = '#,##0';
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '품목_업로드_양식.xlsx';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('업로드 양식이 다운로드되었습니다', 'success');
 }
 
 // ── 가격/프로모션 관리 탭 ─────────────────────────────────────────────
@@ -2257,6 +2526,40 @@ function formatRoiInputs() {
   ['roiNewPatients','roiReturnPatients'].forEach(id => {
     document.getElementById(id).addEventListener('input', updateRoi);
   });
+  // HIRA 금액 입력 (참고용 · 환자당 시술 금액과는 별도)
+  const hiraPrice = document.getElementById('roiHiraPrice');
+  if (hiraPrice) bindCommaInput(hiraPrice, () => {});
+}
+
+// ROI 의료기기 분류 상태
+let ROI_CATEGORY = 'skin';      // 'skin' | 'general'
+let ROI_COVERAGE = 'non';       // 'non' | 'ins'
+
+function setRoiCategory(cat) {
+  ROI_CATEGORY = cat;
+  document.getElementById('roiCatSkin').classList.toggle('active', cat === 'skin');
+  document.getElementById('roiCatGeneral').classList.toggle('active', cat === 'general');
+  document.getElementById('roiCatSkin').setAttribute('aria-selected', cat === 'skin');
+  document.getElementById('roiCatGeneral').setAttribute('aria-selected', cat === 'general');
+  // 일반의료기기일 때만 급여/비급여 토글 노출
+  const covRow = document.getElementById('roiCoverageRow');
+  covRow.classList.toggle('hidden', cat !== 'general');
+  // 피부기기로 전환 시 HIRA 패널 숨김
+  if (cat !== 'general') {
+    document.getElementById('roiHiraPanel').classList.remove('visible');
+  } else {
+    // general 진입 시 현재 coverage에 맞춰 HIRA 패널 표시
+    document.getElementById('roiHiraPanel').classList.toggle('visible', ROI_COVERAGE === 'ins');
+  }
+}
+
+function setRoiCoverage(cov) {
+  ROI_COVERAGE = cov;
+  document.getElementById('roiCovNon').classList.toggle('active', cov === 'non');
+  document.getElementById('roiCovIns').classList.toggle('active', cov === 'ins');
+  document.getElementById('roiCovNon').setAttribute('aria-selected', cov === 'non');
+  document.getElementById('roiCovIns').setAttribute('aria-selected', cov === 'ins');
+  document.getElementById('roiHiraPanel').classList.toggle('visible', cov === 'ins');
 }
 
 function updateRoi() {
@@ -2404,6 +2707,399 @@ function exportPng() {
     toast('PNG 저장 중 오류가 발생했습니다', 'error');
   });
 }
+
+// ─────────────────────────────────────────────────────────
+// 견적서 엑셀 다운로드 (ExcelJS 기반, 노란색 fill 없음)
+// ─────────────────────────────────────────────────────────
+const QUOTE_FONT      = { name: '맑은 고딕', size: 9 };
+const QUOTE_FONT_BOLD = { name: '맑은 고딕', size: 9, bold: true };
+const QUOTE_HEADER_BG    = 'FF5E858C';
+const QUOTE_HEADER_LIGHT = 'FFDEE8E9';
+const QUOTE_TITLE_BG     = 'FFEB9952';
+const QUOTE_SUBTOTAL_BG  = 'FFF1BC8C';
+const QUOTE_LEASE_BG     = 'FFEAF1FF';
+const QUOTE_BORDER = (() => {
+  const t = { style: 'thin', color: { argb: 'FFBFBFBF' } };
+  return { top: t, left: t, bottom: t, right: t };
+})();
+const QUOTE_MAX_ITEMS = 14;
+
+function openQuoteModal() {
+  if (selected.size === 0) {
+    toast('품목을 1개 이상 선택해주세요', 'error');
+    return;
+  }
+  if (typeof ExcelJS === 'undefined') {
+    toast('엑셀 라이브러리 로드 실패. 새로고침 해주세요', 'error');
+    return;
+  }
+  const isLease = MODE === 'lease';
+  const tag = document.getElementById('qmModeTag');
+  tag.textContent = isLease ? '📋 리스 견적서' : '💰 할인 견적서';
+  tag.className = 'qm-mode-tag ' + (isLease ? 'lease' : 'discount');
+  const dRateEl = document.getElementById('discountInput');
+  document.getElementById('qmModeNote').textContent = isLease
+    ? `${getPeriod()}개월 · 보증금 ${getDeposit()}% · 선취수수료 ${(getFeeRate()*100).toFixed(2)}%`
+    : `추가 할인율 ${parseFloat(dRateEl?.value)||0}%`;
+  document.getElementById('qmDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('quoteModal').classList.add('visible');
+  setTimeout(() => document.getElementById('qmCustomer').focus(), 80);
+}
+
+function closeQuoteModal() {
+  document.getElementById('quoteModal').classList.remove('visible');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const m = document.getElementById('quoteModal');
+    if (m && m.classList.contains('visible')) closeQuoteModal();
+  }
+});
+
+async function downloadQuote() {
+  const customer = document.getElementById('qmCustomer').value.trim();
+  if (!customer) {
+    toast('고객명을 입력해주세요', 'error');
+    document.getElementById('qmCustomer').focus();
+    return;
+  }
+  const submitBtn = document.getElementById('qmSubmit');
+  submitBtn.disabled = true;
+  const origLabel = submitBtn.textContent;
+  submitBtn.textContent = '생성 중…';
+  try {
+    const info = {
+      customer,
+      date: document.getElementById('qmDate').value || new Date().toISOString().slice(0,10),
+      salesperson: document.getElementById('qmSalesperson').value.trim(),
+      salespersonPhone: document.getElementById('qmSalespersonPhone').value.trim(),
+    };
+    const buf = await buildQuoteWorkbook(info);
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const d = new Date(info.date);
+    const yymmdd = String(d.getFullYear()).slice(-2)
+      + String(d.getMonth()+1).padStart(2,'0')
+      + String(d.getDate()).padStart(2,'0');
+    const safe = customer.replace(/[\\/:*?"<>|]/g, '');
+    const tag = MODE === 'lease' ? '리스' : '할인';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `견적서(${tag})_${safe} 원장님_${yymmdd}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    closeQuoteModal();
+    toast('견적서가 다운로드되었습니다', 'success');
+  } catch (err) {
+    console.error('견적서 생성 실패:', err);
+    toast('견적서 생성 실패: ' + (err.message || err), 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = origLabel;
+  }
+}
+
+function qmCell(ws, ref, value, opts) {
+  opts = opts || {};
+  const c = ws.getCell(ref);
+  c.value = value === '' || value == null ? null : value;
+  c.font = Object.assign({}, QUOTE_FONT, opts.font || {});
+  c.alignment = { horizontal: opts.align || 'left', vertical: 'middle', wrapText: true };
+  c.border = QUOTE_BORDER;
+  if (opts.fill) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: opts.fill } };
+  if (opts.numFmt) c.numFmt = opts.numFmt;
+}
+
+async function buildQuoteWorkbook(info) {
+  const isLease = MODE === 'lease';
+  const dRate = MODE === 'discount'
+    ? (parseFloat(document.getElementById('discountInput').value) || 0) / 100
+    : 0;
+  const items = PRODUCTS.filter(p => selected.has(p.id)).map(p => {
+    const promo = getPromo(p.id);
+    const unit  = MODE === 'discount' ? Math.round(promo * (1 - dRate)) : promo;
+    return { name: p.name, qty: 1, unit_price: unit };
+  });
+  const itemsSum = items.reduce((s, it) => s + it.qty * it.unit_price, 0);
+  let subtotal = itemsSum;
+  let leaseInfo = null;
+
+  if (MODE === 'discount') {
+    // subtotal already reflects discount via per-item unit_price
+  } else {
+    const months      = getPeriod();
+    const depositRate = getDeposit();
+    const feeRate     = getFeeRate() * 100;
+    const monthly     = Math.round(subtotal / Math.max(1, months));
+    const deposit     = Math.round(subtotal * (depositRate / 100));
+    const upfront     = Math.round(subtotal * (feeRate / 100));
+    const totalPaid   = monthly * months + deposit;
+    leaseInfo = { months, depositRate, feeRate, monthly, deposit, upfront, totalPaid };
+  }
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'MEDISTREAM TURNKEY';
+  wb.created = new Date();
+  const ws = wb.addWorksheet('견적서');
+
+  ws.pageSetup.paperSize = 9;
+  ws.pageSetup.orientation = 'portrait';
+  ws.pageSetup.margins = { left:.5, right:.5, top:.5, bottom:.5, header:.3, footer:.3 };
+
+  ws.getColumn(1).width = 2;
+  ws.getColumn(2).width = 30;
+  ws.getColumn(3).width = 8;
+  ws.getColumn(4).width = 16;
+  ws.getColumn(5).width = 22;
+  ws.getColumn(6).width = 2;
+
+  ws.getRow(2).height = 40;
+  qmCell(ws, 'B2', isLease ? '견적서 (리스)' : '견적서', {
+    font: { name:'맑은 고딕', size:24, bold:true, color:{argb:'FFFFFFFF'} },
+    align: 'left',
+    fill: QUOTE_TITLE_BG,
+  });
+  ws.mergeCells('B2:E2');
+
+  qmCell(ws, 'D3', '공급자', {
+    font: Object.assign({}, QUOTE_FONT_BOLD, { color:{argb:'FFFFFFFF'} }),
+    align: 'center', fill: QUOTE_HEADER_BG,
+  });
+  ws.mergeCells('D3:E3');
+  ws.getRow(3).height = 20;
+
+  qmCell(ws, 'B4', `           ${info.customer}  원장님 귀하`, { font: QUOTE_FONT_BOLD, align:'left' });
+  ws.mergeCells('B4:C4');
+  qmCell(ws, 'D4', '등록번호',     { fill: QUOTE_HEADER_LIGHT, align:'center' });
+  qmCell(ws, 'E4', '784-87-01184', { align: 'center' });
+
+  qmCell(ws, 'B5', '사업장 주소 : ', { align: 'left' });
+  ws.mergeCells('B5:C5');
+  qmCell(ws, 'D5', '상호(법인명)',         { fill: QUOTE_HEADER_LIGHT, align:'center' });
+  qmCell(ws, 'E5', '주식회사 인티그레이션', { align: 'center' });
+
+  qmCell(ws, 'B6', '전화번호 : 010-6500-1091', { align:'left' });
+  ws.mergeCells('B6:C6');
+  qmCell(ws, 'D6', '성명',   { fill: QUOTE_HEADER_LIGHT, align:'center' });
+  qmCell(ws, 'E6', '정희범', { align:'center' });
+
+  qmCell(ws, 'B7', '', { align:'left' });
+  ws.mergeCells('B7:C7');
+  qmCell(ws, 'D7', '주소', { fill: QUOTE_HEADER_LIGHT, align:'center' });
+  qmCell(ws, 'E7', '서울시 강남구 테헤란로 427, 2층', { align:'center' });
+
+  const d = new Date(info.date);
+  const dateStr = `견적일자 : ${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
+  qmCell(ws, 'B8', dateStr, { align:'left' });
+  ws.mergeCells('B8:C8');
+  qmCell(ws, 'D8', '업태/업종', { fill: QUOTE_HEADER_LIGHT, align:'center' });
+  qmCell(ws, 'E8', '도소매/의료기기 도매업 외', { align:'center' });
+
+  qmCell(ws, 'B9', '견적 유효 일자 : 견적일로 부터 30일 이내', { align:'left' });
+  ws.mergeCells('B9:C9');
+  qmCell(ws, 'D9', '전화', { fill: QUOTE_HEADER_LIGHT, align:'center' });
+  qmCell(ws, 'E9', '02-1599-9073', { align:'center' });
+
+  ws.getRow(11).height = 22;
+  const headOpts = {
+    font: Object.assign({}, QUOTE_FONT_BOLD, { color:{argb:'FFFFFFFF'} }),
+    align:'center', fill: QUOTE_HEADER_BG,
+  };
+  qmCell(ws, 'B11', '상 품 명',          headOpts);
+  qmCell(ws, 'C11', '수량',              headOpts);
+  qmCell(ws, 'D11', '단가',              headOpts);
+  qmCell(ws, 'E11', '상품 금액 (vat 포함)', headOpts);
+
+  const itemStart = 12;
+  for (let i = 0; i < QUOTE_MAX_ITEMS; i++) {
+    const row = itemStart + i;
+    const it = items[i];
+    qmCell(ws, `B${row}`, it ? it.name : '', { align:'left' });
+    qmCell(ws, `C${row}`, it ? it.qty : '',  { align:'center', numFmt:'#,##0' });
+    qmCell(ws, `D${row}`, it ? it.unit_price : '', { align:'right', numFmt:'#,##0' });
+    qmCell(ws, `E${row}`, it ? (it.qty * it.unit_price) : '', { align:'right', numFmt:'#,##0' });
+  }
+
+  const subRow = itemStart + QUOTE_MAX_ITEMS;
+  qmCell(ws, `B${subRow}`, isLease ? '패키지 금액 (할인 적용)' : '소계', {
+    fill: QUOTE_SUBTOTAL_BG, font: QUOTE_FONT_BOLD, align:'center',
+  });
+  ws.mergeCells(`B${subRow}:D${subRow}`);
+  qmCell(ws, `E${subRow}`, subtotal, {
+    fill: QUOTE_SUBTOTAL_BG, font: QUOTE_FONT_BOLD, align:'right', numFmt:'#,##0',
+  });
+  ws.getRow(subRow).height = 22;
+
+  let nextRow = subRow + 1;
+  if (leaseInfo) {
+    ws.getRow(nextRow).height = 22;
+    qmCell(ws, `B${nextRow}`, '📋 리스 결제 조건', {
+      fill: QUOTE_HEADER_BG,
+      font: Object.assign({}, QUOTE_FONT_BOLD, { color:{argb:'FFFFFFFF'}, size:10 }),
+      align: 'center',
+    });
+    ws.mergeCells(`B${nextRow}:E${nextRow}`);
+    nextRow++;
+
+    const rows = [
+      ['리스 기간',                          `${leaseInfo.months}개월`, '무이자 분납'],
+      ['월 납입금',                          leaseInfo.monthly,         '패키지 금액 ÷ 기간'],
+      [`보증금 (${leaseInfo.depositRate}%)`, leaseInfo.deposit,         '만기 시 환급'],
+      ['총 납부액',                          leaseInfo.totalPaid,       '월납 × 기간 + 보증금'],
+    ];
+    for (let i = 0; i < rows.length; i++) {
+      const r = nextRow + i;
+      const [label, value, note] = rows[i];
+      qmCell(ws, `B${r}`, label, { fill: QUOTE_LEASE_BG, font: QUOTE_FONT_BOLD, align:'left' });
+      ws.mergeCells(`B${r}:C${r}`);
+      const isTotal = i === rows.length - 1;
+      qmCell(ws, `D${r}`, value, {
+        align: 'right',
+        numFmt: typeof value === 'number' ? '#,##0' : undefined,
+        font: isTotal ? Object.assign({}, QUOTE_FONT_BOLD, { color:{argb:'FF1D4ED8'} }) : QUOTE_FONT_BOLD,
+      });
+      qmCell(ws, `E${r}`, note, {
+        align: 'center',
+        font: Object.assign({}, QUOTE_FONT, { color:{argb:'FF64748B'} }),
+      });
+    }
+    nextRow += rows.length;
+  }
+
+  qmCell(ws, `B${nextRow}`, '이 견적서와 관련하여 문의 사항이 있다면 다음 연락처 정보를 사용하세요.', {
+    align:'left', font: Object.assign({}, QUOTE_FONT, { italic:true, color:{argb:'FF615A22'} }),
+  });
+  ws.mergeCells(`B${nextRow}:E${nextRow}`);
+  nextRow++;
+
+  const sp  = info.salesperson || '';
+  const sph = info.salespersonPhone || '';
+  qmCell(ws, `B${nextRow}`, `담당자 : ${sp}      연락처 : ${sph}`, {
+    align:'left', font: QUOTE_FONT_BOLD,
+  });
+  ws.mergeCells(`B${nextRow}:E${nextRow}`);
+  ws.getRow(nextRow).height = 20;
+  nextRow++;
+
+  qmCell(ws, `B${nextRow}`, '저희 서비스를 이용해 주셔서 감사합니다!', {
+    align:'center',
+    font: Object.assign({}, QUOTE_FONT_BOLD, { size:11, color:{argb:'FF5E858C'} }),
+  });
+  ws.mergeCells(`B${nextRow}:E${nextRow}`);
+  ws.getRow(nextRow).height = 22;
+
+  return await wb.xlsx.writeBuffer();
+}
+
+function exportRoiPng() {
+  const area = document.getElementById('roiExportArea');
+  const btn  = document.getElementById('roiPngBtn');
+  const cost        = parseRoiInput('roiCost');
+  const chargePerPt = parseRoiInput('roiChargePerPatient');
+  const newPt       = parseInt(document.getElementById('roiNewPatients').value) || 0;
+  const retPt       = parseInt(document.getElementById('roiReturnPatients').value) || 0;
+  if (cost <= 0 || chargePerPt <= 0 || (newPt + retPt) <= 0) {
+    toast('제품 단가·시술 금액·환자 수를 입력해주세요', 'error');
+    return;
+  }
+  btn.disabled = true;
+  const origText = btn.textContent;
+  btn.textContent = '⏳ 저장 중...';
+
+  const baseW = area.getBoundingClientRect().width || area.offsetWidth || 960;
+  const padX  = 24;
+  const wrapW = Math.round(baseW + padX * 2);
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText =
+    `background:#ffffff;padding:${padX}px;border-radius:16px;` +
+    `width:${wrapW}px;box-sizing:border-box;` +
+    `position:fixed;top:0;left:-99999px;`;
+  const clone = area.cloneNode(true);
+  clone.style.width = baseW + 'px';
+  // input 값을 캡처본에 고정 표시 (html2canvas는 input value를 일부 환경에서 안 그림)
+  clone.querySelectorAll('input').forEach(inp => {
+    const orig = document.getElementById(inp.id);
+    const val = orig ? (orig.value || '') : (inp.value || '');
+    const replacement = document.createElement('div');
+    const cs = window.getComputedStyle(inp);
+    replacement.textContent = val || (inp.getAttribute('placeholder') || '');
+    replacement.style.cssText =
+      `width:100%;box-sizing:border-box;` +
+      `padding:${cs.padding};` +
+      `border:${cs.border};` +
+      `border-radius:${cs.borderRadius};` +
+      `background:${cs.backgroundColor};` +
+      `color:${val ? cs.color : '#94a3b8'};` +
+      `font-size:${cs.fontSize};font-weight:${cs.fontWeight};` +
+      `font-family:${cs.fontFamily};line-height:${cs.lineHeight};` +
+      `text-align:${cs.textAlign || 'left'};`;
+    inp.parentNode.replaceChild(replacement, inp);
+  });
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  html2canvas(wrapper, {
+    backgroundColor: '#ffffff',
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    width:       wrapW,
+    height:      wrapper.offsetHeight,
+    windowWidth: wrapW,
+  }).then(canvas => {
+    const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const link = document.createElement('a');
+    link.download = `DSE_ROI분석_${today}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    document.body.removeChild(wrapper);
+    btn.disabled = false;
+    btn.textContent = origText;
+    toast('ROI 이미지가 저장되었습니다', 'success');
+  }).catch(err => {
+    console.error('ROI PNG 저장 실패:', err);
+    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+    btn.disabled = false;
+    btn.textContent = origText;
+    toast('PNG 저장 중 오류가 발생했습니다', 'error');
+  });
+}
 </script>
+<!-- 견적서 다운로드 모달 -->
+<div class="qm-backdrop" id="quoteModal" role="dialog" aria-modal="true" aria-labelledby="qmTitle">
+  <div class="qm-modal">
+    <div class="qm-head">
+      <h3 id="qmTitle">견적서 엑셀 다운로드</h3>
+      <button class="qm-close" type="button" onclick="closeQuoteModal()" aria-label="닫기">×</button>
+    </div>
+    <div class="qm-body">
+      <div>
+        <span class="qm-mode-tag" id="qmModeTag">📋 리스 견적서</span>
+        <span style="font-size:11.5px;color:var(--text-3);margin-left:6px" id="qmModeNote"></span>
+      </div>
+      <div class="qm-field">
+        <label for="qmCustomer">고객 원장님 이름<span class="qm-required">*</span></label>
+        <input type="text" id="qmCustomer" placeholder="예: 홍길동" autocomplete="off">
+      </div>
+      <div class="qm-field">
+        <label for="qmDate">견적일자</label>
+        <input type="date" id="qmDate">
+      </div>
+      <div class="qm-field">
+        <label for="qmSalesperson">담당자</label>
+        <input type="text" id="qmSalesperson" placeholder="예: 주봉현" autocomplete="off">
+      </div>
+      <div class="qm-field">
+        <label for="qmSalespersonPhone">담당자 연락처</label>
+        <input type="text" id="qmSalespersonPhone" placeholder="예: 010-0000-0000" autocomplete="off">
+      </div>
+    </div>
+    <div class="qm-foot">
+      <button class="qm-btn cancel" type="button" onclick="closeQuoteModal()">취소</button>
+      <button class="qm-btn submit" type="button" id="qmSubmit" onclick="downloadQuote()">엑셀 다운로드</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
