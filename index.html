@@ -945,6 +945,18 @@
     <div class="param-chip">최종가 = 합계 × <b>(1 − 할인율)</b></div>
   </div>
 
+  <!-- 공통: 목표 마진율 일괄 적용 (리스/할인 공용) -->
+  <div class="params" id="marginParams" role="group" aria-label="목표 마진율 일괄 적용">
+    <div class="param-chip editable">
+      <label for="marginRateInput">목표 마진율</label>
+      <span class="hint" tabindex="0" data-tip="입력 시 선택된 모든 품목의 패키지 할인가가 '공급가 / (1−마진율)'로 자동 일괄 계산됩니다. 비우면 일괄 적용을 해제하고 기존 가격이 유지됩니다.">?</span>
+      <input class="rate-input" id="marginRateInput" type="number" value="" min="0" max="99" step="0.1" style="width:78px" inputmode="decimal" placeholder="—" aria-label="목표 마진율(%)">
+      <b>%</b>
+    </div>
+    <div class="param-chip">판매금액 <b id="marginSaleSum" style="color:var(--primary);margin-left:6px">0원</b></div>
+    <div class="param-chip">할인금액 <b id="marginDiscSum" style="color:var(--green);margin-left:6px">0원</b></div>
+  </div>
+
   <div id="calcArea" role="tabpanel" aria-labelledby="tabLease">
 
   <!-- PRODUCT SELECTION -->
@@ -1653,6 +1665,7 @@ function setMode(m) {
   });
   document.getElementById('leaseParams').style.display    = m === 'lease'    ? 'flex' : 'none';
   document.getElementById('discountParams').style.display = m === 'discount' ? 'flex' : 'none';
+  document.getElementById('marginParams').style.display   = (m === 'lease' || m === 'discount') ? 'flex' : 'none';
 
   const calcMode  = (m === 'lease' || m === 'discount');
   const roiMode   = m === 'roi';
@@ -2170,6 +2183,8 @@ function update() {
     document.getElementById('eDeposit').textContent = fmt(etDeposit);
     document.getElementById('eMonthly').textContent = fmt(etMonthly) + '/월';
   }
+
+  updateMarginSummary();
 }
 
 function toggleSection(id) {
@@ -2885,6 +2900,37 @@ renderGrid();
 update();
 
 document.getElementById('discountInput').addEventListener('input', () => { clampInputs(); update(); });
+
+// ── 목표 마진율 일괄 적용 (리스/할인 공용) ───────────────────────
+function getTargetMargin() {
+  const el = document.getElementById('marginRateInput');
+  if (!el || el.value === '') return null;
+  const v = parseFloat(el.value);
+  if (isNaN(v) || v <= 0) return null;
+  if (v >= 99) return 0.99;
+  return v / 100;
+}
+function applyTargetMargin() {
+  const rate = getTargetMargin();
+  if (rate !== null) {
+    const items = PRODUCTS.filter(p => selected.has(p.id));
+    items.forEach(p => {
+      if (p.cost > 0) setPromo(p.id, Math.round(p.cost / (1 - rate)));
+    });
+    renderGrid();
+  }
+  update();
+}
+function updateMarginSummary() {
+  const items   = PRODUCTS.filter(p => selected.has(p.id));
+  const saleSum = items.reduce((s, p) => s + (getPromo(p.id) || 0), 0);
+  const costSum = items.reduce((s, p) => s + (p.cost || 0), 0);
+  const saleEl  = document.getElementById('marginSaleSum');
+  const discEl  = document.getElementById('marginDiscSum');
+  if (saleEl) saleEl.textContent = fmt(saleSum);
+  if (discEl) discEl.textContent = fmt(Math.max(0, saleSum - costSum));
+}
+document.getElementById('marginRateInput').addEventListener('input', applyTargetMargin);
 
 bindCommaInput(document.getElementById('targetTotalInput'), (target) => {
   const items = PRODUCTS.filter(p => selected.has(p.id));
