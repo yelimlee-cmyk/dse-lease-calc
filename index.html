@@ -2092,30 +2092,41 @@ function update() {
       return;
     }
     let etTotal = 0;
+    let etList  = 0;
     extBody.innerHTML = items.map(p => {
       const lp       = getPromo(p.id);
       const itemDisc = Math.round(lp * discRate);
       const itemFinal= lp - itemDisc;
+      const pkgRate  = p.price > 0 ? (p.price - lp) / p.price : 0;
       etTotal += lp;
+      etList  += p.price;
       return `<tr>
         <td class="ec-name">${p.name}${p.desc ? `<span class="p-desc">${p.desc}</span>` : ''}</td>
-        <td class="ec-sale">${fmt(lp)}</td>
+        <td class="ec-sale">${fmt(lp)}${pkgRate > 0 ? `<span class="p-desc" style="display:block;font-size:10.5px;color:var(--green);font-weight:500;margin-top:2px">정가 ${fmt(p.price)} · -${(pkgRate*100).toFixed(1)}%</span>` : ''}</td>
         <td class="tc-fee">-${fmt(itemDisc)}</td>
         <td class="tc-mlease">${fmt(itemFinal)}</td>
       </tr>`;
     }).join('');
-    const etDisc  = Math.round(etTotal * discRate);
-    const etFinal = etTotal - etDisc;
+    const etDisc       = Math.round(etTotal * discRate);
+    const etFinal      = etTotal - etDisc;
+    const pkgRateTotal = etList > 0 ? (etList - etTotal) / etList : 0;
+    const totalRate    = etList > 0 ? (etList - etFinal) / etList : 0;
     extFoot.innerHTML = `<tr>
       <td class="ec-sale">합계 (${items.length}종)</td>
-      <td class="ec-sale">${fmt(etTotal)}</td>
+      <td class="ec-sale">${fmt(etTotal)}${pkgRateTotal > 0 ? `<span class="p-desc" style="display:block;font-size:10.5px;color:var(--green);font-weight:500;margin-top:2px">정가 ${fmt(etList)} · -${(pkgRateTotal*100).toFixed(1)}%</span>` : ''}</td>
       <td class="tc-fee">-${fmt(etDisc)}</td>
       <td class="tc-mlease">${fmt(etFinal)}</td>
     </tr>`;
     document.getElementById('eTotal').textContent        = fmt(etTotal);
+    document.getElementById('eSubTotal').textContent     = pkgRateTotal > 0
+      ? `정가 ${fmt(etList)} 대비 -${(pkgRateTotal*100).toFixed(1)}% 할인`
+      : '선택 품목 기준';
     document.getElementById('eDeposit').textContent      = fmt(etDisc);
     document.getElementById('eSubDeposit').textContent   = `할인율 ${(discRate*100).toFixed(1)}%`;
     document.getElementById('eMonthly').textContent      = fmt(etFinal);
+    document.getElementById('eSubMonthly').textContent   = totalRate > 0
+      ? `정가 대비 총 -${(totalRate*100).toFixed(1)}% 할인`
+      : '할인 후 총액';
     if (!_suppressTargetSync) {
       const tInput = document.getElementById('targetTotalInput');
       if (tInput) tInput.value = etFinal > 0 ? etFinal.toLocaleString('ko-KR') : '';
