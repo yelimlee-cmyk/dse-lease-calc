@@ -741,9 +741,10 @@
   }
   .qm-backdrop.visible { display:flex; }
   .qm-modal {
-    background:#fff; border-radius:14px; width:100%; max-width:480px;
+    background:#fff; border-radius:14px; width:100%; max-width:560px;
     box-shadow:0 20px 50px rgba(0,0,0,.2); overflow:hidden;
     animation:qmIn .2s ease;
+    max-height:92vh; display:flex; flex-direction:column;
   }
   @keyframes qmIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
   .qm-head {
@@ -756,7 +757,7 @@
     color:var(--text-3); cursor:pointer; padding:4px 8px;
   }
   .qm-close:hover { color:var(--text); }
-  .qm-body { padding:18px 20px; display:grid; gap:12px; }
+  .qm-body { padding:18px 20px; display:grid; gap:12px; overflow-y:auto; flex:1 1 auto; min-height:0; }
   .qm-field { display:flex; flex-direction:column; gap:4px; }
   .qm-field label { font-size:12px; color:var(--text-2); font-weight:600; }
   .qm-field input,
@@ -793,6 +794,57 @@
   .qm-btn.submit { background:var(--primary); color:#fff; }
   .qm-btn.submit:hover { opacity:.92; }
   .qm-btn.submit:disabled { opacity:.5; cursor:not-allowed; }
+
+  /* 견적서 품목 표 편집기 */
+  .ql-head {
+    display:grid; grid-template-columns:38px 1fr 50px 92px 24px; gap:6px;
+    padding:2px 2px 0;
+  }
+  .ql-head span { font-size:10px; color:var(--text-3); font-weight:700; }
+  .ql-head span:nth-child(3), .ql-head span:nth-child(4) { text-align:right; }
+  #qmLines {
+    display:flex; flex-direction:column; gap:5px;
+    max-height:228px; overflow-y:auto; padding:2px;
+  }
+  #qmLines:empty::after {
+    content:'아래 버튼으로 품목을 추가하세요';
+    font-size:11.5px; color:var(--text-3); padding:8px 2px;
+  }
+  .qm-line {
+    display:grid; grid-template-columns:38px 1fr 50px 92px 24px;
+    gap:6px; align-items:center;
+  }
+  .qm-line.section { grid-template-columns:38px 1fr 24px; }
+  .qm-line input {
+    padding:6px 8px; border:1px solid var(--border); border-radius:6px;
+    font-family:inherit; font-size:12.5px; color:var(--text);
+    background:var(--surface-2); outline:none; min-width:0;
+  }
+  .qm-line input:focus { border-color:var(--primary); background:#fff; }
+  .qm-line .ql-qty, .qm-line .ql-price { text-align:right; }
+  .qm-line.section input.ql-name {
+    font-weight:800; background:#eef2ff; border-color:#c7d2fe; color:#3730a3;
+  }
+  .qm-line-move { display:flex; gap:2px; }
+  .qm-line-move button {
+    border:1px solid var(--border); background:#fff; border-radius:4px;
+    width:17px; height:28px; padding:0; cursor:pointer; font-size:8px;
+    color:var(--text-3); line-height:1;
+  }
+  .qm-line-move button:hover { border-color:var(--primary); color:var(--primary); }
+  .qm-line-del {
+    border:none; background:transparent; color:var(--text-3); cursor:pointer;
+    font-size:15px; padding:0; height:28px;
+  }
+  .qm-line-del:hover { color:var(--red); }
+  .ql-add { display:flex; gap:6px; }
+  .ql-add-btn {
+    flex:1; padding:7px; border:1px dashed var(--border-2); border-radius:7px;
+    background:#fff; color:var(--text-2); font-size:12px; font-weight:700;
+    font-family:inherit; cursor:pointer;
+  }
+  .ql-add-btn:hover { border-color:var(--primary); color:var(--primary); }
+  .ql-add-btn.sec:hover { border-color:#6366f1; color:#6366f1; }
 
   /* TOAST */
   .toast-wrap {
@@ -3213,11 +3265,9 @@ const QUOTE_BORDER = (() => {
 })();
 const QUOTE_MAX_ITEMS = 14;
 
+let QUOTE_LINES = [];   // 견적서 품목 표 ({type:'item',name,qty,price} | {type:'section',name})
+
 function openQuoteModal() {
-  if (selected.size === 0) {
-    toast('품목을 1개 이상 선택해주세요', 'error');
-    return;
-  }
   if (typeof ExcelJS === 'undefined') {
     toast('엑셀 라이브러리 로드 실패. 새로고침 해주세요', 'error');
     return;
@@ -3231,8 +3281,68 @@ function openQuoteModal() {
     ? `${getPeriod()}개월 · 보증금 ${getDeposit()}% · 선취수수료 ${(getFeeRate()*100).toFixed(2)}%`
     : `추가 할인율 ${parseFloat(dRateEl?.value)||0}%`;
   document.getElementById('qmDate').value = new Date().toISOString().slice(0,10);
+
+  // 선택한 품목으로 품목 표 초기화
+  const dRate = MODE === 'discount' ? (parseFloat(dRateEl?.value) || 0) / 100 : 0;
+  QUOTE_LINES = PRODUCTS.filter(p => selected.has(p.id)).map(p => {
+    const promo = getPromo(p.id);
+    const unit  = MODE === 'discount' ? Math.round(promo * (1 - dRate)) : promo;
+    return { type:'item', name: p.name || '', qty: getQty(p), price: unit };
+  });
+  if (QUOTE_LINES.length === 0) QUOTE_LINES = [{ type:'item', name:'', qty:1, price:0 }];
+  renderQuoteLines();
+
   document.getElementById('quoteModal').classList.add('visible');
   setTimeout(() => document.getElementById('qmCustomer').focus(), 80);
+}
+
+function qlEsc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+function renderQuoteLines() {
+  const box = document.getElementById('qmLines');
+  if (!box) return;
+  box.innerHTML = QUOTE_LINES.map((ln, i) => {
+    const mv = `<div class="qm-line-move">`
+      + `<button type="button" onclick="moveQuoteLine(${i},-1)" aria-label="위로">▲</button>`
+      + `<button type="button" onclick="moveQuoteLine(${i},1)" aria-label="아래로">▼</button></div>`;
+    const del = `<button type="button" class="qm-line-del" onclick="removeQuoteLine(${i})" aria-label="삭제">✕</button>`;
+    if (ln.type === 'section') {
+      return `<div class="qm-line section">${mv}`
+        + `<input type="text" class="ql-name" data-i="${i}" value="${qlEsc(ln.name)}" placeholder="구분 (예: 본체, 소모품)">`
+        + `${del}</div>`;
+    }
+    return `<div class="qm-line">${mv}`
+      + `<input type="text" class="ql-name" data-i="${i}" value="${qlEsc(ln.name)}" placeholder="품목명">`
+      + `<input type="text" class="ql-qty" data-i="${i}" inputmode="numeric" value="${ln.qty || ''}" placeholder="1">`
+      + `<input type="text" class="ql-price" data-i="${i}" inputmode="numeric" value="${ln.price ? ln.price.toLocaleString('ko-KR') : ''}" placeholder="증정">`
+      + `${del}</div>`;
+  }).join('');
+  box.querySelectorAll('.ql-name').forEach(el => {
+    el.addEventListener('input', () => { QUOTE_LINES[+el.dataset.i].name = el.value; });
+  });
+  box.querySelectorAll('.ql-qty').forEach(el => {
+    el.addEventListener('input', () => {
+      QUOTE_LINES[+el.dataset.i].qty = parseInt(el.value.replace(/[^0-9]/g,'')) || 0;
+    });
+  });
+  box.querySelectorAll('.ql-price').forEach(el => {
+    el.addEventListener('input', () => {
+      QUOTE_LINES[+el.dataset.i].price = parseInt(el.value.replace(/[^0-9]/g,'')) || 0;
+    });
+  });
+}
+
+function addQuoteItem()     { QUOTE_LINES.push({ type:'item', name:'', qty:1, price:0 }); renderQuoteLines(); }
+function addQuoteSection()  { QUOTE_LINES.push({ type:'section', name:'' }); renderQuoteLines(); }
+function removeQuoteLine(i) { QUOTE_LINES.splice(i, 1); renderQuoteLines(); }
+function moveQuoteLine(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= QUOTE_LINES.length) return;
+  const t = QUOTE_LINES[i]; QUOTE_LINES[i] = QUOTE_LINES[j]; QUOTE_LINES[j] = t;
+  renderQuoteLines();
 }
 
 function closeQuoteModal() {
@@ -3260,11 +3370,18 @@ async function downloadQuote() {
   try {
     const info = {
       customer,
+      customerAddr:  document.getElementById('qmCustomerAddr').value.trim(),
+      customerPhone: document.getElementById('qmCustomerPhone').value.trim(),
       date: document.getElementById('qmDate').value || new Date().toISOString().slice(0,10),
       salesperson: document.getElementById('qmSalesperson').value.trim(),
       salespersonPhone: document.getElementById('qmSalespersonPhone').value.trim(),
       notes: (document.getElementById('qmNotes').value || '')
         .split('\n').map(s => s.trim()).filter(Boolean),
+      lines: QUOTE_LINES
+        .map(l => l.type === 'section'
+          ? { type:'section', name:(l.name || '').trim() }
+          : { type:'item', name:(l.name || '').trim(), qty:l.qty || 0, price:l.price || 0 })
+        .filter(l => l.name),
     };
     const buf = await buildQuoteWorkbook(info);
     const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -3276,7 +3393,7 @@ async function downloadQuote() {
     const tag = MODE === 'lease' ? '리스' : '할인';
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `견적서(${tag})_${safe} 원장님_${yymmdd}.xlsx`;
+    a.download = `견적서(${tag})_${safe}_${yymmdd}.xlsx`;
     a.click();
     URL.revokeObjectURL(a.href);
     closeQuoteModal();
@@ -3296,27 +3413,21 @@ function qmCell(ws, ref, value, opts) {
   c.value = value === '' || value == null ? null : value;
   c.font = Object.assign({}, QUOTE_FONT, opts.font || {});
   c.alignment = { horizontal: opts.align || 'left', vertical: 'middle', wrapText: true };
-  c.border = QUOTE_BORDER;
+  if (!opts.noBorder) c.border = QUOTE_BORDER;
   if (opts.fill) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: opts.fill } };
   if (opts.numFmt) c.numFmt = opts.numFmt;
 }
 
 async function buildQuoteWorkbook(info) {
   const isLease = MODE === 'lease';
-  const dRate = MODE === 'discount'
-    ? (parseFloat(document.getElementById('discountInput').value) || 0) / 100
-    : 0;
-  const items = PRODUCTS.filter(p => selected.has(p.id)).map(p => {
-    const promo = getPromo(p.id);
-    const unit  = MODE === 'discount' ? Math.round(promo * (1 - dRate)) : promo;
-    return { name: p.name, qty: getQty(p), unit_price: unit };
-  });
-  const itemsSum = items.reduce((s, it) => s + it.qty * it.unit_price, 0);
-  let subtotal = itemsSum;
+  const lines = Array.isArray(info.lines) ? info.lines : [];
+  // 소계 = 단가가 있는(증정 아닌) 품목 행의 수량 × 단가 합계
+  const subtotal = lines.reduce((s, ln) =>
+    s + (ln.type === 'item' && ln.price > 0 ? (ln.qty || 0) * ln.price : 0), 0);
   let leaseInfo = null;
 
   if (MODE === 'discount') {
-    // subtotal already reflects discount via per-item unit_price
+    // subtotal already reflects discount
   } else {
     const months      = getPeriod();
     const depositRate = getDeposit();
@@ -3369,17 +3480,17 @@ async function buildQuoteWorkbook(info) {
   ws.mergeCells('D3:E3');
   ws.getRow(3).height = 20;
 
-  qmCell(ws, 'B4', `           ${info.customer}  원장님 귀하`, { font: QUOTE_FONT_BOLD, align:'left' });
+  qmCell(ws, 'B4', `${info.customer}  귀하`, { font: QUOTE_FONT_BOLD, align:'left' });
   ws.mergeCells('B4:C4');
   qmCell(ws, 'D4', '등록번호',     { fill: QUOTE_HEADER_LIGHT, align:'center' });
   qmCell(ws, 'E4', '784-87-01184', { align: 'center' });
 
-  qmCell(ws, 'B5', '사업장 주소 : ', { align: 'left' });
+  qmCell(ws, 'B5', `사업장 주소 : ${info.customerAddr || ''}`, { align: 'left' });
   ws.mergeCells('B5:C5');
   qmCell(ws, 'D5', '상호(법인명)',         { fill: QUOTE_HEADER_LIGHT, align:'center' });
   qmCell(ws, 'E5', '주식회사 인티그레이션', { align: 'center' });
 
-  qmCell(ws, 'B6', '전화번호 : 010-6500-1091', { align:'left' });
+  qmCell(ws, 'B6', `전화번호 : ${info.customerPhone || ''}`, { align:'left' });
   ws.mergeCells('B6:C6');
   qmCell(ws, 'D6', '성명',   { fill: QUOTE_HEADER_LIGHT, align:'center' });
   qmCell(ws, 'E6', '정희범', { align:'center' });
@@ -3412,28 +3523,34 @@ async function buildQuoteWorkbook(info) {
   qmCell(ws, 'E11', '상품 금액 (vat 포함)', headOpts);
 
   const itemStart = 12;
-  for (let i = 0; i < QUOTE_MAX_ITEMS; i++) {
+  const hasSections = lines.some(l => l.type === 'section');
+  const totalRows = Math.max(QUOTE_MAX_ITEMS, lines.length);
+  for (let i = 0; i < totalRows; i++) {
     const row = itemStart + i;
-    const it = items[i];
-    qmCell(ws, `B${row}`, it ? it.name : '', { align:'left' });
-    qmCell(ws, `C${row}`, it ? it.qty : '',  { align:'center', numFmt:'#,##0' });
-    qmCell(ws, `D${row}`, it ? it.unit_price : '', { align:'right', numFmt:'#,##0' });
-    qmCell(ws, `E${row}`, it ? (it.qty * it.unit_price) : '', { align:'right', numFmt:'#,##0' });
+    const ln  = lines[i];
+    if (ln && ln.type === 'section') {
+      // 구분 헤더 행 (본체 / 소모품 등)
+      ['B','C','D','E'].forEach(col =>
+        qmCell(ws, `${col}${row}`, '', { fill: QUOTE_HEADER_LIGHT }));
+      const sc = ws.getCell(`B${row}`);
+      sc.value = ln.name;
+      sc.font  = QUOTE_FONT_BOLD;
+      ws.mergeCells(`B${row}:E${row}`);
+    } else if (ln && ln.type === 'item') {
+      const free = !(ln.price > 0);   // 단가 없으면 증정 품목
+      qmCell(ws, `B${row}`, hasSections ? ` - ${ln.name}` : ln.name, { align:'left' });
+      qmCell(ws, `C${row}`, ln.qty || '', { align:'center', numFmt:'#,##0' });
+      qmCell(ws, `D${row}`, free ? '-' : ln.price, { align: free ? 'center' : 'right', numFmt:'#,##0' });
+      qmCell(ws, `E${row}`, free ? '-' : (ln.qty || 0) * ln.price, { align: free ? 'center' : 'right', numFmt:'#,##0' });
+    } else {
+      qmCell(ws, `B${row}`, '', { align:'left' });
+      qmCell(ws, `C${row}`, '', { align:'center' });
+      qmCell(ws, `D${row}`, '', { align:'right' });
+      qmCell(ws, `E${row}`, '', { align:'right' });
+    }
   }
 
-  // 비고 (품목 아래·소계 위) — PDF 양식과 동일
-  let subRow = itemStart + QUOTE_MAX_ITEMS;
-  const notes = Array.isArray(info.notes) ? info.notes : [];
-  for (let i = 0; i < notes.length; i++) {
-    const r = subRow + i;
-    qmCell(ws, `B${r}`, ` - ${notes[i].replace(/^[-•·\s]+/, '')}`, {
-      align: 'left',
-      font: Object.assign({}, QUOTE_FONT, { color:{argb:'FF475569'} }),
-    });
-    ws.mergeCells(`B${r}:E${r}`);
-  }
-  subRow += notes.length;
-
+  const subRow = itemStart + totalRows;
   qmCell(ws, `B${subRow}`, isLease ? '패키지 금액 (할인 적용)' : '소계', {
     fill: QUOTE_SUBTOTAL_BG, font: QUOTE_FONT_BOLD, align:'center',
   });
@@ -3479,23 +3596,28 @@ async function buildQuoteWorkbook(info) {
     nextRow += rows.length;
   }
 
-  qmCell(ws, `B${nextRow}`, '이 견적서와 관련하여 문의 사항이 있다면 다음 연락처 정보를 사용하세요.', {
-    align:'left', font: Object.assign({}, QUOTE_FONT, { italic:true, color:{argb:'FF615A22'} }),
-  });
-  ws.mergeCells(`B${nextRow}:E${nextRow}`);
-  nextRow++;
+  // 비고 (소계 아래) — "* " 접두어
+  const notes = Array.isArray(info.notes) ? info.notes : [];
+  for (let i = 0; i < notes.length; i++) {
+    qmCell(ws, `B${nextRow}`, `* ${notes[i].replace(/^[-•·*\s]+/, '')}`, {
+      align:'left', noBorder:true,
+      font: Object.assign({}, QUOTE_FONT, { color:{argb:'FF475569'} }),
+    });
+    ws.mergeCells(`B${nextRow}:E${nextRow}`);
+    nextRow++;
+  }
 
   const sp  = info.salesperson || '';
   const sph = info.salespersonPhone || '';
   qmCell(ws, `B${nextRow}`, `담당자 : ${sp}      연락처 : ${sph}`, {
-    align:'left', font: QUOTE_FONT_BOLD,
+    align:'left', noBorder:true, font: QUOTE_FONT_BOLD,
   });
   ws.mergeCells(`B${nextRow}:E${nextRow}`);
   ws.getRow(nextRow).height = 20;
   nextRow++;
 
   qmCell(ws, `B${nextRow}`, '저희 서비스를 이용해 주셔서 감사합니다!', {
-    align:'center',
+    align:'center', noBorder:true,
     font: Object.assign({}, QUOTE_FONT_BOLD, { size:11, color:{argb:'FF5E858C'} }),
   });
   ws.mergeCells(`B${nextRow}:E${nextRow}`);
@@ -3592,16 +3714,34 @@ function exportRoiPng() {
         <span style="font-size:11.5px;color:var(--text-3);margin-left:6px" id="qmModeNote"></span>
       </div>
       <div class="qm-field">
-        <label for="qmCustomer">고객 원장님 이름<span class="qm-required">*</span></label>
-        <input type="text" id="qmCustomer" placeholder="예: 홍길동" autocomplete="off">
+        <label for="qmCustomer">고객명<span class="qm-required">*</span></label>
+        <input type="text" id="qmCustomer" placeholder="예: 다이트한의원 부평점" autocomplete="off">
+      </div>
+      <div class="qm-field">
+        <label for="qmCustomerAddr">고객 사업장 주소</label>
+        <input type="text" id="qmCustomerAddr" placeholder="예: 인천광역시 부평구 주부토로 17" autocomplete="off">
+      </div>
+      <div class="qm-field">
+        <label for="qmCustomerPhone">고객 전화번호</label>
+        <input type="text" id="qmCustomerPhone" placeholder="예: 032-000-0000" autocomplete="off">
       </div>
       <div class="qm-field">
         <label for="qmDate">견적일자</label>
         <input type="date" id="qmDate">
       </div>
       <div class="qm-field">
+        <label>품목<span style="font-weight:500;color:var(--text-3)"> · 구분 헤더·증정 품목을 자유롭게 편집</span></label>
+        <div class="ql-head"><span></span><span>품목명</span><span>수량</span><span>단가</span><span></span></div>
+        <div id="qmLines"></div>
+        <div class="ql-add">
+          <button type="button" class="ql-add-btn" onclick="addQuoteItem()">＋ 품목 추가</button>
+          <button type="button" class="ql-add-btn sec" onclick="addQuoteSection()">＋ 구분 추가</button>
+        </div>
+        <span class="qm-hint">단가를 비우면 증정 품목(단가·금액 “-”)으로 표시됩니다. ▲▼로 순서를 바꾸세요.</span>
+      </div>
+      <div class="qm-field">
         <label for="qmSalesperson">담당자</label>
-        <input type="text" id="qmSalesperson" placeholder="예: 주봉현" autocomplete="off">
+        <input type="text" id="qmSalesperson" placeholder="예: 조성갑" autocomplete="off">
       </div>
       <div class="qm-field">
         <label for="qmSalespersonPhone">담당자 연락처</label>
@@ -3609,8 +3749,8 @@ function exportRoiPng() {
       </div>
       <div class="qm-field">
         <label for="qmNotes">비고</label>
-        <textarea id="qmNotes" rows="3" placeholder="예:&#10;- warranty 1년&#10;- 제조사 : elica" autocomplete="off"></textarea>
-        <span class="qm-hint">한 줄에 하나씩 입력하면 품목 아래·소계 위에 표시됩니다.</span>
+        <textarea id="qmNotes" rows="3" placeholder="예:&#10;무상하자보증 : 1년&#10;패키지 구성 : 본체, 카트리지 2개 증정" autocomplete="off"></textarea>
+        <span class="qm-hint">한 줄에 하나씩 입력하면 소계 아래에 “* ”를 붙여 표시됩니다.</span>
       </div>
     </div>
     <div class="qm-foot">
