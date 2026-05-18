@@ -1348,10 +1348,11 @@
           <col style="width:3%">
           <col style="width:8%">
           <col style="width:6%">
-          <col style="width:9%">
+          <col style="width:6.5%">
           <col style="width:5.5%">
           <col style="width:5.5%">
           <col style="width:5.5%">
+          <col style="width:4%">
           <col style="width:7%">
           <col style="width:7%">
           <col style="width:5.5%">
@@ -1372,6 +1373,7 @@
             <th class="num-col">공급가</th>
             <th class="num-col">시장가</th>
             <th class="num-col">정가</th>
+            <th class="num-col">수량</th>
             <th class="num-col promo-col">프로모션가</th>
             <th class="num-col promo-col">스팟할인가</th>
             <th class="num-col">1회 시술비</th>
@@ -1391,7 +1393,8 @@
       💡 <b>정가</b>·<b>공급가</b>는 품목 관리 탭과 공유됩니다. 여기서 수정하면 다른 탭에도 반영됩니다.<br>
       🔁 상단 <b>₩ 최종가 / % 할인율 / ₩ 할인액</b> 토글로 입력 방식 전환 — 어떤 모드로 입력하든 정가를 기준으로 자동 환산되어 같은 값이 저장됩니다.<br>
       📐 <b>마진</b> = (가격 − 공급가) ÷ 가격 · <b>vs 시장가</b> = (가격 − 공급가) ÷ 시장가 (시장가 기준 마진율)<br>
-      📊 <b>회수 횟수</b> = 공급가 ÷ 1회 시술비 (간이 ROI). 자세한 ROI는 우측 <b>📊</b> 버튼으로 확인하세요.
+      📊 <b>회수 횟수</b> = 공급가 ÷ 1회 시술비 (간이 ROI). 자세한 ROI는 우측 <b>📊</b> 버튼으로 확인하세요.<br>
+      🧮 <b>수량</b>은 견적서 다운로드 시 품목별 수량·상품 금액에 반영됩니다 (기본 1).
     </div>
   </div>
 
@@ -1485,7 +1488,12 @@ function migrateProduct(p) {
     promoPrice:   parseInt(p.promoPrice)   || 0,
     spotPrice:    parseInt(p.spotPrice)    || 0,
     treatmentFee: parseInt(p.treatmentFee) || 0,
+    qty:          parseInt(p.qty) || 1,
   };
+}
+function getQty(p) {
+  const q = parseInt(p && p.qty);
+  return (q && q > 0) ? q : 1;
 }
 let PRODUCTS = (function() {
   try {
@@ -2500,6 +2508,7 @@ function _normalizeProduct(p) {
     promoPrice:   parseInt(p.promoPrice)   || 0,
     spotPrice:    parseInt(p.spotPrice)    || 0,
     treatmentFee: parseInt(p.treatmentFee) || 0,
+    qty:          parseInt(p.qty) || 1,
   };
 }
 
@@ -2686,11 +2695,11 @@ function renderPromoTable() {
   updateBulkBars();
 
   if (PRODUCTS.length === 0) {
-    body.innerHTML = `<tr><td colspan="17" class="promo-empty">품목 관리 탭에서 먼저 품목을 추가해주세요</td></tr>`;
+    body.innerHTML = `<tr><td colspan="18" class="promo-empty">품목 관리 탭에서 먼저 품목을 추가해주세요</td></tr>`;
     return;
   }
   if (filtered.length === 0) {
-    body.innerHTML = `<tr><td colspan="17" class="promo-empty">"${PRODUCT_FILTER}"에 일치하는 품목이 없습니다</td></tr>`;
+    body.innerHTML = `<tr><td colspan="18" class="promo-empty">"${PRODUCT_FILTER}"에 일치하는 품목이 없습니다</td></tr>`;
     return;
   }
   const mode = PROMO_INPUT_MODE; // 'amount' | 'rate' | 'discount'
@@ -2740,6 +2749,7 @@ function renderPromoTable() {
       <td><input type="text" inputmode="numeric" class="pm-cost num" value="${(p.cost || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="공급가"></td>
       <td><input type="text" inputmode="numeric" class="pm-market num" value="${(p.marketPrice || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="시장가"></td>
       <td><input type="text" inputmode="numeric" class="pm-price num" value="${(p.price || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="정가"></td>
+      <td><input type="text" inputmode="numeric" class="pm-qty num" value="${getQty(p)}" placeholder="1" aria-label="수량"></td>
       <td><input type="text" inputmode="${isRate ? 'decimal' : 'numeric'}" class="pm-promo num promo-input" value="${promoVal}" placeholder="${promoPlaceholder}" aria-label="프로모션가${promoSuffix}" data-suffix="${promoSuffix}"></td>
       <td><input type="text" inputmode="${isRate ? 'decimal' : 'numeric'}" class="pm-spot num promo-input" value="${spotVal}" placeholder="${spotPlaceholder}" aria-label="스팟할인가${spotSuffix}" data-suffix="${spotSuffix}"></td>
       <td><input type="text" inputmode="numeric" class="pm-treat num" value="${(p.treatmentFee || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="1회 시술비"></td>
@@ -2764,7 +2774,7 @@ function renderPromoTable() {
       const someChecked = checkedCount > 0 && !allChecked;
       html += `
         <tr class="supplier-row${collapsed ? ' collapsed' : ''}" data-supplier="${supplier.replace(/"/g,'&quot;')}">
-          <td colspan="17">
+          <td colspan="18">
             <input type="checkbox" class="supplier-check" ${allChecked ? 'checked' : ''} ${someChecked ? 'data-indeterminate="1"' : ''} aria-label="${supplier} 전체 선택">
             <span class="sr-toggle" data-collapse="1">▼</span>
             <span class="sr-name" data-collapse="1">${supplier}</span>
@@ -2804,6 +2814,7 @@ function renderPromoTable() {
     const c  = tr.querySelector('.pm-cost');
     const mk = tr.querySelector('.pm-market');
     const pr = tr.querySelector('.pm-price');
+    const qt = tr.querySelector('.pm-qty');
     const pm = tr.querySelector('.pm-promo');
     const sp = tr.querySelector('.pm-spot');
     const tf = tr.querySelector('.pm-treat');
@@ -2852,6 +2863,13 @@ function renderPromoTable() {
         recalcMargins();
         flashPromoSaved();
       });
+    });
+
+    if (qt) bindCommaInput(qt, () => {
+      const q = parseIntInput(qt);
+      p.qty = (q && q > 0) ? q : 1;
+      saveProducts();
+      flashPromoSaved();
     });
 
     if (PROMO_INPUT_MODE === 'amount') {
@@ -3280,7 +3298,7 @@ async function buildQuoteWorkbook(info) {
   const items = PRODUCTS.filter(p => selected.has(p.id)).map(p => {
     const promo = getPromo(p.id);
     const unit  = MODE === 'discount' ? Math.round(promo * (1 - dRate)) : promo;
-    return { name: p.name, qty: 1, unit_price: unit };
+    return { name: p.name, qty: getQty(p), unit_price: unit };
   });
   const itemsSum = items.reduce((s, it) => s + it.qty * it.unit_price, 0);
   let subtotal = itemsSum;
