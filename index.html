@@ -392,13 +392,15 @@
   .manage-btn.template { background:linear-gradient(135deg, var(--orange), #fb923c); color:#fff; }
   .manage-table-wrap {
     background:var(--surface); border:1px solid var(--border); border-radius:14px;
-    overflow:hidden; margin-bottom:12px; box-shadow: var(--shadow);
+    overflow:auto; margin-bottom:12px; box-shadow: var(--shadow);
+    max-height: calc(100vh - 240px); min-height: 260px;
   }
   .manage-table { width:100%; border-collapse:collapse; }
   .manage-table thead th {
     padding:11px 12px; font-size:10.5px; color:var(--text-3); font-weight:800;
     text-align:left; border-bottom:1px solid var(--border); letter-spacing:.4px;
     background:var(--surface-2);
+    position:sticky; top:0; z-index:5; box-shadow: inset 0 -1px 0 var(--border);
   }
   .manage-table tbody td { padding:8px 10px; border-bottom:1px solid var(--border); }
   .manage-table tbody tr:last-child td { border-bottom:none; }
@@ -522,13 +524,15 @@
   .pmt-btn.active { background:#6d28d9; color:#fff; box-shadow: 0 1px 2px rgba(109,40,217,.25); }
   .promo-table-wrap {
     background:var(--surface); border:1px solid var(--border); border-radius:14px;
-    overflow-x:auto; margin-bottom:12px; box-shadow: var(--shadow);
+    overflow:auto; margin-bottom:12px; box-shadow: var(--shadow);
+    max-height: calc(100vh - 240px); min-height: 260px;
   }
   .promo-table { width:100%; border-collapse:collapse; table-layout:fixed; }
   .promo-table thead th {
     padding:9px 6px; font-size:10.5px; color:var(--text-3); font-weight:800;
     text-align:left; border-bottom:1px solid var(--border); letter-spacing:.2px;
     background:var(--surface-2); white-space:nowrap;
+    position:sticky; top:0; z-index:5; box-shadow: inset 0 -1px 0 var(--border);
   }
   .promo-table thead th.num-col { text-align:right; }
   .promo-table thead th.promo-col { color:#6d28d9; }
