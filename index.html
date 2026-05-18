@@ -755,13 +755,17 @@
   .qm-body { padding:18px 20px; display:grid; gap:12px; }
   .qm-field { display:flex; flex-direction:column; gap:4px; }
   .qm-field label { font-size:12px; color:var(--text-2); font-weight:600; }
-  .qm-field input {
+  .qm-field input,
+  .qm-field textarea {
     padding:9px 12px; border:1px solid var(--border); border-radius:8px;
     font-family:inherit; font-size:13.5px; color:var(--text);
     background:var(--surface-2); outline:none;
     transition:border-color .15s, box-shadow .15s;
   }
-  .qm-field input:focus { border-color:var(--primary); box-shadow:var(--focus); background:#fff; }
+  .qm-field textarea { resize:vertical; min-height:62px; line-height:1.5; }
+  .qm-field input:focus,
+  .qm-field textarea:focus { border-color:var(--primary); box-shadow:var(--focus); background:#fff; }
+  .qm-field .qm-hint { font-size:11px; color:var(--text-3); font-weight:500; }
   .qm-field .qm-required { color:var(--red); margin-left:2px; }
   .qm-mode-tag {
     display:inline-flex; align-items:center; gap:6px;
@@ -3230,6 +3234,8 @@ async function downloadQuote() {
       date: document.getElementById('qmDate').value || new Date().toISOString().slice(0,10),
       salesperson: document.getElementById('qmSalesperson').value.trim(),
       salespersonPhone: document.getElementById('qmSalespersonPhone').value.trim(),
+      notes: (document.getElementById('qmNotes').value || '')
+        .split('\n').map(s => s.trim()).filter(Boolean),
     };
     const buf = await buildQuoteWorkbook(info);
     const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -3309,13 +3315,23 @@ async function buildQuoteWorkbook(info) {
   ws.getColumn(5).width = 22;
   ws.getColumn(6).width = 2;
 
-  ws.getRow(2).height = 40;
-  qmCell(ws, 'B2', isLease ? '견적서 (리스)' : '견적서', {
-    font: { name:'맑은 고딕', size:24, bold:true, color:{argb:'FFFFFFFF'} },
-    align: 'left',
-    fill: QUOTE_TITLE_BG,
-  });
-  ws.mergeCells('B2:E2');
+  ws.getRow(2).height = 44;
+  const titleCell = ws.getCell('B2');
+  titleCell.value = {
+    richText: [
+      { text: '견적서', font: { name:'맑은 고딕', size:24, bold:true, color:{argb:'FF1E3A8A'} } },
+      { text: isLease ? '   리스 견적' : '   할인 견적',
+        font: { name:'맑은 고딕', size:11, bold:true, color:{argb:'FF94A3B8'} } },
+    ],
+  };
+  titleCell.alignment = { horizontal:'left', vertical:'middle' };
+  ws.mergeCells('B2:C2');
+
+  const logoCell = ws.getCell('D2');
+  logoCell.value = 'Medistream';
+  logoCell.font = { name:'맑은 고딕', size:15, bold:true, color:{argb:'FF1E3A8A'} };
+  logoCell.alignment = { horizontal:'right', vertical:'middle' };
+  ws.mergeCells('D2:E2');
 
   qmCell(ws, 'D3', '공급자', {
     font: Object.assign({}, QUOTE_FONT_BOLD, { color:{argb:'FFFFFFFF'} }),
@@ -3376,7 +3392,19 @@ async function buildQuoteWorkbook(info) {
     qmCell(ws, `E${row}`, it ? (it.qty * it.unit_price) : '', { align:'right', numFmt:'#,##0' });
   }
 
-  const subRow = itemStart + QUOTE_MAX_ITEMS;
+  // 비고 (품목 아래·소계 위) — PDF 양식과 동일
+  let subRow = itemStart + QUOTE_MAX_ITEMS;
+  const notes = Array.isArray(info.notes) ? info.notes : [];
+  for (let i = 0; i < notes.length; i++) {
+    const r = subRow + i;
+    qmCell(ws, `B${r}`, ` - ${notes[i].replace(/^[-•·\s]+/, '')}`, {
+      align: 'left',
+      font: Object.assign({}, QUOTE_FONT, { color:{argb:'FF475569'} }),
+    });
+    ws.mergeCells(`B${r}:E${r}`);
+  }
+  subRow += notes.length;
+
   qmCell(ws, `B${subRow}`, isLease ? '패키지 금액 (할인 적용)' : '소계', {
     fill: QUOTE_SUBTOTAL_BG, font: QUOTE_FONT_BOLD, align:'center',
   });
@@ -3549,6 +3577,11 @@ function exportRoiPng() {
       <div class="qm-field">
         <label for="qmSalespersonPhone">담당자 연락처</label>
         <input type="text" id="qmSalespersonPhone" placeholder="예: 010-0000-0000" autocomplete="off">
+      </div>
+      <div class="qm-field">
+        <label for="qmNotes">비고</label>
+        <textarea id="qmNotes" rows="3" placeholder="예:&#10;- warranty 1년&#10;- 제조사 : elica" autocomplete="off"></textarea>
+        <span class="qm-hint">한 줄에 하나씩 입력하면 품목 아래·소계 위에 표시됩니다.</span>
       </div>
     </div>
     <div class="qm-foot">
