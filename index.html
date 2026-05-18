@@ -1398,7 +1398,7 @@
       🔁 상단 <b>₩ 최종가 / % 할인율 / ₩ 할인액</b> 토글로 입력 방식 전환 — 어떤 모드로 입력하든 정가를 기준으로 자동 환산되어 같은 값이 저장됩니다.<br>
       📐 <b>마진</b> = (가격 − 공급가) ÷ 가격 · <b>vs 시장가</b> = (가격 − 공급가) ÷ 시장가 (시장가 기준 마진율)<br>
       📊 <b>회수 횟수</b> = 공급가 ÷ 1회 시술비 (간이 ROI). 자세한 ROI는 우측 <b>📊</b> 버튼으로 확인하세요.<br>
-      🧮 <b>수량</b>은 견적서 다운로드 시 품목별 수량·상품 금액에 반영됩니다 (기본 1).
+      🧮 <b>수량</b>을 입력하면 <b>공급가·시장가·정가</b>가 <b>단가×수량 합계</b>로 표시됩니다. 입력 시에는 단가로 환산되어 저장되며(품목 관리 탭과 공유), 견적서에도 반영됩니다 (기본 1).
     </div>
   </div>
 
@@ -2719,6 +2719,7 @@ function renderPromoTable() {
   const productRow = (p, idx) => {
     const promoPrice = p.promoPrice || 0;
     const spotPrice  = p.spotPrice  || 0;
+    const q          = getQty(p);   // 공급가·시장가·정가는 단가×수량 합계로 표시
     let promoVal, spotVal, promoPlaceholder, spotPlaceholder, promoSuffix, spotSuffix;
     if (isRate) {
       promoVal = promoPrice > 0 ? discountRate(promoPrice, p.price).toFixed(1) : '';
@@ -2750,10 +2751,10 @@ function renderPromoTable() {
       <td><input type="text" class="pm-name" value="${(p.name || '').replace(/"/g,'&quot;')}" placeholder="제품명" aria-label="제품명"></td>
       <td><input type="text" class="pm-supplier" value="${(p.supplier || '').replace(/"/g,'&quot;')}" placeholder="—" aria-label="공급업체"></td>
       <td><input type="text" class="pm-desc" value="${(p.desc || '').replace(/"/g,'&quot;')}" placeholder="설명(선택)" aria-label="설명"></td>
-      <td><input type="text" inputmode="numeric" class="pm-cost num" value="${(p.cost || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="공급가"></td>
-      <td><input type="text" inputmode="numeric" class="pm-market num" value="${(p.marketPrice || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="시장가"></td>
-      <td><input type="text" inputmode="numeric" class="pm-price num" value="${(p.price || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="정가"></td>
-      <td><input type="text" inputmode="numeric" class="pm-qty num" value="${getQty(p)}" placeholder="1" aria-label="수량"></td>
+      <td><input type="text" inputmode="numeric" class="pm-cost num" value="${((p.cost || 0) * q).toLocaleString('ko-KR')}" placeholder="0" aria-label="공급가 합계"></td>
+      <td><input type="text" inputmode="numeric" class="pm-market num" value="${((p.marketPrice || 0) * q).toLocaleString('ko-KR')}" placeholder="0" aria-label="시장가 합계"></td>
+      <td><input type="text" inputmode="numeric" class="pm-price num" value="${((p.price || 0) * q).toLocaleString('ko-KR')}" placeholder="0" aria-label="정가 합계"></td>
+      <td><input type="text" inputmode="numeric" class="pm-qty num" value="${q}" placeholder="1" aria-label="수량"></td>
       <td><input type="text" inputmode="${isRate ? 'decimal' : 'numeric'}" class="pm-promo num promo-input" value="${promoVal}" placeholder="${promoPlaceholder}" aria-label="프로모션가${promoSuffix}" data-suffix="${promoSuffix}"></td>
       <td><input type="text" inputmode="${isRate ? 'decimal' : 'numeric'}" class="pm-spot num promo-input" value="${spotVal}" placeholder="${spotPlaceholder}" aria-label="스팟할인가${spotSuffix}" data-suffix="${spotSuffix}"></td>
       <td><input type="text" inputmode="numeric" class="pm-treat num" value="${(p.treatmentFee || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="1회 시술비"></td>
@@ -2858,9 +2859,11 @@ function renderPromoTable() {
 
     [c, mk, pr, tf].forEach(el => {
       bindCommaInput(el, () => {
-        p.cost         = parseIntInput(c);
-        p.marketPrice  = parseIntInput(mk);
-        p.price        = parseIntInput(pr);
+        // 공급가·시장가·정가 입력칸은 '단가×수량 합계' → 단가로 환산해 저장
+        const qNow = getQty(p);
+        p.cost         = Math.round(parseIntInput(c)  / qNow);
+        p.marketPrice  = Math.round(parseIntInput(mk) / qNow);
+        p.price        = Math.round(parseIntInput(pr) / qNow);
         p.treatmentFee = parseIntInput(tf);
         // 정가가 바뀌면 같은 행의 promo/spot 표시값(% 모드일 때)도 갱신해야 하나, 금액은 그대로 두고 마진만 갱신
         saveProducts();
@@ -2872,6 +2875,10 @@ function renderPromoTable() {
     if (qt) bindCommaInput(qt, () => {
       const q = parseIntInput(qt);
       p.qty = (q && q > 0) ? q : 1;
+      // 수량 변경 시 공급가·시장가·정가 표시값(합계)을 즉시 갱신
+      c.value  = ((p.cost || 0)        * p.qty).toLocaleString('ko-KR');
+      mk.value = ((p.marketPrice || 0) * p.qty).toLocaleString('ko-KR');
+      pr.value = ((p.price || 0)       * p.qty).toLocaleString('ko-KR');
       saveProducts();
       flashPromoSaved();
     });
