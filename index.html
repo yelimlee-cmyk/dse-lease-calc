@@ -663,12 +663,12 @@
     font-size:11px; color:var(--text-3); letter-spacing:1px;
     text-transform:uppercase; margin-bottom:8px; font-weight:800;
   }
-  .roi-card .rc-val { font-size:21px; font-weight:800; color:var(--text); line-height:1.25; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
+  .roi-card .rc-val { font-size:20px; font-weight:800; color:var(--text); line-height:1.25; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
   .roi-card.primary .rc-val { color:var(--orange); }
-  .roi-card .rc-sub { font-size:12.5px; color:var(--text-2); margin-top:8px; line-height:1.6; font-weight:500; }
-  .roi-card .rc-sub b { color:var(--orange); font-weight:800; font-size:13px; }
+  .roi-card .rc-sub { font-size:11.5px; color:var(--text-2); margin-top:8px; line-height:1.6; font-weight:500; }
+  .roi-card .rc-sub b { color:var(--orange); font-weight:800; font-size:12.5px; }
   .roi-card .rc-sub .muted { color:var(--muted); }
-  .roi-card .rc-sub .pos   { color:var(--green); font-weight:800; font-size:13px; }
+  .roi-card .rc-sub .pos   { color:var(--green); font-weight:800; font-size:12.5px; }
   .roi-bar-wrap {
     background:var(--surface); border:1px solid var(--border); border-radius:12px;
     padding:18px 20px; margin-bottom:14px; box-shadow: var(--shadow);
@@ -703,16 +703,19 @@
     box-shadow: var(--shadow);
   }
   .roi-summary-card .rs-title {
-    font-size:12px; font-weight:800; color:var(--amber);
-    letter-spacing:.4px; margin-bottom:10px;
+    font-size:12.5px; font-weight:800; color:var(--amber);
+    letter-spacing:.4px; margin-bottom:12px;
     display:flex; align-items:center; gap:6px;
   }
   .roi-summary-grid {
     display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
-    gap:10px 18px;
+    gap:12px 18px;
   }
-  .roi-summary-grid .rs-item { display:flex; flex-direction:column; gap:2px; }
-  .roi-summary-grid .rs-lbl  { font-size:10.5px; color:var(--text-3); font-weight:600; }
+  .roi-summary-grid .rs-item {
+    display:flex; flex-direction:column; gap:3px;
+    padding:2px 0;
+  }
+  .roi-summary-grid .rs-lbl  { font-size:11px; color:var(--text-3); font-weight:600; letter-spacing:.2px; }
   .roi-summary-grid .rs-val  { font-size:14px; font-weight:800; color:var(--text); font-variant-numeric:tabular-nums; line-height:1.3; }
   .roi-summary-grid .rs-val.pos { color: var(--green); }
   .roi-summary-grid .rs-val.neg { color: var(--red); }
@@ -720,26 +723,29 @@
   /* 12개월 누적 그래프 */
   .roi-chart-wrap {
     background:#fff; border:1px solid var(--border); border-radius:12px;
-    padding:16px 18px 12px; margin-bottom:14px;
+    padding:18px 20px 14px; margin-bottom:14px;
     box-shadow: var(--shadow);
   }
   .roi-chart-title {
     font-size:13px; font-weight:800; color:var(--text);
-    margin-bottom:6px; display:flex; align-items:center; gap:6px;
+    margin-bottom:10px; display:flex; align-items:center; gap:6px;
   }
   .roi-chart-legend {
-    display:flex; gap:14px; font-size:11px; color:var(--text-2);
-    margin-bottom:8px; flex-wrap:wrap;
+    display:flex; gap:16px; font-size:11.5px; color:var(--text-2);
+    margin-bottom:10px; flex-wrap:wrap;
   }
-  .roi-chart-legend .rcl-item { display:flex; align-items:center; gap:5px; font-weight:600; }
-  .roi-chart-legend .rcl-dot  { width:10px; height:10px; border-radius:2px; }
+  .roi-chart-legend .rcl-item { display:flex; align-items:center; gap:6px; font-weight:600; }
+  .roi-chart-legend .rcl-dot  { width:10px; height:10px; border-radius:50%; }
   .roi-chart-svg { width:100%; height:auto; display:block; font-variant-numeric:tabular-nums; }
-  .roi-chart-svg .axis text   { font-size:10px; fill: var(--text-3); }
-  .roi-chart-svg .axis line   { stroke: var(--border); }
-  .roi-chart-svg .grid line   { stroke: #f1f5f9; stroke-dasharray: 2 3; }
-  .roi-chart-svg .series      { fill:none; stroke-width:2; }
-  .roi-chart-svg .target-line { stroke: var(--orange); stroke-width:1.5; stroke-dasharray: 4 4; }
-  .roi-chart-svg .target-text { font-size:10px; fill: var(--orange); font-weight:700; }
+  .roi-chart-svg .axis-line    { stroke: var(--border-2); stroke-width:1; }
+  .roi-chart-svg .grid-line    { stroke: #eef2f7; stroke-width:1; }
+  .roi-chart-svg .y-tick,
+  .roi-chart-svg .x-tick       { font-size:10.5px; fill: var(--text-3); font-weight:600; }
+  .roi-chart-svg .series       { fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .roi-chart-svg .target-line  { stroke: var(--orange); stroke-width:1.4; stroke-dasharray: 5 4; }
+  .roi-chart-svg .target-text  { font-size:10.5px; fill: var(--orange); font-weight:800; }
+  .roi-chart-svg .be-text      { font-size:10.5px; fill: var(--orange); font-weight:800; }
+  .roi-chart-svg .be-sub       { font-size:9.5px; fill: var(--text-3); font-weight:600; }
 
   .ext-summary.disc {
     background:linear-gradient(135deg, #ecfdf5, #d1fae5);
@@ -1302,21 +1308,28 @@
       <div class="roi-inputs">
         <div class="roi-field">
           <label for="roiCartCost">카트리지(소모품) 단가
-            <span class="hint" tabindex="0" data-tip="시술 1회당 소비되는 소모품(카트리지·팁 등) 단가. 정상 단가로 입력하면 증정분 차감 후 영업이익이 자동 계산됩니다.">?</span>
+            <span class="hint" tabindex="0" data-tip="카트리지 1개 가격을 입력하세요. 시술당 샷수와 카트리지 전체 샷수를 함께 입력하면 시술당 원가가 자동 계산됩니다.">?</span>
           </label>
-          <input type="text" id="roiCartCost" placeholder="예: 50,000" value="" inputmode="numeric" aria-label="카트리지 단가(원)">
-          <div class="unit">원 / 시술 1회분</div>
+          <input type="text" id="roiCartCost" placeholder="예: 200,000" value="" inputmode="numeric" aria-label="카트리지 단가(원)">
+          <div class="unit">원 / 카트리지 1개</div>
+        </div>
+        <div class="roi-field">
+          <label for="roiShotsPerCart">카트리지 전체 샷수
+            <span class="hint" tabindex="0" data-tip="카트리지 1개로 발사 가능한 총 샷 수입니다. 시술당 샷수와 함께 카트리지당 시술 횟수·시술당 원가를 자동 계산합니다.">?</span>
+          </label>
+          <input type="number" id="roiShotsPerCart" placeholder="예: 6000" value="" min="0" step="1" inputmode="numeric" aria-label="카트리지 전체 샷수">
+          <div class="unit">샷 / 카트리지 1개 · <span id="roiTxPerCart" style="color:var(--orange);font-weight:800;">시술 0회/개</span></div>
         </div>
         <div class="roi-field">
           <label for="roiShotsPerTx">시술당 샷수
-            <span class="hint" tabindex="0" data-tip="1회 시술 시 발사되는 평균 샷 수입니다. 영업이익 계산에는 직접 반영되지 않지만, 카트리지 1개당 시술 가능 횟수 등 참고 지표로 표시됩니다.">?</span>
+            <span class="hint" tabindex="0" data-tip="1회 시술 시 발사되는 평균 샷 수입니다. 카트리지 전체 샷수로 나눠 시술당 카트리지 소비량·원가를 계산합니다.">?</span>
           </label>
           <input type="number" id="roiShotsPerTx" placeholder="예: 300" value="" min="0" step="1" inputmode="numeric" aria-label="시술당 샷수">
           <div class="unit">샷 / 시술 1회</div>
         </div>
         <div class="roi-field">
           <label for="roiFreeCart">증정 카트리지 수량
-            <span class="hint" tabindex="0" data-tip="장비 도입 시 무상 제공된 카트리지 개수입니다. 증정 카트리지로 처리되는 시술 횟수만큼은 소모품 원가가 0원으로 계산됩니다.">?</span>
+            <span class="hint" tabindex="0" data-tip="장비 도입 시 무상 제공된 카트리지 개수입니다. 카트리지당 시술 횟수 × 증정 개수만큼은 소모품 원가가 0원으로 계산됩니다.">?</span>
           </label>
           <input type="number" id="roiFreeCart" placeholder="0" value="" min="0" step="1" inputmode="numeric" aria-label="증정 카트리지 수량">
           <div class="unit">개 · <span id="roiFreeTxCover" style="color:var(--orange);font-weight:800;">시술 0회 무상</span></div>
@@ -1330,8 +1343,10 @@
       <div class="roi-summary-grid">
         <div class="rs-item"><span class="rs-lbl">제품 단가 (장비)</span><span class="rs-val" id="rsCost">0원</span></div>
         <div class="rs-item"><span class="rs-lbl">카트리지 단가</span><span class="rs-val" id="rsCart">0원</span></div>
+        <div class="rs-item"><span class="rs-lbl">카트리지 전체 샷수</span><span class="rs-val" id="rsShotsPerCart">0샷</span></div>
         <div class="rs-item"><span class="rs-lbl">시술당 판매가</span><span class="rs-val" id="rsCharge">0원</span></div>
         <div class="rs-item"><span class="rs-lbl">시술당 샷수</span><span class="rs-val" id="rsShots">0샷</span></div>
+        <div class="rs-item"><span class="rs-lbl">카트리지당 시술</span><span class="rs-val" id="rsTxPerCart">0회</span></div>
         <div class="rs-item"><span class="rs-lbl">증정 카트리지</span><span class="rs-val" id="rsFree">0개</span></div>
         <div class="rs-item"><span class="rs-lbl">월 환자 (신환+재환)</span><span class="rs-val" id="rsPt">0명</span></div>
       </div>
@@ -3186,7 +3201,7 @@ function formatRoiInputs() {
     const el = document.getElementById(id);
     if (el) bindCommaInput(el, () => updateRoi());
   });
-  ['roiNewPatients','roiReturnPatients','roiShotsPerTx','roiFreeCart'].forEach(id => {
+  ['roiNewPatients','roiReturnPatients','roiShotsPerTx','roiShotsPerCart','roiFreeCart'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', updateRoi);
   });
@@ -3236,10 +3251,11 @@ function updateRoi() {
   const newPt       = parseInt(document.getElementById('roiNewPatients').value) || 0;
   const retPt       = parseInt(document.getElementById('roiReturnPatients').value) || 0;
   // 피부기기 전용 입력 (소모품)
-  const cartCost  = parseRoiInput('roiCartCost');
-  const shots     = parseInt((document.getElementById('roiShotsPerTx') || {}).value) || 0;
-  const freeCart  = parseInt((document.getElementById('roiFreeCart')  || {}).value) || 0;
-  const isSkin    = (ROI_CATEGORY === 'skin');
+  const cartCost     = parseRoiInput('roiCartCost');
+  const shotsPerTx   = parseInt((document.getElementById('roiShotsPerTx')   || {}).value) || 0;
+  const shotsPerCart = parseInt((document.getElementById('roiShotsPerCart') || {}).value) || 0;
+  const freeCart     = parseInt((document.getElementById('roiFreeCart')     || {}).value) || 0;
+  const isSkin       = (ROI_CATEGORY === 'skin');
 
   const totalPt      = newPt + retPt;
   const monthlyRev   = totalPt * chargePerPt;
@@ -3248,31 +3264,45 @@ function updateRoi() {
   const roiPct       = cost > 0 ? (annualProfit / cost * 100) : 0;
   const breakeven    = monthlyRev > 0 ? (cost / monthlyRev) : 0;
 
-  // 시술당 손익 (피부기기)
-  const txPrice  = chargePerPt;
-  const txCost   = cartCost;
-  const txProfit = txPrice - txCost;
-  const margin   = txPrice > 0 ? (txProfit / txPrice * 100) : 0;
+  // 시술당 손익 (피부기기) ─ 카트리지 전체 샷수 기반
+  // 카트리지당 시술 횟수 = 카트리지 전체 샷수 / 시술당 샷수
+  // 시술당 원가         = 카트리지 단가 × (시술당 샷수 / 카트리지 전체 샷수)
+  // (전체 샷수 미입력 시 fallback: 카트리지 단가 그대로를 시술당 원가로 사용)
+  const txPerCart = (shotsPerCart > 0 && shotsPerTx > 0)
+    ? (shotsPerCart / shotsPerTx) : 0;
+  const txPrice   = chargePerPt;
+  const txCost    = (shotsPerCart > 0 && shotsPerTx > 0)
+    ? Math.round(cartCost * (shotsPerTx / shotsPerCart))
+    : cartCost;
+  const txProfit  = txPrice - txCost;
+  const margin    = txPrice > 0 ? (txProfit / txPrice * 100) : 0;
+  // 증정 카트리지 → 가능한 무상 시술 횟수
+  const freeTxCover = txPerCart > 0
+    ? Math.floor(txPerCart * freeCart)
+    : freeCart;  // fallback: 카트리지 1개 = 시술 1회
 
-  // 입력값 요약
-  const freeTxCover = freeCart; // 카트리지 1개 = 시술 1회 무상
-  const fc = document.getElementById('roiFreeTxCover');
-  if (fc) fc.textContent = `시술 ${freeTxCover.toLocaleString('ko-KR')}회 무상`;
+  // 입력 보조 텍스트
   const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  setText('rsCost',   fmt(cost));
-  setText('rsCart',   fmt(cartCost));
-  setText('rsCharge', fmt(chargePerPt));
-  setText('rsShots',  `${shots.toLocaleString('ko-KR')}샷`);
-  setText('rsFree',   `${freeCart.toLocaleString('ko-KR')}개`);
-  setText('rsPt',     `${totalPt.toLocaleString('ko-KR')}명`);
+  setText('roiFreeTxCover', `시술 ${freeTxCover.toLocaleString('ko-KR')}회 무상`);
+  setText('roiTxPerCart',   `시술 ${txPerCart > 0 ? txPerCart.toFixed(1) : 0}회/개`);
 
-  // 시술당 카드
+  // 입력값 요약 카드
+  setText('rsCost',        fmt(cost));
+  setText('rsCart',        fmt(cartCost));
+  setText('rsShotsPerCart',`${shotsPerCart.toLocaleString('ko-KR')}샷`);
+  setText('rsCharge',      fmt(chargePerPt));
+  setText('rsShots',       `${shotsPerTx.toLocaleString('ko-KR')}샷`);
+  setText('rsTxPerCart',   txPerCart > 0 ? `${txPerCart.toFixed(1)}회` : '—');
+  setText('rsFree',        `${freeCart.toLocaleString('ko-KR')}개`);
+  setText('rsPt',          `${totalPt.toLocaleString('ko-KR')}명`);
+
+  // 시술당 손익 카드
   setText('roiTxPrice', fmt(txPrice));
   setText('roiTxCost',  fmt(txCost));
   const txCostSub = document.getElementById('roiTxCostSub');
   if (txCostSub) {
-    txCostSub.textContent = (shots > 0 && cartCost > 0)
-      ? `카트리지 1회 소모분 · 1샷당 ${fmt(Math.round(cartCost / shots))}`
+    txCostSub.textContent = (shotsPerCart > 0 && shotsPerTx > 0 && cartCost > 0)
+      ? `카트리지 ${shotsPerTx}/${shotsPerCart}샷 사용 · 1샷당 ${fmt(Math.round(cartCost / shotsPerCart))}`
       : '카트리지 1회 소모분';
   }
   const txProfitEl = document.getElementById('roiTxProfit');
@@ -3280,10 +3310,10 @@ function updateRoi() {
     txProfitEl.textContent = fmt(txProfit);
     txProfitEl.style.color = txProfit >= 0 ? 'var(--green)' : 'var(--red)';
   }
-  setText('roiTxProfitSub',
-    `판매가 − 원가 · 마진율 <b>${margin.toFixed(1)}%</b>`);
   const tps = document.getElementById('roiTxProfitSub');
-  if (tps) tps.innerHTML = `판매가 − 원가 · 마진율 <b style="color:${txProfit >= 0 ? 'var(--green)' : 'var(--red)'}">${margin.toFixed(1)}%</b>`;
+  if (tps) {
+    tps.innerHTML = `판매가 − 원가 · 마진율 <b style="color:${txProfit >= 0 ? 'var(--green)' : 'var(--red)'}">${margin.toFixed(1)}%</b>`;
+  }
 
   document.getElementById('roiTotalPatients').innerHTML     =
     `월 ${totalPt.toLocaleString('ko-KR')}명 ` +
@@ -3371,25 +3401,26 @@ function updateRoi() {
 }
 
 // 12개월 누적 그래프 (피부기기 전용)
-// - 매월 매출 = 환자수 × 시술당 판매가
-// - 매월 원가 = (시술수 − 증정 차감분) × 카트리지 단가
+// - 매월 매출 = 환자수 × 시술당 판매가  (= monthlyRev)
+// - 매월 원가 = (시술수 − 증정 차감분) × 시술당 원가
 // - 매월 영업이익 = 매출 − 원가
+// 증정 카트리지 차감분은 freeTxCover(시술 횟수)만큼 초반에 소진
 function renderRoiChart({ monthlyRev, txCost, totalPt, cost, freeTxCover }) {
   const svg = document.getElementById('roiChart');
   if (!svg) return;
   const N = 12;
+  const COLORS = { rev:'#2563eb', cost:'#ef4444', profit:'#10b981', target:'#f97316' };
 
+  // 월별 누적 데이터 계산
   let remainFree = Math.max(0, freeTxCover);
   const data = [];
   let cumRev = 0, cumCost = 0, cumProfit = 0;
   for (let m = 1; m <= N; m++) {
-    const txThis = totalPt;
+    const txThis = Math.max(0, totalPt);
     const paidTx = Math.max(0, txThis - remainFree);
     remainFree   = Math.max(0, remainFree - txThis);
-    const rev    = txThis * (monthlyRev > 0 && totalPt > 0 ? monthlyRev / totalPt : 0);
-    // ↑ monthlyRev = totalPt × chargePerPt 이므로 단순화하면 rev = monthlyRev
-    const revM   = monthlyRev;
-    const costM  = paidTx * txCost;
+    const revM    = monthlyRev;
+    const costM   = paidTx * txCost;
     const profitM = revM - costM;
     cumRev    += revM;
     cumCost   += costM;
@@ -3397,72 +3428,95 @@ function renderRoiChart({ monthlyRev, txCost, totalPt, cost, freeTxCover }) {
     data.push({ m, cumRev, cumCost, cumProfit });
   }
 
-  // SVG 영역 (viewBox 640×300, padding)
-  const W = 640, H = 300;
-  const pad = { l: 64, r: 18, t: 14, b: 32 };
+  // SVG 좌표계
+  const W = 680, H = 320;
+  const pad = { l: 68, r: 28, t: 28, b: 38 };
   const innerW = W - pad.l - pad.r;
   const innerH = H - pad.t - pad.b;
 
-  const allValues = data.flatMap(d => [d.cumRev, d.cumCost, d.cumProfit]).concat([cost]);
-  const yMax = Math.max(1, ...allValues);
-  const yMin = Math.min(0, ...allValues);
+  // Y축 범위 — 0부터 시작, 음수 영업이익이 있으면 그만큼 아래로 확장
+  const maxVal = Math.max(1, ...data.flatMap(d => [d.cumRev, d.cumCost, d.cumProfit]), cost);
+  const minVal = Math.min(0, ...data.map(d => d.cumProfit));
+  const yMax = niceCeil(maxVal);
+  const yMin = minVal < 0 ? -niceCeil(-minVal) : 0;
   const yRange = yMax - yMin || 1;
 
   const x = i => pad.l + (innerW * i / (N - 1));
   const y = v => pad.t + innerH - ((v - yMin) / yRange) * innerH;
 
+  // 라인 path
   const linePath = key => data
     .map((d, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(d[key]).toFixed(1)}`)
     .join(' ');
 
-  // Y축 눈금 (5단계)
-  const ticks = 4;
+  // 영업이익 영역 (0선과 cumProfit 사이를 옅게 채움)
+  const zeroY = y(0);
+  const profitArea = data
+    .map((d, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(d.cumProfit).toFixed(1)}`)
+    .concat([`L ${x(N - 1).toFixed(1)} ${zeroY.toFixed(1)}`, `L ${x(0).toFixed(1)} ${zeroY.toFixed(1)}`, 'Z'])
+    .join(' ');
+
+  // Y축 눈금 (5단계 · 0선 강조)
+  const ticks = 5;
   let yAxis = '';
   for (let i = 0; i <= ticks; i++) {
     const v = yMin + (yRange * i / ticks);
     const py = y(v);
-    yAxis += `<g class="grid"><line x1="${pad.l}" x2="${W - pad.r}" y1="${py}" y2="${py}"/></g>`;
-    yAxis += `<text x="${pad.l - 8}" y="${py + 3}" text-anchor="end">${fmtShort(v)}</text>`;
+    const isZero = Math.abs(v) < 1;
+    yAxis += `<line class="grid-line" x1="${pad.l}" x2="${W - pad.r}" y1="${py.toFixed(1)}" y2="${py.toFixed(1)}"${isZero ? ' stroke="#cbd5e1" stroke-width="1.2"' : ''}/>`;
+    yAxis += `<text class="y-tick" x="${(pad.l - 10).toFixed(1)}" y="${(py + 4).toFixed(1)}" text-anchor="end">${fmtShort(v)}</text>`;
   }
 
   // X축 라벨
   let xAxis = '';
   for (let i = 0; i < N; i++) {
-    xAxis += `<text x="${x(i)}" y="${H - pad.b + 16}" text-anchor="middle">${i + 1}M</text>`;
+    xAxis += `<text class="x-tick" x="${x(i).toFixed(1)}" y="${(H - pad.b + 18).toFixed(1)}" text-anchor="middle">${i + 1}M</text>`;
   }
 
-  // 목표선 (장비 투자금)
-  const targetLine = (cost > 0 && cost >= yMin && cost <= yMax)
-    ? `<line class="target-line" x1="${pad.l}" x2="${W - pad.r}" y1="${y(cost)}" y2="${y(cost)}"/>` +
-      `<text class="target-text" x="${W - pad.r}" y="${y(cost) - 5}" text-anchor="end">투자금 ${fmtShort(cost)}</text>`
-    : '';
+  // 투자금 목표선
+  let targetLine = '';
+  if (cost > 0 && cost >= yMin && cost <= yMax) {
+    const ty = y(cost);
+    targetLine = `<line class="target-line" x1="${pad.l}" x2="${W - pad.r}" y1="${ty.toFixed(1)}" y2="${ty.toFixed(1)}"/>` +
+                 `<text class="target-text" x="${(W - pad.r - 4).toFixed(1)}" y="${(ty - 6).toFixed(1)}" text-anchor="end">투자금 ${fmtShort(cost)}</text>`;
+  }
 
-  // 영역 (영업이익 음수 구간 강조)
-  const profitPath = linePath('cumProfit');
-  const revPath    = linePath('cumRev');
-  const costPath   = linePath('cumCost');
+  // 데이터 포인트 (작은 원)
+  const dots = (key, color) => data.map((d, i) =>
+    `<circle cx="${x(i).toFixed(1)}" cy="${y(d[key]).toFixed(1)}" r="3" fill="#fff" stroke="${color}" stroke-width="1.6"/>`
+  ).join('');
 
-  // 손익분기 마커 (cumProfit가 cost를 처음 넘는 월)
+  // 손익분기 마커 (cumProfit ≥ cost)
   let beMark = '';
   if (cost > 0) {
     const beIdx = data.findIndex(d => d.cumProfit >= cost);
     if (beIdx >= 0) {
-      beMark = `<circle cx="${x(beIdx).toFixed(1)}" cy="${y(data[beIdx].cumProfit).toFixed(1)}" r="5" fill="#fff" stroke="var(--orange)" stroke-width="2"/>` +
-               `<text x="${x(beIdx).toFixed(1)}" y="${(y(data[beIdx].cumProfit) - 10).toFixed(1)}" text-anchor="middle" font-size="10" font-weight="800" fill="var(--orange)">손익분기 ${beIdx + 1}M</text>`;
+      const cx = x(beIdx), cy = y(data[beIdx].cumProfit);
+      beMark = `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="6" fill="${COLORS.target}" stroke="#fff" stroke-width="2"/>` +
+               `<text class="be-text" x="${cx.toFixed(1)}" y="${(cy - 14).toFixed(1)}" text-anchor="middle">손익분기 ${beIdx + 1}M</text>`;
     }
   }
 
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.innerHTML = `
-    <g class="axis">
-      <line x1="${pad.l}" x2="${pad.l}" y1="${pad.t}" y2="${H - pad.b}"/>
-      <line x1="${pad.l}" x2="${W - pad.r}" y1="${H - pad.b}" y2="${H - pad.b}"/>
-    </g>
+    <defs>
+      <linearGradient id="roiProfitGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="${COLORS.profit}" stop-opacity="0.18"/>
+        <stop offset="100%" stop-color="${COLORS.profit}" stop-opacity="0.02"/>
+      </linearGradient>
+    </defs>
     ${yAxis}
+    <path d="${profitArea}" fill="url(#roiProfitGrad)" stroke="none"/>
     ${targetLine}
-    <path class="series" stroke="var(--blue)"  d="${revPath}"/>
-    <path class="series" stroke="var(--red)"   d="${costPath}"/>
-    <path class="series" stroke="var(--green)" d="${profitPath}"/>
-    <g class="axis">${xAxis}</g>
+    <path class="series" stroke="${COLORS.rev}"    d="${linePath('cumRev')}"/>
+    <path class="series" stroke="${COLORS.cost}"   d="${linePath('cumCost')}"/>
+    <path class="series" stroke="${COLORS.profit}" d="${linePath('cumProfit')}"/>
+    ${dots('cumRev',    COLORS.rev)}
+    ${dots('cumCost',   COLORS.cost)}
+    ${dots('cumProfit', COLORS.profit)}
+    <line class="axis-line" x1="${pad.l}" x2="${pad.l}" y1="${pad.t}" y2="${(H - pad.b).toFixed(1)}"/>
+    <line class="axis-line" x1="${pad.l}" x2="${(W - pad.r).toFixed(1)}" y1="${(H - pad.b).toFixed(1)}" y2="${(H - pad.b).toFixed(1)}"/>
+    ${xAxis}
     ${beMark}
   `;
 }
@@ -3471,9 +3525,30 @@ function renderRoiChart({ monthlyRev, txCost, totalPt, cost, freeTxCover }) {
 function fmtShort(v) {
   const abs = Math.abs(v);
   const sign = v < 0 ? '-' : '';
-  if (abs >= 1e8) return sign + (abs / 1e8).toFixed(abs >= 1e9 ? 0 : 1) + '억';
-  if (abs >= 1e4) return sign + (abs / 1e4).toFixed(abs >= 1e7 ? 0 : 0) + '만';
-  return sign + abs.toLocaleString('ko-KR');
+  if (abs === 0) return '0';
+  if (abs >= 1e8) {
+    const n = abs / 1e8;
+    return sign + (n >= 10 ? Math.round(n) : n.toFixed(1)) + '억';
+  }
+  if (abs >= 1e4) {
+    const n = abs / 1e4;
+    return sign + (n >= 100 ? Math.round(n) : n.toFixed(0)) + '만';
+  }
+  return sign + Math.round(abs).toLocaleString('ko-KR');
+}
+
+// 보기 좋은 상한값으로 라운드업 (1, 2, 5, 10 × 10^n)
+function niceCeil(v) {
+  if (v <= 0) return 0;
+  const order = Math.pow(10, Math.floor(Math.log10(v)));
+  const norm  = v / order;
+  let nice;
+  if (norm <= 1) nice = 1;
+  else if (norm <= 2) nice = 2;
+  else if (norm <= 2.5) nice = 2.5;
+  else if (norm <= 5) nice = 5;
+  else nice = 10;
+  return nice * order;
 }
 
 formatRoiInputs();
