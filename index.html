@@ -1505,13 +1505,6 @@
           <div class="unit">회 / 월</div>
         </div>
         <div class="roi-field">
-          <label for="roiAnnualSalary">시술자 연봉
-            <span class="hint" tabindex="0" data-tip="시술자 1인 연봉입니다. 한국 표준 연 2,508시간(월 209h × 12) 기준으로 시술당 인건비가 계산됩니다.">?</span>
-          </label>
-          <input type="text" id="roiAnnualSalary" placeholder="예: 48,000,000" value="" inputmode="numeric" aria-label="시술자 연봉(원)">
-          <div class="unit">원 / 연 · 표준 근무 2,508h/년</div>
-        </div>
-        <div class="roi-field">
           <label for="roiFreeCart">증정 카트리지 수량
             <span class="hint" tabindex="0" data-tip="장비 도입 시 무상 제공된 카트리지 개수입니다. 카트리지당 시술 횟수 × 증정 개수만큼은 소모품 원가가 0원으로 계산됩니다.">?</span>
           </label>
@@ -1547,9 +1540,17 @@
       </div>
     </div>
 
-    <!-- 입력값 요약 (3열) -->
+    <!-- PNG 다운로드 버튼 (ROI 요약~프로모션 효과 영역) -->
+    <div class="roi-skin-only" style="display:flex;justify-content:flex-end;margin:6px 0 -2px">
+      <button class="png-btn" id="roiProposalPngBtn" onclick="exportRoiProposalPng()" aria-label="ROI 제안서 영역을 PNG 이미지로 저장">📥 PNG로 저장</button>
+    </div>
+
+    <!-- ═══ PNG 캡처 영역 시작: ROI 요약 ~ 프로모션 효과 ═══ -->
+    <div id="roiProposalArea">
+
+    <!-- ROI 요약 (3열) -->
     <div class="roi-skin-only" id="roiInputsSummaryBlock">
-      <div class="roi-section-title">입력값 요약</div>
+      <div class="roi-section-title">ROI 요약</div>
       <div class="inputs-summary-wrap">
         <div class="inputs-summary-grid" id="inputsSummaryGrid"></div>
       </div>
@@ -1577,7 +1578,6 @@
           <tbody>
             <tr><td>시술당 판매가</td><td><span id="pl-rev">0</span></td><td>100.0%</td></tr>
             <tr><td>(−) 카트리지 원가</td><td class="pl-neg"><span id="pl-cart">0</span></td><td><span id="pl-cart-pct">0.0%</span></td></tr>
-            <tr><td>(−) 시술 인건비</td><td class="pl-neg"><span id="pl-labor">0</span></td><td><span id="pl-labor-pct">0.0%</span></td></tr>
             <tr class="pl-total"><td>시술당 영업이익</td><td><span id="pl-margin">0</span></td><td><span id="pl-margin-pct">0.0%</span></td></tr>
           </tbody>
         </table>
@@ -1615,6 +1615,8 @@
         </div>
       </div>
     </div>
+
+    </div><!-- ═══ PNG 캡처 영역 끝 ═══ -->
 
     <!-- ROI 결과 카드 (일반의료기기 전용) -->
     <div class="roi-result-grid roi-general-only" id="roiResults">
@@ -3430,7 +3432,7 @@ function parseRoiInput(id) {
 }
 
 function formatRoiInputs() {
-  ['roiCost','roiChargePerPatient','roiCartCost','roiAnnualSalary'].forEach(id => {
+  ['roiCost','roiChargePerPatient','roiCartCost'].forEach(id => {
     const el = document.getElementById(id);
     if (el) bindCommaInput(el, () => updateRoi());
   });
@@ -3485,13 +3487,12 @@ function updateRoi() {
   const chargePerPt = parseRoiInput('roiChargePerPatient');
   const newPt       = parseInt(document.getElementById('roiNewPatients').value) || 0;
   const retPt       = parseInt(document.getElementById('roiReturnPatients').value) || 0;
-  // 피부기기 전용 입력 (소모품 + 인건비 + 시술 횟수)
+  // 피부기기 전용 입력 (소모품 + 시술 횟수)
   const cartCost     = parseRoiInput('roiCartCost');
   const shotsPerTx   = parseInt((document.getElementById('roiShotsPerTx')   || {}).value) || 0;
   const shotsPerCart = parseInt((document.getElementById('roiShotsPerCart') || {}).value) || 0;
   const freeCart     = parseInt((document.getElementById('roiFreeCart')     || {}).value) || 0;
   const procMinutes  = parseInt((document.getElementById('roiProcedureMinutes') || {}).value) || 0;
-  const annualSalary = parseRoiInput('roiAnnualSalary');
   const monthlyTxInp = parseInt((document.getElementById('roiMonthlyTx') || {}).value) || 0;
   const isSkin       = (ROI_CATEGORY === 'skin');
 
@@ -3503,23 +3504,16 @@ function updateRoi() {
   const roiPct       = cost > 0 ? (annualProfit / cost * 100) : 0;
   const breakeven    = monthlyRev > 0 ? (cost / monthlyRev) : 0;
 
-  // ── 피부기기 ROI 제안서 계산 (참조: device-roi.html · ANNUAL_WORK_HOURS=2508) ──
-  const ANNUAL_WORK_MINUTES = 2508 * 60;  // 150,480분
-  // 시술당 카트리지 원가
+  // ── 피부기기 ROI 계산 (소모품 원가만 반영) ──
   const cartCostPerShot = shotsPerCart > 0 ? cartCost / shotsPerCart : 0;
   const cartCostPerTx   = cartCostPerShot * shotsPerTx;
-  // 시술당 인건비
-  const laborCostPerMin = ANNUAL_WORK_MINUTES > 0 ? annualSalary / ANNUAL_WORK_MINUTES : 0;
-  const laborCostPerTx  = laborCostPerMin * procMinutes;
-  // 시술당 손익
-  const totalCostPerTx  = cartCostPerTx + laborCostPerTx;
-  const marginPerTx     = chargePerPt - totalCostPerTx;
+  const marginPerTx     = chargePerPt - cartCostPerTx;
   const marginRate      = chargePerPt > 0 ? (marginPerTx / chargePerPt) : 0;
   // 월/연 손익 (월 시술 횟수 기반)
   const monthlyTx       = monthlyTxInp > 0 ? monthlyTxInp : totalPt;
   const skinMonthlyRev  = chargePerPt * monthlyTx;
   const skinMonthlyCart = cartCostPerTx * monthlyTx;
-  const skinMonthlyLab  = laborCostPerTx * monthlyTx;
+  const skinMonthlyLab  = 0;
   const skinMonthlyProf = marginPerTx * monthlyTx;
   const skinAnnualRev   = skinMonthlyRev * 12;
   const skinAnnualProf  = skinMonthlyProf * 12;
@@ -3550,21 +3544,18 @@ function updateRoi() {
   // 시술당 손익 분해 표
   setText('pl-rev',    fmt(chargePerPt));
   setText('pl-cart',   '−' + fmt(cartCostPerTx));
-  setText('pl-labor',  '−' + fmt(laborCostPerTx));
   setText('pl-margin', fmt(marginPerTx));
   const denom = chargePerPt > 0 ? chargePerPt : 1;
   setText('pl-cart-pct',   `${(cartCostPerTx / denom * 100).toFixed(1)}%`);
-  setText('pl-labor-pct',  `${(laborCostPerTx / denom * 100).toFixed(1)}%`);
   setText('pl-margin-pct', `${(marginPerTx / denom * 100).toFixed(1)}%`);
 
-  // 입력값 요약 (3열)
+  // ROI 요약 (3열) — 시술자 연봉 제외
   const summaryItems = [
     ['기기 단가',       fmt(cost) + '원'],
     ['시술당 판매가',   fmt(chargePerPt) + '원'],
     ['월 시술 횟수',    fmt(monthlyTx) + '회'],
     ['카트리지 단가',   fmt(cartCost) + '원'],
     ['시술당 샷수',     fmt(shotsPerTx) + '샷'],
-    ['시술자 연봉',     fmt(annualSalary) + '원'],
     ['카트리지당 샷수', fmt(shotsPerCart) + '샷'],
     ['시술 시간',       fmt(procMinutes) + '분'],
     ['증정 카트리지',   fmt(freeCart) + '개'],
@@ -4454,6 +4445,77 @@ async function buildQuoteWorkbook(info) {
   ws.getRow(nextRow).height = 22;
 
   return await wb.xlsx.writeBuffer();
+}
+
+// ROI 요약~프로모션 효과 영역만 PNG로 저장 (피부기기 제안서)
+function exportRoiProposalPng() {
+  const area = document.getElementById('roiProposalArea');
+  const btn  = document.getElementById('roiProposalPngBtn');
+  if (!area || !btn) return;
+  const cost = parseRoiInput('roiCost');
+  const chargePerPt = parseRoiInput('roiChargePerPatient');
+  const monthlyTx = parseInt((document.getElementById('roiMonthlyTx') || {}).value) || 0;
+  if (cost <= 0 || chargePerPt <= 0 || monthlyTx <= 0) {
+    toast('기기 단가·시술당 판매가·월 시술 횟수를 입력해주세요', 'error');
+    return;
+  }
+  btn.disabled = true;
+  const origText = btn.textContent;
+  btn.textContent = '⏳ 저장 중...';
+
+  // Chart.js canvas를 PNG로 미리 굳혀두기 (html2canvas로 캡처 가능하게)
+  const srcCanvas = document.getElementById('roiLineChart');
+  let chartImgEl = null;
+  if (srcCanvas) {
+    chartImgEl = document.createElement('img');
+    chartImgEl.src = srcCanvas.toDataURL('image/png');
+    chartImgEl.style.cssText = `width:${srcCanvas.clientWidth}px;height:${srcCanvas.clientHeight}px;display:block`;
+  }
+
+  const baseW = area.getBoundingClientRect().width || area.offsetWidth || 960;
+  const padX  = 24;
+  const wrapW = Math.round(baseW + padX * 2);
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText =
+    `background:#ffffff;padding:${padX}px;border-radius:16px;` +
+    `width:${wrapW}px;box-sizing:border-box;` +
+    `position:fixed;top:0;left:-99999px;`;
+  const clone = area.cloneNode(true);
+  clone.style.width = baseW + 'px';
+  // canvas → img 치환
+  if (chartImgEl) {
+    const tgt = clone.querySelector('#roiLineChart');
+    if (tgt && tgt.parentNode) tgt.parentNode.replaceChild(chartImgEl, tgt);
+  }
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  html2canvas(wrapper, {
+    backgroundColor: '#ffffff',
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    width:       wrapW,
+    height:      wrapper.offsetHeight,
+    windowWidth: wrapW,
+  }).then(canvas => {
+    const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const link = document.createElement('a');
+    link.download = `DSE_ROI제안서_${today}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    document.body.removeChild(wrapper);
+    btn.disabled = false;
+    btn.textContent = origText;
+    toast('ROI 제안서가 PNG로 저장되었습니다', 'success');
+  }).catch(err => {
+    console.error('ROI 제안서 PNG 저장 실패:', err);
+    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+    btn.disabled = false;
+    btn.textContent = origText;
+    toast('PNG 저장 중 오류가 발생했습니다', 'error');
+  });
 }
 
 function exportRoiPng() {
