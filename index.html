@@ -803,10 +803,11 @@
     background: linear-gradient(135deg, #F6EFDD 0%, #FBF5E2 100%);
     border:1px solid #E8D9A8; border-radius:12px;
     padding:18px 20px; margin-bottom:16px;
-    display:grid; grid-template-columns:1.4fr 0.9fr 0.9fr 0.9fr;
-    gap:18px; align-items:center; box-shadow: var(--shadow);
+    display:grid; grid-template-columns: 1.4fr repeat(4, 0.8fr);
+    gap:16px; align-items:center; box-shadow: var(--shadow);
   }
-  @media (max-width: 900px) { .promo-block { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 1100px) { .promo-block { grid-template-columns: 1fr 1fr 1fr; } }
+  @media (max-width: 720px)  { .promo-block { grid-template-columns: 1fr 1fr; } }
   .promo-block .promo-badge {
     display:inline-block; padding:4px 10px; border-radius:14px;
     background:#C7A567; color:#0F2F4F;
@@ -825,6 +826,15 @@
     letter-spacing:-.01em; font-variant-numeric:tabular-nums;
   }
   .promo-block .promo-stat .ps-unit  { font-size:11px; color:#9CA3AF; margin-left:2px; font-weight:600; }
+  .promo-block .promo-stat .ps-sub   { font-size:10px; color:#8B6E2C; margin-top:4px; font-weight:600; letter-spacing:.1px; }
+  .promo-block .promo-stat-be {
+    background: #0F2F4F; color:#fff;
+    border:1px solid #0F2F4F;
+  }
+  .promo-block .promo-stat-be .ps-label { color: rgba(255,255,255,.65); }
+  .promo-block .promo-stat-be .ps-val   { color: #C7A567; }
+  .promo-block .promo-stat-be .ps-unit  { color: rgba(255,255,255,.6); }
+  .promo-block .promo-stat-be .ps-sub   { color: rgba(255,255,255,.7); }
 
   /* 프로모션 적용 callout (네이비) */
   .roi-callout {
@@ -856,16 +866,26 @@
     padding:18px 20px; margin-bottom:16px;
   }
   .inputs-summary-grid {
-    display:grid; grid-template-columns:repeat(3, 1fr);
-    gap:10px 24px;
+    display:grid; grid-template-columns:repeat(4, 1fr);
+    gap:10px 18px;
   }
-  @media (max-width: 720px) { .inputs-summary-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 1100px) { .inputs-summary-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 720px)  { .inputs-summary-grid { grid-template-columns: 1fr 1fr; } }
   .inputs-summary-grid .is-item {
     display:flex; justify-content:flex-start; align-items:baseline; gap:8px;
     font-size:12.5px; padding:4px 0;
   }
   .inputs-summary-grid .is-item .is-lbl { color:#9CA3AF; flex:0 0 auto; font-weight:600; }
   .inputs-summary-grid .is-item .is-val { color:#0F2F4F; font-weight:700; font-variant-numeric:tabular-nums; }
+  /* 산출 지표 — 골드 액센트로 구분 */
+  .inputs-summary-grid .is-item.is-calc {
+    border-top: 1px dashed #E8D9A8;
+    padding-top: 8px; margin-top: 4px;
+  }
+  .inputs-summary-grid .is-item.is-calc .is-lbl::before {
+    content: '⚙ '; color: #C7A567; font-weight: 800; margin-right: 2px;
+  }
+  .inputs-summary-grid .is-item.is-calc .is-val { color: #8B6E2C; }
 
   /* 입력값 요약 카드 */
   .roi-summary-card {
@@ -1565,19 +1585,6 @@
       </div>
     </div>
 
-    <!-- 프로모션 적용 callout (네이비) — 증정 카트리지 입력 시에만 표시 -->
-    <div class="roi-callout roi-skin-only" id="roiPromoCallout" style="display:none">
-      <div class="c-l">
-        <div class="c-badge">★ PROMOTION APPLIED</div>
-        <div class="c-title">증정 카트리지 적용 시</div>
-        <div class="c-desc">무상 증정분이 초기 시술 원가를 0원으로 만들어, 기기 단가 회수 시점이 더 빨라집니다.</div>
-      </div>
-      <div class="c-be">
-        <span class="be-val" id="cBeVal">—</span><span class="be-unit">개월</span>
-        <div class="be-label">정가 대비 <span id="cBeSaved">0.0</span>개월 단축</div>
-      </div>
-    </div>
-
     <!-- 시술당 손익 분해 표 -->
     <div class="roi-skin-only">
       <div class="roi-section-title">시술당 손익 분해</div>
@@ -1601,14 +1608,14 @@
       </div>
     </div>
 
-    <!-- 프로모션 효과 상세 (베이지/골드) -->
+    <!-- 프로모션 효과 상세 (베이지/골드) — 손익분기 단축 통합 -->
     <div class="roi-skin-only">
       <div class="roi-section-title">프로모션 효과 상세</div>
       <div class="promo-block">
         <div class="promo-l">
           <span class="promo-badge">★ PROMOTION</span>
-          <div class="promo-title">증정 카트리지 <span id="pb-cart">0</span>개</div>
-          <div class="promo-desc">무상 증정분으로 초기 시술의 카트리지 원가가 0원이 되어, 초기 매출의 마진율이 일시적으로 상승합니다.</div>
+          <div class="promo-title">증정 카트리지 <span id="pb-cart">0</span>개 적용 시</div>
+          <div class="promo-desc">무상 증정분으로 초기 시술의 카트리지 원가가 0원이 되어, 초기 마진율이 상승하고 기기 단가 회수 시점도 빨라집니다.</div>
         </div>
         <div class="promo-stat">
           <div class="ps-label">무료 가능 시술</div>
@@ -1621,6 +1628,11 @@
         <div class="promo-stat">
           <div class="ps-label">원가 절감 가치</div>
           <div class="ps-val"><span id="pb-cost">0</span><span class="ps-unit">원</span></div>
+        </div>
+        <div class="promo-stat promo-stat-be">
+          <div class="ps-label">손익분기 단축</div>
+          <div class="ps-val"><span id="pb-be-saved">0.0</span><span class="ps-unit">개월</span></div>
+          <div class="ps-sub">정가 <span id="pb-be-base">—</span>개월 → 프로모션 <span id="pb-be-promo">—</span>개월</div>
         </div>
       </div>
     </div>
@@ -3560,21 +3572,27 @@ function updateRoi() {
   setText('pl-cart-pct',   `${(cartCostPerTx / denom * 100).toFixed(1)}%`);
   setText('pl-margin-pct', `${(marginPerTx / denom * 100).toFixed(1)}%`);
 
-  // ROI 요약 (3열) — 시술자 연봉 제외
+  // ROI 요약 ─ 입력값(8) + 산출 지표(4)
   const summaryItems = [
-    ['기기 단가',       fmt(cost) + '원'],
-    ['시술당 판매가',   fmt(chargePerPt) + '원'],
-    ['월 시술 횟수',    fmt(monthlyTx) + '회'],
-    ['카트리지 단가',   fmt(cartCost) + '원'],
-    ['시술당 샷수',     fmt(shotsPerTx) + '샷'],
-    ['카트리지당 샷수', fmt(shotsPerCart) + '샷'],
-    ['시술 시간',       fmt(procMinutes) + '분'],
-    ['증정 카트리지',   fmt(freeCart) + '개'],
+    // 입력값
+    { k:'기기 단가',         v: fmt(cost) + '원' },
+    { k:'시술당 판매가',     v: fmt(chargePerPt) + '원' },
+    { k:'월 시술 횟수',      v: fmt(monthlyTx) + '회' },
+    { k:'카트리지 단가',     v: fmt(cartCost) + '원' },
+    { k:'시술당 샷수',       v: fmt(shotsPerTx) + '샷' },
+    { k:'카트리지당 샷수',   v: fmt(shotsPerCart) + '샷' },
+    { k:'시술 시간',         v: fmt(procMinutes) + '분' },
+    { k:'증정 카트리지',     v: fmt(freeCart) + '개' },
+    // 산출 지표
+    { k:'샷당 원가',         v: fmt(Math.round(cartCostPerShot)) + '원', calc: true },
+    { k:'카트리지 개당 원가', v: fmt(cartCost) + '원',                    calc: true },
+    { k:'시술당 마진금액',    v: fmt(Math.round(marginPerTx)) + '원',     calc: true },
+    { k:'마진율',            v: (marginRate * 100).toFixed(1) + '%',     calc: true },
   ];
   const grid = document.getElementById('inputsSummaryGrid');
   if (grid) {
-    grid.innerHTML = summaryItems.map(([k, v]) =>
-      `<div class="is-item"><span class="is-lbl">${k}</span><span class="is-val">${v}</span></div>`
+    grid.innerHTML = summaryItems.map(it =>
+      `<div class="is-item${it.calc ? ' is-calc' : ''}"><span class="is-lbl">${it.k}</span><span class="is-val">${it.v}</span></div>`
     ).join('');
   }
 
@@ -3584,7 +3602,7 @@ function updateRoi() {
   setText('pb-retail',  fmt(promoRetailVal));
   setText('pb-cost',    fmt(promoCostVal));
 
-  // 24개월 시뮬레이션 + 프로모션 callout
+  // 24개월 시뮬레이션 + 손익분기 단축 통계
   if (isSkin) {
     const sim = simulate24Months({
       devicePrice: cost,
@@ -3595,16 +3613,16 @@ function updateRoi() {
       monthlyTx, shotsPerTx, shotsPerCart, cartCost, freeShots,
     });
     drawRoiLineChart(sim.series);
-    const callout = document.getElementById('roiPromoCallout');
-    if (callout) {
-      if (freeCart > 0 && sim.bePromoMonth !== null && isFinite(skinBeMonths)) {
-        callout.style.display = '';
-        setText('cBeVal',   sim.bePromoMonth.toFixed(1));
-        const saved = skinBeMonths - sim.bePromoMonth;
-        setText('cBeSaved', isFinite(saved) ? saved.toFixed(1) : '0.0');
-      } else {
-        callout.style.display = 'none';
-      }
+    // 손익분기 단축 통계 (프로모션 효과 상세 카드 통합)
+    if (freeCart > 0 && sim.bePromoMonth !== null && isFinite(skinBeMonths)) {
+      const saved = skinBeMonths - sim.bePromoMonth;
+      setText('pb-be-saved', (isFinite(saved) ? saved.toFixed(1) : '0.0'));
+      setText('pb-be-base',  skinBeMonths.toFixed(1));
+      setText('pb-be-promo', sim.bePromoMonth.toFixed(1));
+    } else {
+      setText('pb-be-saved', '0.0');
+      setText('pb-be-base',  isFinite(skinBeMonths) ? skinBeMonths.toFixed(1) : '—');
+      setText('pb-be-promo', '—');
     }
   }
 
@@ -4513,7 +4531,7 @@ function exportRoiProposalPng() {
   }).then(canvas => {
     const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
     const link = document.createElement('a');
-    link.download = `DSE_ROI제안서_${today}.png`;
+    link.download = `ROI 시뮬레이션_${today}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     document.body.removeChild(wrapper);
