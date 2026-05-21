@@ -3577,12 +3577,12 @@ function updateRoi() {
     // 입력값
     { k:'기기 단가',         v: fmt(cost) },
     { k:'시술당 판매가',     v: fmt(chargePerPt) },
-    { k:'월 시술 횟수',      v: fmt(monthlyTx) + '회' },
+    { k:'월 시술 횟수',      v: monthlyTx.toLocaleString('ko-KR') + '회' },
     { k:'카트리지 단가',     v: fmt(cartCost) },
-    { k:'시술당 샷수',       v: fmt(shotsPerTx) + '샷' },
-    { k:'카트리지당 샷수',   v: fmt(shotsPerCart) + '샷' },
-    { k:'시술 시간',         v: fmt(procMinutes) + '분' },
-    { k:'증정 카트리지',     v: fmt(freeCart) + '개' },
+    { k:'시술당 샷수',       v: shotsPerTx.toLocaleString('ko-KR') + '샷' },
+    { k:'카트리지당 샷수',   v: shotsPerCart.toLocaleString('ko-KR') + '샷' },
+    { k:'시술 시간',         v: procMinutes.toLocaleString('ko-KR') + '분' },
+    { k:'증정 카트리지',     v: freeCart.toLocaleString('ko-KR') + '개' },
     // 산출 지표
     { k:'샷당 원가',         v: fmt(Math.round(cartCostPerShot)),     calc: true },
     { k:'카트리지 개당 원가', v: fmt(cartCost),                         calc: true },
