@@ -691,6 +691,56 @@
   .roi-monthly-table .breakeven-row { background: #fff7ed; }
   .roi-monthly-table .breakeven-row td { color:var(--orange); font-weight:800; }
 
+  /* 피부기기 전용 (소모품/카트리지) */
+  .roi-skin-only { display: block; }
+  .roi-skin-only.hidden { display: none; }
+
+  /* 입력값 요약 카드 */
+  .roi-summary-card {
+    background: linear-gradient(180deg, #fffaf3 0%, #fff 100%);
+    border:1px solid #fed7aa; border-radius:12px;
+    padding:14px 16px; margin-bottom:14px;
+    box-shadow: var(--shadow);
+  }
+  .roi-summary-card .rs-title {
+    font-size:12px; font-weight:800; color:var(--amber);
+    letter-spacing:.4px; margin-bottom:10px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .roi-summary-grid {
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
+    gap:10px 18px;
+  }
+  .roi-summary-grid .rs-item { display:flex; flex-direction:column; gap:2px; }
+  .roi-summary-grid .rs-lbl  { font-size:10.5px; color:var(--text-3); font-weight:600; }
+  .roi-summary-grid .rs-val  { font-size:14px; font-weight:800; color:var(--text); font-variant-numeric:tabular-nums; line-height:1.3; }
+  .roi-summary-grid .rs-val.pos { color: var(--green); }
+  .roi-summary-grid .rs-val.neg { color: var(--red); }
+
+  /* 12개월 누적 그래프 */
+  .roi-chart-wrap {
+    background:#fff; border:1px solid var(--border); border-radius:12px;
+    padding:16px 18px 12px; margin-bottom:14px;
+    box-shadow: var(--shadow);
+  }
+  .roi-chart-title {
+    font-size:13px; font-weight:800; color:var(--text);
+    margin-bottom:6px; display:flex; align-items:center; gap:6px;
+  }
+  .roi-chart-legend {
+    display:flex; gap:14px; font-size:11px; color:var(--text-2);
+    margin-bottom:8px; flex-wrap:wrap;
+  }
+  .roi-chart-legend .rcl-item { display:flex; align-items:center; gap:5px; font-weight:600; }
+  .roi-chart-legend .rcl-dot  { width:10px; height:10px; border-radius:2px; }
+  .roi-chart-svg { width:100%; height:auto; display:block; font-variant-numeric:tabular-nums; }
+  .roi-chart-svg .axis text   { font-size:10px; fill: var(--text-3); }
+  .roi-chart-svg .axis line   { stroke: var(--border); }
+  .roi-chart-svg .grid line   { stroke: #f1f5f9; stroke-dasharray: 2 3; }
+  .roi-chart-svg .series      { fill:none; stroke-width:2; }
+  .roi-chart-svg .target-line { stroke: var(--orange); stroke-width:1.5; stroke-dasharray: 4 4; }
+  .roi-chart-svg .target-text { font-size:10px; fill: var(--orange); font-weight:700; }
+
   .ext-summary.disc {
     background:linear-gradient(135deg, #ecfdf5, #d1fae5);
     border-color:#6ee7b7;
@@ -1245,6 +1295,77 @@
         <input type="number" id="roiReturnPatients" placeholder="0" value="" min="0" step="1" inputmode="numeric" aria-label="월 재환 수(명)">
         <div class="unit">명 / 월 · <span id="roiReturnPatientsAnnual" style="color:var(--orange);font-weight:800;">연 0명</span></div>
       </div>
+    </div>
+
+    <!-- 피부기기 전용: 소모품(카트리지) 입력 -->
+    <div class="roi-skin-only" id="roiSkinInputs">
+      <div class="roi-inputs">
+        <div class="roi-field">
+          <label for="roiCartCost">카트리지(소모품) 단가
+            <span class="hint" tabindex="0" data-tip="시술 1회당 소비되는 소모품(카트리지·팁 등) 단가. 정상 단가로 입력하면 증정분 차감 후 영업이익이 자동 계산됩니다.">?</span>
+          </label>
+          <input type="text" id="roiCartCost" placeholder="예: 50,000" value="" inputmode="numeric" aria-label="카트리지 단가(원)">
+          <div class="unit">원 / 시술 1회분</div>
+        </div>
+        <div class="roi-field">
+          <label for="roiShotsPerTx">시술당 샷수
+            <span class="hint" tabindex="0" data-tip="1회 시술 시 발사되는 평균 샷 수입니다. 영업이익 계산에는 직접 반영되지 않지만, 카트리지 1개당 시술 가능 횟수 등 참고 지표로 표시됩니다.">?</span>
+          </label>
+          <input type="number" id="roiShotsPerTx" placeholder="예: 300" value="" min="0" step="1" inputmode="numeric" aria-label="시술당 샷수">
+          <div class="unit">샷 / 시술 1회</div>
+        </div>
+        <div class="roi-field">
+          <label for="roiFreeCart">증정 카트리지 수량
+            <span class="hint" tabindex="0" data-tip="장비 도입 시 무상 제공된 카트리지 개수입니다. 증정 카트리지로 처리되는 시술 횟수만큼은 소모품 원가가 0원으로 계산됩니다.">?</span>
+          </label>
+          <input type="number" id="roiFreeCart" placeholder="0" value="" min="0" step="1" inputmode="numeric" aria-label="증정 카트리지 수량">
+          <div class="unit">개 · <span id="roiFreeTxCover" style="color:var(--orange);font-weight:800;">시술 0회 무상</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 입력값 요약 카드 (피부기기 전용) -->
+    <div class="roi-summary-card roi-skin-only" id="roiSummaryCard">
+      <div class="rs-title">📌 입력값 요약</div>
+      <div class="roi-summary-grid">
+        <div class="rs-item"><span class="rs-lbl">제품 단가 (장비)</span><span class="rs-val" id="rsCost">0원</span></div>
+        <div class="rs-item"><span class="rs-lbl">카트리지 단가</span><span class="rs-val" id="rsCart">0원</span></div>
+        <div class="rs-item"><span class="rs-lbl">시술당 판매가</span><span class="rs-val" id="rsCharge">0원</span></div>
+        <div class="rs-item"><span class="rs-lbl">시술당 샷수</span><span class="rs-val" id="rsShots">0샷</span></div>
+        <div class="rs-item"><span class="rs-lbl">증정 카트리지</span><span class="rs-val" id="rsFree">0개</span></div>
+        <div class="rs-item"><span class="rs-lbl">월 환자 (신환+재환)</span><span class="rs-val" id="rsPt">0명</span></div>
+      </div>
+    </div>
+
+    <!-- 시술당 손익 카드 (피부기기 전용) -->
+    <div class="roi-result-grid roi-skin-only" id="roiPerTxCards">
+      <div class="roi-card">
+        <div class="rc-label">시술당 판매가</div>
+        <div class="rc-val" id="roiTxPrice">0원</div>
+        <div class="rc-sub">환자당 시술 금액</div>
+      </div>
+      <div class="roi-card">
+        <div class="rc-label">시술당 원가 (소모품)</div>
+        <div class="rc-val" id="roiTxCost">0원</div>
+        <div class="rc-sub" id="roiTxCostSub">카트리지 1회 소모분</div>
+      </div>
+      <div class="roi-card primary">
+        <div class="rc-label">시술당 영업이익</div>
+        <div class="rc-val" id="roiTxProfit">0원</div>
+        <div class="rc-sub" id="roiTxProfitSub">판매가 − 원가 · 마진율 0%</div>
+      </div>
+    </div>
+
+    <!-- 12개월 누적 그래프 (피부기기 전용) -->
+    <div class="roi-chart-wrap roi-skin-only" id="roiChartWrap">
+      <div class="roi-chart-title">📊 12개월 누적 매출 · 원가 · 영업이익</div>
+      <div class="roi-chart-legend">
+        <div class="rcl-item"><span class="rcl-dot" style="background:var(--blue)"></span>누적 매출</div>
+        <div class="rcl-item"><span class="rcl-dot" style="background:var(--red)"></span>누적 원가 (소모품)</div>
+        <div class="rcl-item"><span class="rcl-dot" style="background:var(--green)"></span>누적 영업이익</div>
+        <div class="rcl-item"><span class="rcl-dot" style="background:var(--orange)"></span>장비 투자금 (목표선)</div>
+      </div>
+      <svg id="roiChart" class="roi-chart-svg" viewBox="0 0 640 300" preserveAspectRatio="xMidYMid meet" aria-label="12개월 누적 매출·원가·영업이익 그래프"></svg>
     </div>
 
     <!-- ROI 결과 카드 -->
@@ -3061,11 +3182,13 @@ function parseRoiInput(id) {
 }
 
 function formatRoiInputs() {
-  ['roiCost','roiChargePerPatient'].forEach(id => {
-    bindCommaInput(document.getElementById(id), () => updateRoi());
+  ['roiCost','roiChargePerPatient','roiCartCost'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) bindCommaInput(el, () => updateRoi());
   });
-  ['roiNewPatients','roiReturnPatients'].forEach(id => {
-    document.getElementById(id).addEventListener('input', updateRoi);
+  ['roiNewPatients','roiReturnPatients','roiShotsPerTx','roiFreeCart'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', updateRoi);
   });
   // HIRA 금액 입력 (참고용 · 환자당 시술 금액과는 별도)
   const hiraPrice = document.getElementById('roiHiraPrice');
@@ -3089,9 +3212,13 @@ function setRoiCategory(cat) {
   if (cat !== 'general') {
     document.getElementById('roiHiraPanel').classList.remove('visible');
   } else {
-    // general 진입 시 현재 coverage에 맞춰 HIRA 패널 표시
     document.getElementById('roiHiraPanel').classList.toggle('visible', ROI_COVERAGE === 'ins');
   }
+  // 피부기기 전용 영역 (소모품 입력 / 요약 / 시술당 손익 / 그래프)
+  document.querySelectorAll('.roi-skin-only').forEach(el => {
+    el.classList.toggle('hidden', cat !== 'skin');
+  });
+  updateRoi();
 }
 
 function setRoiCoverage(cov) {
@@ -3108,6 +3235,11 @@ function updateRoi() {
   const chargePerPt = parseRoiInput('roiChargePerPatient');
   const newPt       = parseInt(document.getElementById('roiNewPatients').value) || 0;
   const retPt       = parseInt(document.getElementById('roiReturnPatients').value) || 0;
+  // 피부기기 전용 입력 (소모품)
+  const cartCost  = parseRoiInput('roiCartCost');
+  const shots     = parseInt((document.getElementById('roiShotsPerTx') || {}).value) || 0;
+  const freeCart  = parseInt((document.getElementById('roiFreeCart')  || {}).value) || 0;
+  const isSkin    = (ROI_CATEGORY === 'skin');
 
   const totalPt      = newPt + retPt;
   const monthlyRev   = totalPt * chargePerPt;
@@ -3115,6 +3247,43 @@ function updateRoi() {
   const annualProfit = annualRev - cost;
   const roiPct       = cost > 0 ? (annualProfit / cost * 100) : 0;
   const breakeven    = monthlyRev > 0 ? (cost / monthlyRev) : 0;
+
+  // 시술당 손익 (피부기기)
+  const txPrice  = chargePerPt;
+  const txCost   = cartCost;
+  const txProfit = txPrice - txCost;
+  const margin   = txPrice > 0 ? (txProfit / txPrice * 100) : 0;
+
+  // 입력값 요약
+  const freeTxCover = freeCart; // 카트리지 1개 = 시술 1회 무상
+  const fc = document.getElementById('roiFreeTxCover');
+  if (fc) fc.textContent = `시술 ${freeTxCover.toLocaleString('ko-KR')}회 무상`;
+  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setText('rsCost',   fmt(cost));
+  setText('rsCart',   fmt(cartCost));
+  setText('rsCharge', fmt(chargePerPt));
+  setText('rsShots',  `${shots.toLocaleString('ko-KR')}샷`);
+  setText('rsFree',   `${freeCart.toLocaleString('ko-KR')}개`);
+  setText('rsPt',     `${totalPt.toLocaleString('ko-KR')}명`);
+
+  // 시술당 카드
+  setText('roiTxPrice', fmt(txPrice));
+  setText('roiTxCost',  fmt(txCost));
+  const txCostSub = document.getElementById('roiTxCostSub');
+  if (txCostSub) {
+    txCostSub.textContent = (shots > 0 && cartCost > 0)
+      ? `카트리지 1회 소모분 · 1샷당 ${fmt(Math.round(cartCost / shots))}`
+      : '카트리지 1회 소모분';
+  }
+  const txProfitEl = document.getElementById('roiTxProfit');
+  if (txProfitEl) {
+    txProfitEl.textContent = fmt(txProfit);
+    txProfitEl.style.color = txProfit >= 0 ? 'var(--green)' : 'var(--red)';
+  }
+  setText('roiTxProfitSub',
+    `판매가 − 원가 · 마진율 <b>${margin.toFixed(1)}%</b>`);
+  const tps = document.getElementById('roiTxProfitSub');
+  if (tps) tps.innerHTML = `판매가 − 원가 · 마진율 <b style="color:${txProfit >= 0 ? 'var(--green)' : 'var(--red)'}">${margin.toFixed(1)}%</b>`;
 
   document.getElementById('roiTotalPatients').innerHTML     =
     `월 ${totalPt.toLocaleString('ko-KR')}명 ` +
@@ -3192,6 +3361,119 @@ function updateRoi() {
     </tr>`;
   }
   tbody.innerHTML = rows;
+
+  // 피부기기 전용: 12개월 누적 매출·원가·영업이익 그래프
+  if (isSkin) {
+    renderRoiChart({
+      monthlyRev, txCost, totalPt, cost, freeTxCover: freeCart,
+    });
+  }
+}
+
+// 12개월 누적 그래프 (피부기기 전용)
+// - 매월 매출 = 환자수 × 시술당 판매가
+// - 매월 원가 = (시술수 − 증정 차감분) × 카트리지 단가
+// - 매월 영업이익 = 매출 − 원가
+function renderRoiChart({ monthlyRev, txCost, totalPt, cost, freeTxCover }) {
+  const svg = document.getElementById('roiChart');
+  if (!svg) return;
+  const N = 12;
+
+  let remainFree = Math.max(0, freeTxCover);
+  const data = [];
+  let cumRev = 0, cumCost = 0, cumProfit = 0;
+  for (let m = 1; m <= N; m++) {
+    const txThis = totalPt;
+    const paidTx = Math.max(0, txThis - remainFree);
+    remainFree   = Math.max(0, remainFree - txThis);
+    const rev    = txThis * (monthlyRev > 0 && totalPt > 0 ? monthlyRev / totalPt : 0);
+    // ↑ monthlyRev = totalPt × chargePerPt 이므로 단순화하면 rev = monthlyRev
+    const revM   = monthlyRev;
+    const costM  = paidTx * txCost;
+    const profitM = revM - costM;
+    cumRev    += revM;
+    cumCost   += costM;
+    cumProfit += profitM;
+    data.push({ m, cumRev, cumCost, cumProfit });
+  }
+
+  // SVG 영역 (viewBox 640×300, padding)
+  const W = 640, H = 300;
+  const pad = { l: 64, r: 18, t: 14, b: 32 };
+  const innerW = W - pad.l - pad.r;
+  const innerH = H - pad.t - pad.b;
+
+  const allValues = data.flatMap(d => [d.cumRev, d.cumCost, d.cumProfit]).concat([cost]);
+  const yMax = Math.max(1, ...allValues);
+  const yMin = Math.min(0, ...allValues);
+  const yRange = yMax - yMin || 1;
+
+  const x = i => pad.l + (innerW * i / (N - 1));
+  const y = v => pad.t + innerH - ((v - yMin) / yRange) * innerH;
+
+  const linePath = key => data
+    .map((d, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(d[key]).toFixed(1)}`)
+    .join(' ');
+
+  // Y축 눈금 (5단계)
+  const ticks = 4;
+  let yAxis = '';
+  for (let i = 0; i <= ticks; i++) {
+    const v = yMin + (yRange * i / ticks);
+    const py = y(v);
+    yAxis += `<g class="grid"><line x1="${pad.l}" x2="${W - pad.r}" y1="${py}" y2="${py}"/></g>`;
+    yAxis += `<text x="${pad.l - 8}" y="${py + 3}" text-anchor="end">${fmtShort(v)}</text>`;
+  }
+
+  // X축 라벨
+  let xAxis = '';
+  for (let i = 0; i < N; i++) {
+    xAxis += `<text x="${x(i)}" y="${H - pad.b + 16}" text-anchor="middle">${i + 1}M</text>`;
+  }
+
+  // 목표선 (장비 투자금)
+  const targetLine = (cost > 0 && cost >= yMin && cost <= yMax)
+    ? `<line class="target-line" x1="${pad.l}" x2="${W - pad.r}" y1="${y(cost)}" y2="${y(cost)}"/>` +
+      `<text class="target-text" x="${W - pad.r}" y="${y(cost) - 5}" text-anchor="end">투자금 ${fmtShort(cost)}</text>`
+    : '';
+
+  // 영역 (영업이익 음수 구간 강조)
+  const profitPath = linePath('cumProfit');
+  const revPath    = linePath('cumRev');
+  const costPath   = linePath('cumCost');
+
+  // 손익분기 마커 (cumProfit가 cost를 처음 넘는 월)
+  let beMark = '';
+  if (cost > 0) {
+    const beIdx = data.findIndex(d => d.cumProfit >= cost);
+    if (beIdx >= 0) {
+      beMark = `<circle cx="${x(beIdx).toFixed(1)}" cy="${y(data[beIdx].cumProfit).toFixed(1)}" r="5" fill="#fff" stroke="var(--orange)" stroke-width="2"/>` +
+               `<text x="${x(beIdx).toFixed(1)}" y="${(y(data[beIdx].cumProfit) - 10).toFixed(1)}" text-anchor="middle" font-size="10" font-weight="800" fill="var(--orange)">손익분기 ${beIdx + 1}M</text>`;
+    }
+  }
+
+  svg.innerHTML = `
+    <g class="axis">
+      <line x1="${pad.l}" x2="${pad.l}" y1="${pad.t}" y2="${H - pad.b}"/>
+      <line x1="${pad.l}" x2="${W - pad.r}" y1="${H - pad.b}" y2="${H - pad.b}"/>
+    </g>
+    ${yAxis}
+    ${targetLine}
+    <path class="series" stroke="var(--blue)"  d="${revPath}"/>
+    <path class="series" stroke="var(--red)"   d="${costPath}"/>
+    <path class="series" stroke="var(--green)" d="${profitPath}"/>
+    <g class="axis">${xAxis}</g>
+    ${beMark}
+  `;
+}
+
+// 짧은 금액 포맷 (만/억 단위) — 차트 축에서 사용
+function fmtShort(v) {
+  const abs = Math.abs(v);
+  const sign = v < 0 ? '-' : '';
+  if (abs >= 1e8) return sign + (abs / 1e8).toFixed(abs >= 1e9 ? 0 : 1) + '억';
+  if (abs >= 1e4) return sign + (abs / 1e4).toFixed(abs >= 1e7 ? 0 : 0) + '만';
+  return sign + abs.toLocaleString('ko-KR');
 }
 
 formatRoiInputs();
@@ -3254,15 +3536,13 @@ function exportPng() {
 // ─────────────────────────────────────────────────────────
 const QUOTE_FONT      = { name: '맑은 고딕', size: 9 };
 const QUOTE_FONT_BOLD = { name: '맑은 고딕', size: 9, bold: true };
-const QUOTE_HEADER_BG    = 'FF5E858C';
-const QUOTE_HEADER_LIGHT = 'FFDEE8E9';
-const QUOTE_TITLE_BG     = 'FFEB9952';
-const QUOTE_SUBTOTAL_BG  = 'FFF1BC8C';
-const QUOTE_LEASE_BG     = 'FFEAF1FF';
-const QUOTE_BORDER = (() => {
-  const t = { style: 'thin', color: { argb: 'FFBFBFBF' } };
-  return { top: t, left: t, bottom: t, right: t };
-})();
+const QUOTE_TEXT_BLUE  = 'FF1E40AF';                     // 진한 블루 액센트
+const QUOTE_TEXT_DARK  = 'FF0F172A';                     // 본문
+const QUOTE_TEXT_MUTED = 'FF64748B';                     // 회색 보조
+const QUOTE_LINE_GOLD  = 'FFDDB838';                     // 노란/골드 라인
+const QUOTE_LINE_BORDER = { color: { argb: QUOTE_LINE_GOLD }, style: 'thin' };
+const QUOTE_BORDER_BOTTOM = { bottom: QUOTE_LINE_BORDER };
+const QUOTE_BORDER_TOPBOT = { top: QUOTE_LINE_BORDER, bottom: QUOTE_LINE_BORDER };
 const QUOTE_MAX_ITEMS = 14;
 const QUOTE_LOGO_B64 = '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WLp0KWNs06ZNv/nNb0ZHRxOJRDqdJj20cePGRCJB6RNd1ylgqaurGxoaIvH09ttvv/baa+l0euHChXV1deVy+fz589u3b58xY8aECRNaWlrK5TJJk5kzZ+ZyuYaGBlKsxWIxkUgMDw9v27YtnU63trbeeOONLS0tv/zlLzdv3oyITU1NmUwmDMPe3l6C5pNPPpnNZgcGBl544YX3339/eHi4qakpm80Wi8Xh4eG3336bXFixWKRtQ77Y9/29e/c2Nzcjou/7Uspnn3320KFDH3/8sVIql8tR1Pn73/9+8uTJX/nKVyjM/CdSguOOCiVCyCBACBkPlRJSAGeo6wForheWCm4Q2BC6oMdMg0sPbAd0BNAUgODgKSVEgG4gSyUFpqkl0gwZIBcKEYAjgAIGgCgVCvl3D3ll45wnk0nbtlOp1De/+c2BgYFPPvnkpZdeamtr27Vr15EjR6ZPn/7tb3/7zJkzFKiTdOjs7NyxY0d/f39dXd1jjz123XXXFQqFXbt2vf766z09Pdu3b58zZ06xWHz55ZcvXryYzWZXrFixYMGCRCJx8uTJF1980TRN8v2kVUmjkFwdGBg4fvx4EATz5s37zne+M3/+/MHBwX379vX3969evbpYLE6aNGnr1q0fffRRbW3tY489Vltba1lWc3NzuVwmRayUWrhw4YoVK5LJZFNT08GDB/ft21cqlRYuXPjAAw9ce+213d3dW7du3b179549e2677bapU6fu2LHj/fffr1QqM2fOXL58+ezZs8MwPHz48JYtW5LJZORYabNJKW3bXrVq1a233up53u7du48fP57P53fu3Nna2rp27drm5uYDBw5s27ZtcHDwnXfeWb58+eTJk6ME0lUVInQhUCDXA4kBYgDgQ0Lplqcyrp/wwEAAKTlCIq55gefK0E7GvZSZAAnIlFB+qFxgApArnwUlCMeUTMkgJhm16CAqBEQK9KnkyaKClgKu4AoqXwhBORJN0xYtWrR27dqzZ886jvPTn/7UcRzO+YoVK26//fYNGzZQfoLEaUdHx759+3zfX7FixZ133kkJm2w2e+7cub1797766qurV68eGBg4efJkPB5fuXLlE088MXXqVETM5/Ojo6NbtmyxbTuCC7FRFOimUinDMAYGBs6ePZvL5dLpdHt7OyV4SDLv2LHDcZx0Or1q1apMJuO6rqZptm1H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';
 
@@ -3414,7 +3694,7 @@ function qmCell(ws, ref, value, opts) {
   c.value = value === '' || value == null ? null : value;
   c.font = Object.assign({}, QUOTE_FONT, opts.font || {});
   c.alignment = { horizontal: opts.align || 'left', vertical: 'middle', wrapText: true };
-  if (!opts.noBorder) c.border = QUOTE_BORDER;
+  if (opts.border) c.border = opts.border;
   if (opts.fill) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: opts.fill } };
   if (opts.numFmt) c.numFmt = opts.numFmt;
 }
@@ -3448,6 +3728,7 @@ async function buildQuoteWorkbook(info) {
   ws.pageSetup.paperSize = 9;
   ws.pageSetup.orientation = 'portrait';
   ws.pageSetup.margins = { left:.5, right:.5, top:.5, bottom:.5, header:.3, footer:.3 };
+  ws.headerFooter.oddFooter = '&C&"맑은 고딕"&9&K64748BPage &P of &N';
 
   ws.getColumn(1).width = 2;
   ws.getColumn(2).width = 30;
@@ -3456,130 +3737,186 @@ async function buildQuoteWorkbook(info) {
   ws.getColumn(5).width = 22;
   ws.getColumn(6).width = 2;
 
+  // 제목 "견적서" (진한 블루)
   ws.getRow(2).height = 44;
   const titleCell = ws.getCell('B2');
-  titleCell.value = {
-    richText: [
-      { text: '견적서', font: { name:'맑은 고딕', size:24, bold:true, color:{argb:'FF1E3A8A'} } },
-      { text: isLease ? '   리스 견적' : '   할인 견적',
-        font: { name:'맑은 고딕', size:11, bold:true, color:{argb:'FF94A3B8'} } },
-    ],
-  };
+  titleCell.value = '견적서';
+  titleCell.font = { name:'맑은 고딕', size:24, bold:true, color:{argb:QUOTE_TEXT_BLUE} };
   titleCell.alignment = { horizontal:'left', vertical:'middle' };
   ws.mergeCells('B2:C2');
 
-  // 우측 상단 Medistream 로고 이미지
+  // 우측 상단 Medistream 로고
   ws.mergeCells('D2:E2');
   try {
     const logoId = wb.addImage({ base64: QUOTE_LOGO_B64, extension: 'png' });
     ws.addImage(logoId, {
-      tl: { col: 3.18, row: 1.12 },
+      tl: { col: 3.8, row: 1.1 },
       ext: { width: 118, height: 39 },
       editAs: 'oneCell',
     });
   } catch (e) {
     const lc = ws.getCell('D2');
     lc.value = 'Medistream';
-    lc.font = { name:'맑은 고딕', size:15, bold:true, color:{argb:'FF1E3A8A'} };
+    lc.font = { name:'맑은 고딕', size:15, bold:true, color:{argb:QUOTE_TEXT_BLUE} };
     lc.alignment = { horizontal:'right', vertical:'middle' };
   }
 
+  // 공통 폰트 정의
+  const labelBlue = { bold:true, color:{argb:QUOTE_TEXT_BLUE} };
+  const labelBlueLg = { bold:true, color:{argb:QUOTE_TEXT_BLUE}, size:11 };
+  const valueDark = { color:{argb:QUOTE_TEXT_DARK} };
+
+  // Row 3: "공급자" 헤더 (블루 텍스트 + 하단 노란 라인)
+  ws.getRow(3).height = 22;
   qmCell(ws, 'D3', '공급자', {
-    font: Object.assign({}, QUOTE_FONT_BOLD, { color:{argb:'FFFFFFFF'} }),
-    align: 'center', fill: QUOTE_HEADER_BG,
+    font: labelBlueLg, align: 'left',
+    border: QUOTE_BORDER_BOTTOM,
   });
-  ws.mergeCells('D3:E3');
-  ws.getRow(3).height = 20;
+  qmCell(ws, 'E3', '', { border: QUOTE_BORDER_BOTTOM });
 
-  qmCell(ws, 'B4', `${info.customer}  귀하`, { font: QUOTE_FONT_BOLD, align:'left' });
+  // Row 4: 고객명 귀하 + 등록번호
+  ws.getRow(4).height = 22;
+  qmCell(ws, 'B4', `${info.customer}  귀하`, {
+    font: { bold:true, color:{argb:QUOTE_TEXT_BLUE}, size:11, underline:true },
+    align: 'left',
+  });
   ws.mergeCells('B4:C4');
-  qmCell(ws, 'D4', '등록번호',     { fill: QUOTE_HEADER_LIGHT, align:'center' });
-  qmCell(ws, 'E4', '784-87-01184', { align: 'center' });
+  qmCell(ws, 'D4', '등록번호', {
+    font: labelBlue, align: 'left',
+    border: QUOTE_BORDER_BOTTOM,
+  });
+  qmCell(ws, 'E4', '784-87-01184', {
+    align: 'center',
+    border: QUOTE_BORDER_BOTTOM,
+  });
 
-  qmCell(ws, 'B5', `사업장 주소 : ${info.customerAddr || ''}`, { align: 'left' });
+  // Row 5: 사업장 주소 + 상호(법인명)
+  qmCell(ws, 'B5', `사업장 주소 : ${info.customerAddr || ''}`, { align:'left' });
   ws.mergeCells('B5:C5');
-  qmCell(ws, 'D5', '상호(법인명)',         { fill: QUOTE_HEADER_LIGHT, align:'center' });
-  qmCell(ws, 'E5', '주식회사 인티그레이션', { align: 'center' });
+  qmCell(ws, 'D5', '상호(법인명)', {
+    font: labelBlue, align: 'left',
+    border: QUOTE_BORDER_BOTTOM,
+  });
+  qmCell(ws, 'E5', '주식회사 인티그레이션', {
+    align: 'center',
+    border: QUOTE_BORDER_BOTTOM,
+  });
 
+  // Row 6: 전화번호 + 성명
   qmCell(ws, 'B6', `전화번호 : ${info.customerPhone || ''}`, { align:'left' });
   ws.mergeCells('B6:C6');
-  qmCell(ws, 'D6', '성명',   { fill: QUOTE_HEADER_LIGHT, align:'center' });
-  qmCell(ws, 'E6', '정희범', { align:'center' });
+  qmCell(ws, 'D6', '성명', {
+    font: labelBlue, align: 'left',
+    border: QUOTE_BORDER_BOTTOM,
+  });
+  qmCell(ws, 'E6', '정희범', {
+    align: 'center',
+    border: QUOTE_BORDER_BOTTOM,
+  });
 
+  // Row 7: 빈 줄 + 주소
   qmCell(ws, 'B7', '', { align:'left' });
   ws.mergeCells('B7:C7');
-  qmCell(ws, 'D7', '주소', { fill: QUOTE_HEADER_LIGHT, align:'center' });
-  qmCell(ws, 'E7', '서울시 강남구 테헤란로 427, 2층', { align:'center' });
+  qmCell(ws, 'D7', '주소', {
+    font: labelBlue, align: 'left',
+    border: QUOTE_BORDER_BOTTOM,
+  });
+  qmCell(ws, 'E7', '서울시 강남구 테헤란로 427, 2층', {
+    align: 'center',
+    border: QUOTE_BORDER_BOTTOM,
+  });
 
+  // Row 8: 견적일자 + 업태/업종
   const d = new Date(info.date);
   const dateStr = `견적일자 : ${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
-  qmCell(ws, 'B8', dateStr, { align:'left' });
+  qmCell(ws, 'B8', dateStr, { font: labelBlue, align:'left' });
   ws.mergeCells('B8:C8');
-  qmCell(ws, 'D8', '업태/업종', { fill: QUOTE_HEADER_LIGHT, align:'center' });
-  qmCell(ws, 'E8', '도소매/의료기기 도매업 외', { align:'center' });
+  qmCell(ws, 'D8', '업태/업종', {
+    font: labelBlue, align: 'left',
+    border: QUOTE_BORDER_BOTTOM,
+  });
+  qmCell(ws, 'E8', '도소매/의료기기 도매업 외', {
+    align: 'center',
+    border: QUOTE_BORDER_BOTTOM,
+  });
 
-  qmCell(ws, 'B9', '견적 유효 일자 : 견적일로 부터 30일 이내', { align:'left' });
+  // Row 9: 견적 유효 일자 + 전화
+  qmCell(ws, 'B9', '견적 유효 일자 : 견적일로 부터 30일 이내', {
+    font: labelBlue, align: 'left',
+  });
   ws.mergeCells('B9:C9');
-  qmCell(ws, 'D9', '전화', { fill: QUOTE_HEADER_LIGHT, align:'center' });
-  qmCell(ws, 'E9', '02-1599-9073', { align:'center' });
+  qmCell(ws, 'D9', '전화', {
+    font: labelBlue, align: 'left',
+    border: QUOTE_BORDER_BOTTOM,
+  });
+  qmCell(ws, 'E9', '02-1599-9073', {
+    align: 'center',
+    border: QUOTE_BORDER_BOTTOM,
+  });
 
-  ws.getRow(11).height = 22;
-  const headOpts = {
-    font: Object.assign({}, QUOTE_FONT_BOLD, { color:{argb:'FFFFFFFF'} }),
-    align:'center', fill: QUOTE_HEADER_BG,
-  };
-  qmCell(ws, 'B11', '상 품 명',          headOpts);
-  qmCell(ws, 'C11', '수량',              headOpts);
-  qmCell(ws, 'D11', '단가',              headOpts);
-  qmCell(ws, 'E11', '상품 금액 (vat 포함)', headOpts);
+  // Row 11: 상품 표 헤더 (위·아래 노란 라인)
+  ws.getRow(11).height = 24;
+  const headFont = { bold:true, color:{argb:QUOTE_TEXT_BLUE} };
+  qmCell(ws, 'B11', '상 품 명',            { font: headFont, align:'left',   border: QUOTE_BORDER_TOPBOT });
+  qmCell(ws, 'C11', '수량',                 { font: headFont, align:'center', border: QUOTE_BORDER_TOPBOT });
+  qmCell(ws, 'D11', '단가',                 { font: headFont, align:'center', border: QUOTE_BORDER_TOPBOT });
+  qmCell(ws, 'E11', '상품 금액 (vat 포함)', { font: headFont, align:'right',  border: QUOTE_BORDER_TOPBOT });
 
+  // 품목 + 빈 행 (각 행 하단 노란 라인)
   const itemStart = 12;
   const hasSections = lines.some(l => l.type === 'section');
   const totalRows = Math.max(QUOTE_MAX_ITEMS, lines.length);
   for (let i = 0; i < totalRows; i++) {
     const row = itemStart + i;
     const ln  = lines[i];
+    ws.getRow(row).height = 20;
     if (ln && ln.type === 'section') {
-      // 구분 헤더 행 (본체 / 소모품 등)
-      ['B','C','D','E'].forEach(col =>
-        qmCell(ws, `${col}${row}`, '', { fill: QUOTE_HEADER_LIGHT }));
-      const sc = ws.getCell(`B${row}`);
-      sc.value = ln.name;
-      sc.font  = QUOTE_FONT_BOLD;
-      ws.mergeCells(`B${row}:E${row}`);
+      qmCell(ws, `B${row}`, ln.name, { font: QUOTE_FONT_BOLD, align:'left',   border: QUOTE_BORDER_BOTTOM });
+      qmCell(ws, `C${row}`, '',      { align:'center', border: QUOTE_BORDER_BOTTOM });
+      qmCell(ws, `D${row}`, '',      { align:'right',  border: QUOTE_BORDER_BOTTOM });
+      qmCell(ws, `E${row}`, '',      { align:'right',  border: QUOTE_BORDER_BOTTOM });
     } else if (ln && ln.type === 'item') {
-      const free = !(ln.price > 0);   // 단가 없으면 증정 품목
-      qmCell(ws, `B${row}`, hasSections ? ` - ${ln.name}` : ln.name, { align:'left' });
-      qmCell(ws, `C${row}`, ln.qty || '', { align:'center', numFmt:'#,##0' });
-      qmCell(ws, `D${row}`, free ? '-' : ln.price, { align: free ? 'center' : 'right', numFmt:'#,##0' });
-      qmCell(ws, `E${row}`, free ? '-' : (ln.qty || 0) * ln.price, { align: free ? 'center' : 'right', numFmt:'#,##0' });
+      const free = !(ln.price > 0);
+      qmCell(ws, `B${row}`, hasSections ? ` - ${ln.name}` : ln.name, { align:'left',   border: QUOTE_BORDER_BOTTOM });
+      qmCell(ws, `C${row}`, ln.qty || '',                            { align:'center', border: QUOTE_BORDER_BOTTOM, numFmt:'#,##0' });
+      qmCell(ws, `D${row}`, free ? '-' : ln.price,                   { align: free?'center':'right', border: QUOTE_BORDER_BOTTOM, numFmt:'#,##0' });
+      qmCell(ws, `E${row}`, free ? '-' : (ln.qty || 0) * ln.price,   { align: free?'center':'right', border: QUOTE_BORDER_BOTTOM, numFmt:'#,##0' });
     } else {
-      qmCell(ws, `B${row}`, '', { align:'left' });
-      qmCell(ws, `C${row}`, '', { align:'center' });
-      qmCell(ws, `D${row}`, '', { align:'right' });
-      qmCell(ws, `E${row}`, '', { align:'right' });
+      qmCell(ws, `B${row}`, '', { align:'left',   border: QUOTE_BORDER_BOTTOM });
+      qmCell(ws, `C${row}`, '', { align:'center', border: QUOTE_BORDER_BOTTOM });
+      qmCell(ws, `D${row}`, '', { align:'right',  border: QUOTE_BORDER_BOTTOM });
+      qmCell(ws, `E${row}`, '', { align:'right',  border: QUOTE_BORDER_BOTTOM });
     }
   }
 
+  // 소계 (상·하 노란 라인, 블루 텍스트)
   const subRow = itemStart + totalRows;
-  qmCell(ws, `B${subRow}`, isLease ? '패키지 금액 (할인 적용)' : '소계', {
-    fill: QUOTE_SUBTOTAL_BG, font: QUOTE_FONT_BOLD, align:'center',
+  ws.getRow(subRow).height = 24;
+  const subFont = { bold:true, color:{argb:QUOTE_TEXT_BLUE} };
+  qmCell(ws, `B${subRow}`, '', { border: QUOTE_BORDER_BOTTOM });
+  qmCell(ws, `C${subRow}`, '', { border: QUOTE_BORDER_BOTTOM });
+  qmCell(ws, `D${subRow}`, isLease ? '패키지 금액 (할인 적용)' : '소계', {
+    font: subFont, align:'center', border: QUOTE_BORDER_BOTTOM,
   });
-  ws.mergeCells(`B${subRow}:D${subRow}`);
   qmCell(ws, `E${subRow}`, subtotal, {
-    fill: QUOTE_SUBTOTAL_BG, font: QUOTE_FONT_BOLD, align:'right', numFmt:'#,##0',
+    font: subFont, align:'right', numFmt:'#,##0',
+    border: QUOTE_BORDER_BOTTOM,
   });
-  ws.getRow(subRow).height = 22;
 
   let nextRow = subRow + 1;
+
+  // 리스 결제 조건 (하단 노란 라인만)
   if (leaseInfo) {
+    nextRow++;
     ws.getRow(nextRow).height = 22;
-    qmCell(ws, `B${nextRow}`, '📋 리스 결제 조건', {
-      fill: QUOTE_HEADER_BG,
-      font: Object.assign({}, QUOTE_FONT_BOLD, { color:{argb:'FFFFFFFF'}, size:10 }),
-      align: 'center',
+    qmCell(ws, `B${nextRow}`, '리스 결제 조건', {
+      font: { bold:true, color:{argb:QUOTE_TEXT_BLUE}, size:10 },
+      align: 'left',
+      border: QUOTE_BORDER_BOTTOM,
     });
-    ws.mergeCells(`B${nextRow}:E${nextRow}`);
+    qmCell(ws, `C${nextRow}`, '', { border: QUOTE_BORDER_BOTTOM });
+    qmCell(ws, `D${nextRow}`, '', { border: QUOTE_BORDER_BOTTOM });
+    qmCell(ws, `E${nextRow}`, '', { border: QUOTE_BORDER_BOTTOM });
     nextRow++;
 
     const rows = [
@@ -3591,45 +3928,57 @@ async function buildQuoteWorkbook(info) {
     for (let i = 0; i < rows.length; i++) {
       const r = nextRow + i;
       const [label, value, note] = rows[i];
-      qmCell(ws, `B${r}`, label, { fill: QUOTE_LEASE_BG, font: QUOTE_FONT_BOLD, align:'left' });
-      ws.mergeCells(`B${r}:C${r}`);
       const isTotal = i === rows.length - 1;
+      const lineBorder = QUOTE_BORDER_BOTTOM;
+      qmCell(ws, `B${r}`, label, {
+        font: { bold:true, color:{argb:isTotal?QUOTE_TEXT_BLUE:QUOTE_TEXT_DARK} },
+        align:'left', border: lineBorder,
+      });
+      qmCell(ws, `C${r}`, '', { border: lineBorder });
       qmCell(ws, `D${r}`, value, {
-        align: 'right',
+        font: { bold:true, color:{argb:isTotal?QUOTE_TEXT_BLUE:QUOTE_TEXT_DARK} },
+        align:'right',
         numFmt: typeof value === 'number' ? '#,##0' : undefined,
-        font: isTotal ? Object.assign({}, QUOTE_FONT_BOLD, { color:{argb:'FF1D4ED8'} }) : QUOTE_FONT_BOLD,
+        border: lineBorder,
       });
       qmCell(ws, `E${r}`, note, {
-        align: 'center',
-        font: Object.assign({}, QUOTE_FONT, { color:{argb:'FF64748B'} }),
+        font: { color:{argb:QUOTE_TEXT_MUTED} },
+        align: 'center', border: lineBorder,
       });
     }
     nextRow += rows.length;
   }
 
-  // 비고 (소계 아래) — "* " 접두어
+  // 비고 ("* " 접두어, 보더 없음)
+  nextRow++;
   const notes = Array.isArray(info.notes) ? info.notes : [];
   for (let i = 0; i < notes.length; i++) {
     qmCell(ws, `B${nextRow}`, `* ${notes[i].replace(/^[-•·*\s]+/, '')}`, {
-      align:'left', noBorder:true,
-      font: Object.assign({}, QUOTE_FONT, { color:{argb:'FF475569'} }),
+      font: { color:{argb:QUOTE_TEXT_MUTED} },
+      align: 'left',
     });
     ws.mergeCells(`B${nextRow}:E${nextRow}`);
     nextRow++;
   }
 
+  // 빈 줄
+  nextRow++;
+
+  // 담당자 / 연락처
   const sp  = info.salesperson || '';
   const sph = info.salespersonPhone || '';
   qmCell(ws, `B${nextRow}`, `담당자 : ${sp}      연락처 : ${sph}`, {
-    align:'left', noBorder:true, font: QUOTE_FONT_BOLD,
+    font: { color:{argb:QUOTE_TEXT_DARK} },
+    align: 'left',
   });
   ws.mergeCells(`B${nextRow}:E${nextRow}`);
   ws.getRow(nextRow).height = 20;
   nextRow++;
 
+  // 감사 메시지 (좌측 정렬, 굵은 블루)
   qmCell(ws, `B${nextRow}`, '저희 서비스를 이용해 주셔서 감사합니다!', {
-    align:'center', noBorder:true,
-    font: Object.assign({}, QUOTE_FONT_BOLD, { size:11, color:{argb:'FF5E858C'} }),
+    font: { bold:true, color:{argb:QUOTE_TEXT_BLUE}, size:10 },
+    align: 'left',
   });
   ws.mergeCells(`B${nextRow}:E${nextRow}`);
   ws.getRow(nextRow).height = 22;
