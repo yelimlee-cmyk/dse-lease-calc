@@ -3572,22 +3572,22 @@ function updateRoi() {
   setText('pl-cart-pct',   `${(cartCostPerTx / denom * 100).toFixed(1)}%`);
   setText('pl-margin-pct', `${(marginPerTx / denom * 100).toFixed(1)}%`);
 
-  // ROI 요약 ─ 입력값(8) + 산출 지표(4)
+  // ROI 요약 ─ 입력값(8) + 산출 지표(4) · 금액은 "원" 단위 생략
   const summaryItems = [
     // 입력값
-    { k:'기기 단가',         v: fmt(cost) + '원' },
-    { k:'시술당 판매가',     v: fmt(chargePerPt) + '원' },
+    { k:'기기 단가',         v: fmt(cost) },
+    { k:'시술당 판매가',     v: fmt(chargePerPt) },
     { k:'월 시술 횟수',      v: fmt(monthlyTx) + '회' },
-    { k:'카트리지 단가',     v: fmt(cartCost) + '원' },
+    { k:'카트리지 단가',     v: fmt(cartCost) },
     { k:'시술당 샷수',       v: fmt(shotsPerTx) + '샷' },
     { k:'카트리지당 샷수',   v: fmt(shotsPerCart) + '샷' },
     { k:'시술 시간',         v: fmt(procMinutes) + '분' },
     { k:'증정 카트리지',     v: fmt(freeCart) + '개' },
     // 산출 지표
-    { k:'샷당 원가',         v: fmt(Math.round(cartCostPerShot)) + '원', calc: true },
-    { k:'카트리지 개당 원가', v: fmt(cartCost) + '원',                    calc: true },
-    { k:'시술당 마진금액',    v: fmt(Math.round(marginPerTx)) + '원',     calc: true },
-    { k:'마진율',            v: (marginRate * 100).toFixed(1) + '%',     calc: true },
+    { k:'샷당 원가',         v: fmt(Math.round(cartCostPerShot)),     calc: true },
+    { k:'카트리지 개당 원가', v: fmt(cartCost),                         calc: true },
+    { k:'시술당 마진금액',    v: fmt(Math.round(marginPerTx)),         calc: true },
+    { k:'마진율',            v: (marginRate * 100).toFixed(1) + '%', calc: true },
   ];
   const grid = document.getElementById('inputsSummaryGrid');
   if (grid) {
