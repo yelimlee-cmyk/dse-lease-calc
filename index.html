@@ -14,6 +14,7 @@
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root {
     --bg:         #ffffff;
@@ -691,9 +692,171 @@
   .roi-monthly-table .breakeven-row { background: #fff7ed; }
   .roi-monthly-table .breakeven-row td { color:var(--orange); font-weight:800; }
 
-  /* 피부기기 전용 (소모품/카트리지) */
-  .roi-skin-only { display: block; }
-  .roi-skin-only.hidden { display: none; }
+  /* 카테고리별 표시 토글 */
+  .roi-skin-only    { display: block; }
+  .roi-skin-only.hidden    { display: none; }
+  .roi-general-only { display: block; }
+  .roi-general-only.hidden { display: none; }
+
+  /* ───── 디바이스 ROI 제안서 토큰 (네이비/골드) ───── */
+  .roi-skin-only {
+    --navy: #0F2F4F;
+    --navy-2: #16406B;
+    --navy-soft: #E8EEF5;
+    --gold: #C7A567;
+    --gold-soft: #F6EFDD;
+    --gold-2: #8B6E2C;
+    --pl-green: #2D7A4E;
+    --pl-red: #B23A3A;
+  }
+
+  /* 메인 KPI 4카드 */
+  .roi-metric-row {
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:12px;
+    margin-bottom:18px;
+  }
+  @media (max-width: 720px) { .roi-metric-row { grid-template-columns: repeat(2, 1fr); } }
+  .roi-metric {
+    background: linear-gradient(180deg, #FAFBFC 0%, #F3F5F8 100%);
+    border:1px solid var(--line, #E5E7EB); border-radius:12px;
+    padding:14px 16px; box-shadow: var(--shadow);
+  }
+  .roi-metric.accent {
+    background: linear-gradient(180deg, var(--navy) 0%, var(--navy-2) 100%);
+    border-color: var(--navy); color:#fff;
+  }
+  .roi-metric .rm-label {
+    font-size:11px; font-weight:700; color:var(--text-3);
+    letter-spacing:.4px; margin-bottom:8px;
+  }
+  .roi-metric.accent .rm-label { color: rgba(255,255,255,.65); }
+  .roi-metric .rm-val {
+    font-size:22px; font-weight:800; color:var(--navy);
+    line-height:1.1; letter-spacing:-.015em;
+    font-variant-numeric:tabular-nums;
+  }
+  .roi-metric.accent .rm-val { color:#fff; }
+  .roi-metric .rm-unit {
+    font-size:12px; font-weight:600; color:var(--text-3); margin-left:2px;
+  }
+  .roi-metric.accent .rm-unit { color: rgba(255,255,255,.6); }
+  .roi-metric .rm-sub {
+    margin-top:8px; font-size:11px; color:var(--text-2); font-weight:500;
+  }
+  .roi-metric.accent .rm-sub { color: rgba(255,255,255,.7); }
+
+  /* 섹션 타이틀 (좌측 골드 바) */
+  .roi-section-title {
+    font-size:14px; font-weight:700; color:#0F2F4F;
+    display:flex; align-items:center; gap:8px;
+    margin:18px 0 10px;
+  }
+  .roi-section-title::before {
+    content:''; width:3px; height:14px;
+    background:#C7A567; border-radius:2px;
+  }
+
+  /* 시술당 손익 분해 표 */
+  .pl-table-wrap {
+    background:#fff; border:1px solid #E5E7EB; border-radius:12px;
+    padding:6px 14px; margin-bottom:16px; box-shadow: var(--shadow);
+  }
+  .pl-table {
+    width:100%; border-collapse: collapse;
+    font-variant-numeric:tabular-nums;
+  }
+  .pl-table th, .pl-table td {
+    padding:10px 8px; text-align:right; font-size:13px;
+    border-bottom:1px solid #F1F3F6;
+  }
+  .pl-table th { font-weight:600; color:#9CA3AF; font-size:11.5px; letter-spacing:.3px; }
+  .pl-table th:first-child, .pl-table td:first-child { text-align:left; color:#4B5563; font-weight:500; }
+  .pl-table thead th { border-bottom:2px solid #0F2F4F; }
+  .pl-table .pl-pos { color:#2D7A4E; font-weight:700; }
+  .pl-table .pl-neg { color:#B23A3A; font-weight:600; }
+  .pl-table .pl-total td {
+    font-size:14px; font-weight:800; color:#0F2F4F;
+    background:#E8EEF5; border-bottom:none; border-top:2px solid #0F2F4F;
+  }
+  .pl-table .pl-total td:first-child { color:#0F2F4F; font-weight:800; }
+
+  /* 24개월 그래프 (Chart.js 컨테이너) */
+  .roi-line-wrap {
+    background:#fff; border:1px solid #E5E7EB; border-radius:12px;
+    padding:18px 20px 14px; margin-bottom:16px; box-shadow: var(--shadow);
+  }
+  .roi-line-wrap .rl-canvas-box {
+    position:relative; height:340px; width:100%;
+  }
+
+  /* 프로모션 효과 상세 (베이지/골드) */
+  .promo-block {
+    background: linear-gradient(135deg, #F6EFDD 0%, #FBF5E2 100%);
+    border:1px solid #E8D9A8; border-radius:12px;
+    padding:18px 20px; margin-bottom:16px;
+    display:grid; grid-template-columns:1.4fr 0.9fr 0.9fr 0.9fr;
+    gap:18px; align-items:center; box-shadow: var(--shadow);
+  }
+  @media (max-width: 900px) { .promo-block { grid-template-columns: 1fr 1fr; } }
+  .promo-block .promo-badge {
+    display:inline-block; padding:4px 10px; border-radius:14px;
+    background:#C7A567; color:#0F2F4F;
+    font-size:10.5px; font-weight:800; letter-spacing:.4px;
+    margin-bottom:8px;
+  }
+  .promo-block .promo-title { font-size:14px; color:#0F2F4F; font-weight:800; margin-bottom:6px; letter-spacing:-.01em; }
+  .promo-block .promo-desc  { font-size:11.5px; color:#4B5563; line-height:1.55; }
+  .promo-block .promo-stat {
+    background: rgba(255,255,255,0.72);
+    border-radius:10px; padding:10px 12px;
+  }
+  .promo-block .promo-stat .ps-label { font-size:10.5px; color:#4B5563; margin-bottom:4px; font-weight:600; }
+  .promo-block .promo-stat .ps-val   {
+    font-size:15px; font-weight:800; color:#0F2F4F;
+    letter-spacing:-.01em; font-variant-numeric:tabular-nums;
+  }
+  .promo-block .promo-stat .ps-unit  { font-size:11px; color:#9CA3AF; margin-left:2px; font-weight:600; }
+
+  /* 프로모션 적용 callout (네이비) */
+  .roi-callout {
+    background: #0F2F4F; color:#fff;
+    border-radius:12px; padding:18px 22px; margin-bottom:16px;
+    display:grid; grid-template-columns:1fr auto;
+    gap:18px; align-items:center; box-shadow: var(--shadow);
+  }
+  .roi-callout .c-badge {
+    font-size:10.5px; font-weight:800; letter-spacing:.4px;
+    color:#C7A567; margin-bottom:6px;
+  }
+  .roi-callout .c-title {
+    font-size:15px; font-weight:800; color:#fff;
+    margin-bottom:6px; letter-spacing:-.01em;
+  }
+  .roi-callout .c-desc { font-size:11.5px; color:rgba(255,255,255,.78); line-height:1.55; }
+  .roi-callout .c-be   { text-align:right; }
+  .roi-callout .c-be .be-val {
+    font-size:32px; font-weight:800; color:#C7A567;
+    letter-spacing:-.02em; line-height:1; font-variant-numeric:tabular-nums;
+  }
+  .roi-callout .c-be .be-unit  { font-size:14px; color:rgba(255,255,255,.7); margin-left:2px; }
+  .roi-callout .c-be .be-label { font-size:11px; color:rgba(255,255,255,.62); margin-top:6px; font-weight:600; }
+
+  /* 입력값 요약 (3열 그리드, 좌측 골드 바) */
+  .inputs-summary-wrap {
+    background:#FAFBFC; border:1px solid #E5E7EB; border-radius:12px;
+    padding:18px 20px; margin-bottom:16px;
+  }
+  .inputs-summary-grid {
+    display:grid; grid-template-columns:repeat(3, 1fr);
+    gap:10px 24px;
+  }
+  @media (max-width: 720px) { .inputs-summary-grid { grid-template-columns: 1fr 1fr; } }
+  .inputs-summary-grid .is-item {
+    display:flex; justify-content:flex-start; align-items:baseline; gap:8px;
+    font-size:12.5px; padding:4px 0;
+  }
+  .inputs-summary-grid .is-item .is-lbl { color:#9CA3AF; flex:0 0 auto; font-weight:600; }
+  .inputs-summary-grid .is-item .is-val { color:#0F2F4F; font-weight:700; font-variant-numeric:tabular-nums; }
 
   /* 입력값 요약 카드 */
   .roi-summary-card {
@@ -1303,29 +1466,50 @@
       </div>
     </div>
 
-    <!-- 피부기기 전용: 소모품(카트리지) 입력 -->
+    <!-- 피부기기 전용: 소모품(카트리지) + 인건비 입력 -->
     <div class="roi-skin-only" id="roiSkinInputs">
       <div class="roi-inputs">
         <div class="roi-field">
           <label for="roiCartCost">카트리지(소모품) 단가
             <span class="hint" tabindex="0" data-tip="카트리지 1개 가격을 입력하세요. 시술당 샷수와 카트리지 전체 샷수를 함께 입력하면 시술당 원가가 자동 계산됩니다.">?</span>
           </label>
-          <input type="text" id="roiCartCost" placeholder="예: 200,000" value="" inputmode="numeric" aria-label="카트리지 단가(원)">
+          <input type="text" id="roiCartCost" placeholder="예: 250,000" value="" inputmode="numeric" aria-label="카트리지 단가(원)">
           <div class="unit">원 / 카트리지 1개</div>
         </div>
         <div class="roi-field">
           <label for="roiShotsPerCart">카트리지 전체 샷수
             <span class="hint" tabindex="0" data-tip="카트리지 1개로 발사 가능한 총 샷 수입니다. 시술당 샷수와 함께 카트리지당 시술 횟수·시술당 원가를 자동 계산합니다.">?</span>
           </label>
-          <input type="number" id="roiShotsPerCart" placeholder="예: 6000" value="" min="0" step="1" inputmode="numeric" aria-label="카트리지 전체 샷수">
+          <input type="number" id="roiShotsPerCart" placeholder="예: 1000" value="" min="0" step="1" inputmode="numeric" aria-label="카트리지 전체 샷수">
           <div class="unit">샷 / 카트리지 1개 · <span id="roiTxPerCart" style="color:var(--orange);font-weight:800;">시술 0회/개</span></div>
         </div>
         <div class="roi-field">
           <label for="roiShotsPerTx">시술당 샷수
             <span class="hint" tabindex="0" data-tip="1회 시술 시 발사되는 평균 샷 수입니다. 카트리지 전체 샷수로 나눠 시술당 카트리지 소비량·원가를 계산합니다.">?</span>
           </label>
-          <input type="number" id="roiShotsPerTx" placeholder="예: 300" value="" min="0" step="1" inputmode="numeric" aria-label="시술당 샷수">
+          <input type="number" id="roiShotsPerTx" placeholder="예: 500" value="" min="0" step="1" inputmode="numeric" aria-label="시술당 샷수">
           <div class="unit">샷 / 시술 1회</div>
+        </div>
+        <div class="roi-field">
+          <label for="roiProcedureMinutes">시술 소요시간
+            <span class="hint" tabindex="0" data-tip="1회 시술 평균 소요 시간(분)입니다. 시술자 연봉을 기반으로 시술당 인건비를 자동 계산합니다.">?</span>
+          </label>
+          <input type="number" id="roiProcedureMinutes" placeholder="예: 30" value="" min="0" step="1" inputmode="numeric" aria-label="시술 소요시간(분)">
+          <div class="unit">분 / 시술 1회</div>
+        </div>
+        <div class="roi-field">
+          <label for="roiMonthlyTx">월 시술 횟수
+            <span class="hint" tabindex="0" data-tip="해당 장비로 월 평균 시행되는 시술 총 횟수입니다.">?</span>
+          </label>
+          <input type="number" id="roiMonthlyTx" placeholder="예: 40" value="" min="0" step="1" inputmode="numeric" aria-label="월 시술 횟수">
+          <div class="unit">회 / 월</div>
+        </div>
+        <div class="roi-field">
+          <label for="roiAnnualSalary">시술자 연봉
+            <span class="hint" tabindex="0" data-tip="시술자 1인 연봉입니다. 한국 표준 연 2,508시간(월 209h × 12) 기준으로 시술당 인건비가 계산됩니다.">?</span>
+          </label>
+          <input type="text" id="roiAnnualSalary" placeholder="예: 48,000,000" value="" inputmode="numeric" aria-label="시술자 연봉(원)">
+          <div class="unit">원 / 연 · 표준 근무 2,508h/년</div>
         </div>
         <div class="roi-field">
           <label for="roiFreeCart">증정 카트리지 수량
@@ -1337,54 +1521,103 @@
       </div>
     </div>
 
-    <!-- 입력값 요약 카드 (피부기기 전용) -->
-    <div class="roi-summary-card roi-skin-only" id="roiSummaryCard">
-      <div class="rs-title">📌 입력값 요약</div>
-      <div class="roi-summary-grid">
-        <div class="rs-item"><span class="rs-lbl">제품 단가 (장비)</span><span class="rs-val" id="rsCost">0원</span></div>
-        <div class="rs-item"><span class="rs-lbl">카트리지 단가</span><span class="rs-val" id="rsCart">0원</span></div>
-        <div class="rs-item"><span class="rs-lbl">카트리지 전체 샷수</span><span class="rs-val" id="rsShotsPerCart">0샷</span></div>
-        <div class="rs-item"><span class="rs-lbl">시술당 판매가</span><span class="rs-val" id="rsCharge">0원</span></div>
-        <div class="rs-item"><span class="rs-lbl">시술당 샷수</span><span class="rs-val" id="rsShots">0샷</span></div>
-        <div class="rs-item"><span class="rs-lbl">카트리지당 시술</span><span class="rs-val" id="rsTxPerCart">0회</span></div>
-        <div class="rs-item"><span class="rs-lbl">증정 카트리지</span><span class="rs-val" id="rsFree">0개</span></div>
-        <div class="rs-item"><span class="rs-lbl">월 환자 (신환+재환)</span><span class="rs-val" id="rsPt">0명</span></div>
+    <!-- ═══ 피부기기 ROI 제안서 (메인 KPI · 손익 분해 · 24M 시뮬레이션 · 프로모션) ═══ -->
+
+    <!-- 메인 KPI 4카드 (피부기기 전용) -->
+    <div class="roi-metric-row roi-skin-only" id="roiMetricRow">
+      <div class="roi-metric">
+        <div class="rm-label">시술당 영업이익</div>
+        <div class="rm-val"><span id="m-margin-per">0</span><span class="rm-unit">원</span></div>
+        <div class="rm-sub">마진율 <span id="m-margin-rate">0.0%</span></div>
+      </div>
+      <div class="roi-metric">
+        <div class="rm-label">월 영업이익</div>
+        <div class="rm-val"><span id="m-monthly-margin">0</span><span class="rm-unit">원</span></div>
+        <div class="rm-sub">월 매출 <span id="m-monthly-rev">0</span>원</div>
+      </div>
+      <div class="roi-metric">
+        <div class="rm-label">연 영업이익</div>
+        <div class="rm-val"><span id="m-annual-margin">0</span><span class="rm-unit">원</span></div>
+        <div class="rm-sub">연 매출 <span id="m-annual-rev">0</span>원</div>
+      </div>
+      <div class="roi-metric accent">
+        <div class="rm-label">손익분기 (정가)</div>
+        <div class="rm-val"><span id="m-be">—</span><span class="rm-unit">개월</span></div>
+        <div class="rm-sub">기기 단가 회수까지</div>
       </div>
     </div>
 
-    <!-- 시술당 손익 카드 (피부기기 전용) -->
-    <div class="roi-result-grid roi-skin-only" id="roiPerTxCards">
-      <div class="roi-card">
-        <div class="rc-label">시술당 판매가</div>
-        <div class="rc-val" id="roiTxPrice">0원</div>
-        <div class="rc-sub">환자당 시술 금액</div>
-      </div>
-      <div class="roi-card">
-        <div class="rc-label">시술당 원가 (소모품)</div>
-        <div class="rc-val" id="roiTxCost">0원</div>
-        <div class="rc-sub" id="roiTxCostSub">카트리지 1회 소모분</div>
-      </div>
-      <div class="roi-card primary">
-        <div class="rc-label">시술당 영업이익</div>
-        <div class="rc-val" id="roiTxProfit">0원</div>
-        <div class="rc-sub" id="roiTxProfitSub">판매가 − 원가 · 마진율 0%</div>
+    <!-- 입력값 요약 (3열) -->
+    <div class="roi-skin-only" id="roiInputsSummaryBlock">
+      <div class="roi-section-title">입력값 요약</div>
+      <div class="inputs-summary-wrap">
+        <div class="inputs-summary-grid" id="inputsSummaryGrid"></div>
       </div>
     </div>
 
-    <!-- 12개월 누적 그래프 (피부기기 전용) -->
-    <div class="roi-chart-wrap roi-skin-only" id="roiChartWrap">
-      <div class="roi-chart-title">📊 12개월 누적 매출 · 원가 · 영업이익</div>
-      <div class="roi-chart-legend">
-        <div class="rcl-item"><span class="rcl-dot" style="background:var(--blue)"></span>누적 매출</div>
-        <div class="rcl-item"><span class="rcl-dot" style="background:var(--red)"></span>누적 원가 (소모품)</div>
-        <div class="rcl-item"><span class="rcl-dot" style="background:var(--green)"></span>누적 영업이익</div>
-        <div class="rcl-item"><span class="rcl-dot" style="background:var(--orange)"></span>장비 투자금 (목표선)</div>
+    <!-- 프로모션 적용 callout (네이비) — 증정 카트리지 입력 시에만 표시 -->
+    <div class="roi-callout roi-skin-only" id="roiPromoCallout" style="display:none">
+      <div class="c-l">
+        <div class="c-badge">★ PROMOTION APPLIED</div>
+        <div class="c-title">증정 카트리지 적용 시</div>
+        <div class="c-desc">무상 증정분이 초기 시술 원가를 0원으로 만들어, 기기 단가 회수 시점이 더 빨라집니다.</div>
       </div>
-      <svg id="roiChart" class="roi-chart-svg" viewBox="0 0 640 300" preserveAspectRatio="xMidYMid meet" aria-label="12개월 누적 매출·원가·영업이익 그래프"></svg>
+      <div class="c-be">
+        <span class="be-val" id="cBeVal">—</span><span class="be-unit">개월</span>
+        <div class="be-label">정가 대비 <span id="cBeSaved">0.0</span>개월 단축</div>
+      </div>
     </div>
 
-    <!-- ROI 결과 카드 -->
-    <div class="roi-result-grid" id="roiResults">
+    <!-- 시술당 손익 분해 표 -->
+    <div class="roi-skin-only">
+      <div class="roi-section-title">시술당 손익 분해</div>
+      <div class="pl-table-wrap">
+        <table class="pl-table" aria-label="시술당 손익 분해">
+          <thead><tr><th>항목</th><th>금액</th><th>비중</th></tr></thead>
+          <tbody>
+            <tr><td>시술당 판매가</td><td><span id="pl-rev">0</span></td><td>100.0%</td></tr>
+            <tr><td>(−) 카트리지 원가</td><td class="pl-neg"><span id="pl-cart">0</span></td><td><span id="pl-cart-pct">0.0%</span></td></tr>
+            <tr><td>(−) 시술 인건비</td><td class="pl-neg"><span id="pl-labor">0</span></td><td><span id="pl-labor-pct">0.0%</span></td></tr>
+            <tr class="pl-total"><td>시술당 영업이익</td><td><span id="pl-margin">0</span></td><td><span id="pl-margin-pct">0.0%</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 24개월 누적 수익 시뮬레이션 (정가 vs 프로모션) -->
+    <div class="roi-skin-only">
+      <div class="roi-section-title">24개월 누적 수익 시뮬레이션</div>
+      <div class="roi-line-wrap">
+        <div class="rl-canvas-box"><canvas id="roiLineChart" aria-label="24개월 누적 수익 시뮬레이션"></canvas></div>
+      </div>
+    </div>
+
+    <!-- 프로모션 효과 상세 (베이지/골드) -->
+    <div class="roi-skin-only">
+      <div class="roi-section-title">프로모션 효과 상세</div>
+      <div class="promo-block">
+        <div class="promo-l">
+          <span class="promo-badge">★ PROMOTION</span>
+          <div class="promo-title">증정 카트리지 <span id="pb-cart">0</span>개</div>
+          <div class="promo-desc">무상 증정분으로 초기 시술의 카트리지 원가가 0원이 되어, 초기 매출의 마진율이 일시적으로 상승합니다.</div>
+        </div>
+        <div class="promo-stat">
+          <div class="ps-label">무료 가능 시술</div>
+          <div class="ps-val"><span id="pb-free-tx">0</span><span class="ps-unit">회</span></div>
+        </div>
+        <div class="promo-stat">
+          <div class="ps-label">고객 측 매출 가치</div>
+          <div class="ps-val"><span id="pb-retail">0</span><span class="ps-unit">원</span></div>
+        </div>
+        <div class="promo-stat">
+          <div class="ps-label">원가 절감 가치</div>
+          <div class="ps-val"><span id="pb-cost">0</span><span class="ps-unit">원</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROI 결과 카드 (일반의료기기 전용) -->
+    <div class="roi-result-grid roi-general-only" id="roiResults">
       <div class="roi-card">
         <div class="rc-label">월 / 연 총 환자 수</div>
         <div class="rc-val" id="roiTotalPatients">0명</div>
@@ -1402,8 +1635,8 @@
       </div>
     </div>
 
-    <!-- ROI 비주얼 바 -->
-    <div class="roi-bar-wrap">
+    <!-- ROI 비주얼 바 (일반의료기기 전용) -->
+    <div class="roi-bar-wrap roi-general-only">
       <div class="roi-bar-label">12개월 기준 투자 회수 진행률</div>
       <div class="roi-bar-track" role="progressbar" aria-label="12개월 투자 회수 진행률" aria-valuemin="0" aria-valuemax="300" aria-valuenow="0">
         <div class="roi-bar-fill" id="roiBarFill" style="width:0%">0%</div>
@@ -1413,8 +1646,8 @@
       </div>
     </div>
 
-    <!-- 추가 지표 -->
-    <div class="roi-result-grid">
+    <!-- 추가 지표 (일반의료기기 전용) -->
+    <div class="roi-result-grid roi-general-only">
       <div class="roi-card">
         <div class="rc-label">연간 매출 (12개월)</div>
         <div class="rc-val" id="roiAnnualRevenue">0원</div>
@@ -1432,8 +1665,8 @@
       </div>
     </div>
 
-    <!-- 월별 누적 테이블 -->
-    <div class="table-wrap roi-monthly-table">
+    <!-- 월별 누적 테이블 (일반의료기기 전용) -->
+    <div class="table-wrap roi-monthly-table roi-general-only">
       <div class="table-header"><b>월별 누적 매출 vs 투자금</b></div>
       <div class="table-scroll">
       <table aria-label="월별 누적 매출">
@@ -3197,15 +3430,15 @@ function parseRoiInput(id) {
 }
 
 function formatRoiInputs() {
-  ['roiCost','roiChargePerPatient','roiCartCost'].forEach(id => {
+  ['roiCost','roiChargePerPatient','roiCartCost','roiAnnualSalary'].forEach(id => {
     const el = document.getElementById(id);
     if (el) bindCommaInput(el, () => updateRoi());
   });
-  ['roiNewPatients','roiReturnPatients','roiShotsPerTx','roiShotsPerCart','roiFreeCart'].forEach(id => {
+  ['roiNewPatients','roiReturnPatients','roiShotsPerTx','roiShotsPerCart','roiFreeCart',
+   'roiProcedureMinutes','roiMonthlyTx'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', updateRoi);
   });
-  // HIRA 금액 입력 (참고용 · 환자당 시술 금액과는 별도)
   const hiraPrice = document.getElementById('roiHiraPrice');
   if (hiraPrice) bindCommaInput(hiraPrice, () => {});
 }
@@ -3229,9 +3462,11 @@ function setRoiCategory(cat) {
   } else {
     document.getElementById('roiHiraPanel').classList.toggle('visible', ROI_COVERAGE === 'ins');
   }
-  // 피부기기 전용 영역 (소모품 입력 / 요약 / 시술당 손익 / 그래프)
   document.querySelectorAll('.roi-skin-only').forEach(el => {
     el.classList.toggle('hidden', cat !== 'skin');
+  });
+  document.querySelectorAll('.roi-general-only').forEach(el => {
+    el.classList.toggle('hidden', cat !== 'general');
   });
   updateRoi();
 }
@@ -3250,13 +3485,17 @@ function updateRoi() {
   const chargePerPt = parseRoiInput('roiChargePerPatient');
   const newPt       = parseInt(document.getElementById('roiNewPatients').value) || 0;
   const retPt       = parseInt(document.getElementById('roiReturnPatients').value) || 0;
-  // 피부기기 전용 입력 (소모품)
+  // 피부기기 전용 입력 (소모품 + 인건비 + 시술 횟수)
   const cartCost     = parseRoiInput('roiCartCost');
   const shotsPerTx   = parseInt((document.getElementById('roiShotsPerTx')   || {}).value) || 0;
   const shotsPerCart = parseInt((document.getElementById('roiShotsPerCart') || {}).value) || 0;
   const freeCart     = parseInt((document.getElementById('roiFreeCart')     || {}).value) || 0;
+  const procMinutes  = parseInt((document.getElementById('roiProcedureMinutes') || {}).value) || 0;
+  const annualSalary = parseRoiInput('roiAnnualSalary');
+  const monthlyTxInp = parseInt((document.getElementById('roiMonthlyTx') || {}).value) || 0;
   const isSkin       = (ROI_CATEGORY === 'skin');
 
+  // 일반 모드 호환: 환자수=신환+재환
   const totalPt      = newPt + retPt;
   const monthlyRev   = totalPt * chargePerPt;
   const annualRev    = monthlyRev * 12;
@@ -3264,55 +3503,107 @@ function updateRoi() {
   const roiPct       = cost > 0 ? (annualProfit / cost * 100) : 0;
   const breakeven    = monthlyRev > 0 ? (cost / monthlyRev) : 0;
 
-  // 시술당 손익 (피부기기) ─ 카트리지 전체 샷수 기반
-  // 카트리지당 시술 횟수 = 카트리지 전체 샷수 / 시술당 샷수
-  // 시술당 원가         = 카트리지 단가 × (시술당 샷수 / 카트리지 전체 샷수)
-  // (전체 샷수 미입력 시 fallback: 카트리지 단가 그대로를 시술당 원가로 사용)
-  const txPerCart = (shotsPerCart > 0 && shotsPerTx > 0)
-    ? (shotsPerCart / shotsPerTx) : 0;
-  const txPrice   = chargePerPt;
-  const txCost    = (shotsPerCart > 0 && shotsPerTx > 0)
-    ? Math.round(cartCost * (shotsPerTx / shotsPerCart))
-    : cartCost;
-  const txProfit  = txPrice - txCost;
-  const margin    = txPrice > 0 ? (txProfit / txPrice * 100) : 0;
-  // 증정 카트리지 → 가능한 무상 시술 횟수
-  const freeTxCover = txPerCart > 0
-    ? Math.floor(txPerCart * freeCart)
-    : freeCart;  // fallback: 카트리지 1개 = 시술 1회
+  // ── 피부기기 ROI 제안서 계산 (참조: device-roi.html · ANNUAL_WORK_HOURS=2508) ──
+  const ANNUAL_WORK_MINUTES = 2508 * 60;  // 150,480분
+  // 시술당 카트리지 원가
+  const cartCostPerShot = shotsPerCart > 0 ? cartCost / shotsPerCart : 0;
+  const cartCostPerTx   = cartCostPerShot * shotsPerTx;
+  // 시술당 인건비
+  const laborCostPerMin = ANNUAL_WORK_MINUTES > 0 ? annualSalary / ANNUAL_WORK_MINUTES : 0;
+  const laborCostPerTx  = laborCostPerMin * procMinutes;
+  // 시술당 손익
+  const totalCostPerTx  = cartCostPerTx + laborCostPerTx;
+  const marginPerTx     = chargePerPt - totalCostPerTx;
+  const marginRate      = chargePerPt > 0 ? (marginPerTx / chargePerPt) : 0;
+  // 월/연 손익 (월 시술 횟수 기반)
+  const monthlyTx       = monthlyTxInp > 0 ? monthlyTxInp : totalPt;
+  const skinMonthlyRev  = chargePerPt * monthlyTx;
+  const skinMonthlyCart = cartCostPerTx * monthlyTx;
+  const skinMonthlyLab  = laborCostPerTx * monthlyTx;
+  const skinMonthlyProf = marginPerTx * monthlyTx;
+  const skinAnnualRev   = skinMonthlyRev * 12;
+  const skinAnnualProf  = skinMonthlyProf * 12;
+  // 손익분기 (정가)
+  const skinBeMonths    = skinMonthlyProf > 0 ? (cost / skinMonthlyProf) : Infinity;
+  // 프로모션 효과
+  const freeShots       = freeCart * shotsPerCart;
+  const freeTxCount     = shotsPerTx > 0 ? Math.floor(freeShots / shotsPerTx) : 0;
+  const promoRetailVal  = freeTxCount * chargePerPt;
+  const promoCostVal    = freeCart * cartCost;
+  // 카트리지당 시술 (입력 보조 표시용)
+  const txPerCart = (shotsPerCart > 0 && shotsPerTx > 0) ? (shotsPerCart / shotsPerTx) : 0;
 
   // 입력 보조 텍스트
   const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  setText('roiFreeTxCover', `시술 ${freeTxCover.toLocaleString('ko-KR')}회 무상`);
+  setText('roiFreeTxCover', `시술 ${freeTxCount.toLocaleString('ko-KR')}회 무상`);
   setText('roiTxPerCart',   `시술 ${txPerCart > 0 ? txPerCart.toFixed(1) : 0}회/개`);
 
-  // 입력값 요약 카드
-  setText('rsCost',        fmt(cost));
-  setText('rsCart',        fmt(cartCost));
-  setText('rsShotsPerCart',`${shotsPerCart.toLocaleString('ko-KR')}샷`);
-  setText('rsCharge',      fmt(chargePerPt));
-  setText('rsShots',       `${shotsPerTx.toLocaleString('ko-KR')}샷`);
-  setText('rsTxPerCart',   txPerCart > 0 ? `${txPerCart.toFixed(1)}회` : '—');
-  setText('rsFree',        `${freeCart.toLocaleString('ko-KR')}개`);
-  setText('rsPt',          `${totalPt.toLocaleString('ko-KR')}명`);
+  // 메인 KPI 4카드
+  setText('m-margin-per',    fmt(marginPerTx));
+  setText('m-margin-rate',   `${(marginRate * 100).toFixed(1)}%`);
+  setText('m-monthly-margin',fmt(skinMonthlyProf));
+  setText('m-monthly-rev',   fmt(skinMonthlyRev));
+  setText('m-annual-margin', fmt(skinAnnualProf));
+  setText('m-annual-rev',    fmt(skinAnnualRev));
+  setText('m-be',            isFinite(skinBeMonths) ? skinBeMonths.toFixed(1) : '∞');
 
-  // 시술당 손익 카드
-  setText('roiTxPrice', fmt(txPrice));
-  setText('roiTxCost',  fmt(txCost));
-  const txCostSub = document.getElementById('roiTxCostSub');
-  if (txCostSub) {
-    txCostSub.textContent = (shotsPerCart > 0 && shotsPerTx > 0 && cartCost > 0)
-      ? `카트리지 ${shotsPerTx}/${shotsPerCart}샷 사용 · 1샷당 ${fmt(Math.round(cartCost / shotsPerCart))}`
-      : '카트리지 1회 소모분';
+  // 시술당 손익 분해 표
+  setText('pl-rev',    fmt(chargePerPt));
+  setText('pl-cart',   '−' + fmt(cartCostPerTx));
+  setText('pl-labor',  '−' + fmt(laborCostPerTx));
+  setText('pl-margin', fmt(marginPerTx));
+  const denom = chargePerPt > 0 ? chargePerPt : 1;
+  setText('pl-cart-pct',   `${(cartCostPerTx / denom * 100).toFixed(1)}%`);
+  setText('pl-labor-pct',  `${(laborCostPerTx / denom * 100).toFixed(1)}%`);
+  setText('pl-margin-pct', `${(marginPerTx / denom * 100).toFixed(1)}%`);
+
+  // 입력값 요약 (3열)
+  const summaryItems = [
+    ['기기 단가',       fmt(cost) + '원'],
+    ['시술당 판매가',   fmt(chargePerPt) + '원'],
+    ['월 시술 횟수',    fmt(monthlyTx) + '회'],
+    ['카트리지 단가',   fmt(cartCost) + '원'],
+    ['시술당 샷수',     fmt(shotsPerTx) + '샷'],
+    ['시술자 연봉',     fmt(annualSalary) + '원'],
+    ['카트리지당 샷수', fmt(shotsPerCart) + '샷'],
+    ['시술 시간',       fmt(procMinutes) + '분'],
+    ['증정 카트리지',   fmt(freeCart) + '개'],
+  ];
+  const grid = document.getElementById('inputsSummaryGrid');
+  if (grid) {
+    grid.innerHTML = summaryItems.map(([k, v]) =>
+      `<div class="is-item"><span class="is-lbl">${k}</span><span class="is-val">${v}</span></div>`
+    ).join('');
   }
-  const txProfitEl = document.getElementById('roiTxProfit');
-  if (txProfitEl) {
-    txProfitEl.textContent = fmt(txProfit);
-    txProfitEl.style.color = txProfit >= 0 ? 'var(--green)' : 'var(--red)';
-  }
-  const tps = document.getElementById('roiTxProfitSub');
-  if (tps) {
-    tps.innerHTML = `판매가 − 원가 · 마진율 <b style="color:${txProfit >= 0 ? 'var(--green)' : 'var(--red)'}">${margin.toFixed(1)}%</b>`;
+
+  // 프로모션 효과 카드
+  setText('pb-cart',    freeCart.toLocaleString('ko-KR'));
+  setText('pb-free-tx', fmt(freeTxCount));
+  setText('pb-retail',  fmt(promoRetailVal));
+  setText('pb-cost',    fmt(promoCostVal));
+
+  // 24개월 시뮬레이션 + 프로모션 callout
+  if (isSkin) {
+    const sim = simulate24Months({
+      devicePrice: cost,
+      monthlyRev: skinMonthlyRev,
+      monthlyMargin: skinMonthlyProf,
+      monthlyCartCost: skinMonthlyCart,
+      monthlyLaborCost: skinMonthlyLab,
+      monthlyTx, shotsPerTx, shotsPerCart, cartCost, freeShots,
+    });
+    drawRoiLineChart(sim.series);
+    const callout = document.getElementById('roiPromoCallout');
+    if (callout) {
+      if (freeCart > 0 && sim.bePromoMonth !== null && isFinite(skinBeMonths)) {
+        callout.style.display = '';
+        setText('cBeVal',   sim.bePromoMonth.toFixed(1));
+        const saved = skinBeMonths - sim.bePromoMonth;
+        setText('cBeSaved', isFinite(saved) ? saved.toFixed(1) : '0.0');
+      } else {
+        callout.style.display = 'none';
+      }
+    }
   }
 
   document.getElementById('roiTotalPatients').innerHTML     =
@@ -3391,21 +3682,125 @@ function updateRoi() {
     </tr>`;
   }
   tbody.innerHTML = rows;
-
-  // 피부기기 전용: 12개월 누적 매출·원가·영업이익 그래프
-  if (isSkin) {
-    renderRoiChart({
-      monthlyRev, txCost, totalPt, cost, freeTxCover: freeCart,
-    });
-  }
 }
 
-// 12개월 누적 그래프 (피부기기 전용)
-// - 매월 매출 = 환자수 × 시술당 판매가  (= monthlyRev)
-// - 매월 원가 = (시술수 − 증정 차감분) × 시술당 원가
-// - 매월 영업이익 = 매출 − 원가
-// 증정 카트리지 차감분은 freeTxCover(시술 횟수)만큼 초반에 소진
-function renderRoiChart({ monthlyRev, txCost, totalPt, cost, freeTxCover }) {
+// ────────────────────────────────────────────────────────────
+// 피부기기 ROI 24개월 시뮬레이션 (정가 vs 프로모션) — Chart.js
+// ────────────────────────────────────────────────────────────
+function simulate24Months({ devicePrice, monthlyRev, monthlyMargin, monthlyCartCost, monthlyLaborCost,
+                            monthlyTx, shotsPerTx, shotsPerCart, cartCost, freeShots }) {
+  const SIM = 24;
+  let cumBase  = -devicePrice;
+  let cumPromo = -devicePrice;
+  let remainFreeShots = Math.max(0, freeShots);
+  const series = [];
+  let bePromoMonth = null;
+  for (let m = 1; m <= SIM; m++) {
+    cumBase += monthlyMargin;
+    const monthShots = monthlyTx * shotsPerTx;
+    let cartCostMonth;
+    if (remainFreeShots >= monthShots) {
+      cartCostMonth = 0;
+      remainFreeShots -= monthShots;
+    } else if (remainFreeShots > 0) {
+      const paidShots = monthShots - remainFreeShots;
+      cartCostMonth = shotsPerCart > 0 ? (paidShots / shotsPerCart) * cartCost : 0;
+      remainFreeShots = 0;
+    } else {
+      cartCostMonth = monthlyCartCost;
+    }
+    const monthMarginPromo = monthlyRev - cartCostMonth - monthlyLaborCost;
+    cumPromo += monthMarginPromo;
+    if (bePromoMonth === null && cumPromo >= 0) {
+      const prev = cumPromo - monthMarginPromo;
+      const ratio = monthMarginPromo > 0 ? (-prev) / monthMarginPromo : 0;
+      bePromoMonth = (m - 1) + ratio;
+    }
+    series.push({ month: m, base: cumBase, promo: cumPromo });
+  }
+  return { series, bePromoMonth };
+}
+
+let _roiLineChart = null;
+function drawRoiLineChart(series) {
+  const cv = document.getElementById('roiLineChart');
+  if (!cv || typeof Chart === 'undefined') return;
+  const labels = series.map(s => `${s.month}M`);
+  const baseSeries  = series.map(s => s.base);
+  const promoSeries = series.map(s => s.promo);
+  if (_roiLineChart) _roiLineChart.destroy();
+  _roiLineChart = new Chart(cv.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '정가 도입',
+          data: baseSeries,
+          borderColor: '#9CA3AF',
+          backgroundColor: 'rgba(156,163,175,0.10)',
+          borderWidth: 2,
+          tension: 0.25,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: false,
+          borderDash: [4, 4],
+        },
+        {
+          label: '프로모션 적용',
+          data: promoSeries,
+          borderColor: '#0F2F4F',
+          backgroundColor: 'rgba(15,47,79,0.10)',
+          borderWidth: 2.5,
+          tension: 0.25,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: true,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top', align: 'end',
+          labels: { font: { size: 11, family: 'Pretendard' }, boxWidth: 14, padding: 10, color: '#4B5563', usePointStyle: false },
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.dataset.label} : ${Math.round(ctx.parsed.y).toLocaleString('ko-KR')}원`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 10.5, family: 'Pretendard' }, color: '#9CA3AF', maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
+        },
+        y: {
+          grid: { color: '#F3F4F6' },
+          ticks: {
+            font: { size: 10.5, family: 'Pretendard' },
+            color: '#9CA3AF',
+            callback: (v) => {
+              const abs = Math.abs(v);
+              if (abs === 0) return '0';
+              if (abs >= 1e8) return (v / 1e8).toFixed(abs >= 1e9 ? 0 : 1) + '억';
+              if (abs >= 1e4) return Math.round(v / 1e4) + '만';
+              return v.toLocaleString('ko-KR');
+            },
+          },
+        },
+      },
+      animation: false,
+    },
+  });
+}
+
+function renderRoiChart_DEAD({ monthlyRev, txCost, totalPt, cost, freeTxCover }) {
+  return;
   const svg = document.getElementById('roiChart');
   if (!svg) return;
   const N = 12;
