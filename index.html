@@ -698,6 +698,15 @@
   .roi-general-only { display: block; }
   .roi-general-only.hidden { display: none; }
 
+  /* readonly 자동 계산 입력 */
+  .roi-field input[readonly] {
+    background: #f8fafc;
+    color: var(--text);
+    cursor: not-allowed;
+    border-style: dashed;
+  }
+  .roi-field input[readonly]:focus { box-shadow: none; }
+
   /* ───── 디바이스 ROI 제안서 토큰 (네이비/골드) ───── */
   .roi-skin-only {
     --navy: #0F2F4F;
@@ -1498,11 +1507,11 @@
           <div class="unit">분 / 시술 1회</div>
         </div>
         <div class="roi-field">
-          <label for="roiMonthlyTx">월 시술 횟수
-            <span class="hint" tabindex="0" data-tip="해당 장비로 월 평균 시행되는 시술 총 횟수입니다.">?</span>
+          <label for="roiMonthlyTx">월 시술 횟수 <span style="color:var(--orange);font-weight:700">(자동계산)</span>
+            <span class="hint" tabindex="0" data-tip="위쪽 '월 신환 수 + 월 재환 수' 합산으로 자동 계산됩니다.">?</span>
           </label>
-          <input type="number" id="roiMonthlyTx" placeholder="예: 40" value="" min="0" step="1" inputmode="numeric" aria-label="월 시술 횟수">
-          <div class="unit">회 / 월</div>
+          <input type="number" id="roiMonthlyTx" placeholder="0" value="" min="0" step="1" inputmode="numeric" aria-label="월 시술 횟수 (자동계산)" readonly tabindex="-1">
+          <div class="unit">회 / 월 · 월 신환 + 재환 자동 합산</div>
         </div>
         <div class="roi-field">
           <label for="roiFreeCart">증정 카트리지 수량
@@ -3437,7 +3446,7 @@ function formatRoiInputs() {
     if (el) bindCommaInput(el, () => updateRoi());
   });
   ['roiNewPatients','roiReturnPatients','roiShotsPerTx','roiShotsPerCart','roiFreeCart',
-   'roiProcedureMinutes','roiMonthlyTx'].forEach(id => {
+   'roiProcedureMinutes'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', updateRoi);
   });
@@ -3493,11 +3502,13 @@ function updateRoi() {
   const shotsPerCart = parseInt((document.getElementById('roiShotsPerCart') || {}).value) || 0;
   const freeCart     = parseInt((document.getElementById('roiFreeCart')     || {}).value) || 0;
   const procMinutes  = parseInt((document.getElementById('roiProcedureMinutes') || {}).value) || 0;
-  const monthlyTxInp = parseInt((document.getElementById('roiMonthlyTx') || {}).value) || 0;
   const isSkin       = (ROI_CATEGORY === 'skin');
 
   // 일반 모드 호환: 환자수=신환+재환
   const totalPt      = newPt + retPt;
+  // 월 시술 횟수 = 신환 + 재환 (자동 계산) — readonly 입력에도 반영
+  const mtxEl = document.getElementById('roiMonthlyTx');
+  if (mtxEl) mtxEl.value = totalPt > 0 ? totalPt : '';
   const monthlyRev   = totalPt * chargePerPt;
   const annualRev    = monthlyRev * 12;
   const annualProfit = annualRev - cost;
@@ -3509,8 +3520,8 @@ function updateRoi() {
   const cartCostPerTx   = cartCostPerShot * shotsPerTx;
   const marginPerTx     = chargePerPt - cartCostPerTx;
   const marginRate      = chargePerPt > 0 ? (marginPerTx / chargePerPt) : 0;
-  // 월/연 손익 (월 시술 횟수 기반)
-  const monthlyTx       = monthlyTxInp > 0 ? monthlyTxInp : totalPt;
+  // 월/연 손익 (월 시술 횟수 = 신환 + 재환 자동 계산)
+  const monthlyTx       = totalPt;
   const skinMonthlyRev  = chargePerPt * monthlyTx;
   const skinMonthlyCart = cartCostPerTx * monthlyTx;
   const skinMonthlyLab  = 0;
