@@ -2098,10 +2098,7 @@ function curPriceMode() { return MODE === 'discount' ? 'discount' : 'lease'; }
 function getPromo(id) {
   const cur = curPriceMode();
   const v   = promoByMode[cur][id];
-  if (v != null) {
-    if (cur === 'lease') return v;
-    if (v) return v;
-  }
+  if (v != null) return v;
   const p = PRODUCTS.find(x => x.id === id);
   if (!p) return 0;
   return cur === 'discount' ? discountSeed(p) : leaseSeed(p);
@@ -2201,7 +2198,7 @@ function renderGrid() {
       <div class="promo-row">
         <span class="promo-label">패키지 할인가</span>
         <input class="promo-input" data-id="${p.id}" type="text" inputmode="numeric"
-               value="${getPromo(p.id) ? getPromo(p.id).toLocaleString('ko-KR') : ''}"
+               value="${manualByMode[curPriceMode()].has(p.id) ? getPromo(p.id).toLocaleString('ko-KR') : ''}"
                placeholder="판매가와 동일"
                aria-label="${p.name} 패키지 할인가 (원)">
       </div>`;
