@@ -2919,23 +2919,51 @@ function exportProducts() {
   toast('JSON 파일이 다운로드되었습니다', 'success');
 }
 function _commitImported(cleaned) {
-  if (!confirm(`${cleaned.length}개 품목을 가져옵니다. 현재 리스트는 대체됩니다. 계속할까요?`)) return false;
-  PRODUCTS.length = 0;
-  cleaned.forEach(p => PRODUCTS.push(p));
-  Object.keys(promoByMode.lease).forEach(k => delete promoByMode.lease[k]);
-  Object.keys(promoByMode.discount).forEach(k => delete promoByMode.discount[k]);
-  manualByMode.lease.clear();
-  manualByMode.discount.clear();
-  PRODUCTS.forEach(p => {
+  const existingIds = new Set(PRODUCTS.map(p => p.id));
+  const dupes = cleaned.filter(p => existingIds.has(p.id));
+  const news  = cleaned.filter(p => !existingIds.has(p.id));
+
+  let overwrite = false;
+  if (dupes.length > 0) {
+    const MAX_SHOW = 15;
+    const names = dupes.map(p => p.name);
+    const shown = names.slice(0, MAX_SHOW).join(', ');
+    const more  = names.length > MAX_SHOW ? ` 외 ${names.length - MAX_SHOW}건` : '';
+    const msg = `이미 등록된 품목 ${dupes.length}건이 있습니다: ${shown}${more}\n\n` +
+                `확인 = 기존 품목 정보를 덮어쓰고, 신규 품목 ${news.length}건과 함께 등록합니다.\n` +
+                `취소 = 중복 품목은 건너뛰고, 신규 품목 ${news.length}건만 등록합니다.`;
+    overwrite = confirm(msg);
+    if (!overwrite && news.length === 0) {
+      toast('추가할 신규 품목이 없습니다', 'error');
+      return false;
+    }
+  } else if (!confirm(`${cleaned.length}개 품목을 새로 등록합니다. 계속할까요?`)) {
+    return false;
+  }
+
+  if (overwrite) {
+    dupes.forEach(p => {
+      const idx = PRODUCTS.findIndex(x => x.id === p.id);
+      if (idx !== -1) PRODUCTS[idx] = p;
+      manualByMode.lease.delete(p.id);
+      manualByMode.discount.delete(p.id);
+      promoByMode.lease[p.id]    = leaseSeed(p);
+      promoByMode.discount[p.id] = discountSeed(p);
+    });
+  }
+  news.forEach(p => {
+    PRODUCTS.push(p);
     promoByMode.lease[p.id]    = leaseSeed(p);
     promoByMode.discount[p.id] = discountSeed(p);
   });
-  selected.clear();
-  SELECTED_PIDS.clear();
+
   saveProducts();
   renderManageTable();
   if (typeof renderPromoTable === 'function') renderPromoTable();
-  toast(`✓ ${cleaned.length}개 품목을 불러왔습니다`, 'success');
+
+  const addedCount   = news.length + (overwrite ? dupes.length : 0);
+  const skippedNote  = (!overwrite && dupes.length > 0) ? ` (중복 ${dupes.length}건 건너뜀)` : '';
+  toast(`✓ ${addedCount}개 품목을 등록했습니다${skippedNote}`, 'success');
   return true;
 }
 
