@@ -550,6 +550,13 @@
   .promo-table input.num { text-align:right; color:var(--primary); }
   .promo-table input.promo-input { color:#6d28d9; background:#faf5ff; }
   .promo-table input:focus { border-color:#6d28d9; box-shadow: 0 0 0 3px rgba(109,40,217,.15); }
+  .promo-table select {
+    width:100%; background:#fff; border:1px solid var(--border-2); border-radius:6px;
+    color:var(--text); font-size:11.5px; font-weight:600; padding:5px 6px;
+    font-family:inherit; outline:none; cursor:pointer; transition:border-color .15s;
+    min-height:30px;
+  }
+  .promo-table select:focus { border-color:#6d28d9; }
   .promo-table .calc-cell {
     font-size:11.5px; font-weight:800; text-align:right; color:var(--text-2);
     padding-right:8px; white-space:nowrap;
@@ -1988,7 +1995,33 @@ function buildSupplierGroups(items) {
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push({ p, idx });
   });
-  return Array.from(groups.entries()).map(([supplier, items]) => ({ supplier, items }));
+  const UNASSIGNED = getSupplierLabel({});
+  return Array.from(groups.entries())
+    .map(([supplier, items]) => ({ supplier, items }))
+    .sort((a, b) => {
+      if (a.supplier === UNASSIGNED) return 1;
+      if (b.supplier === UNASSIGNED) return -1;
+      return a.supplier.localeCompare(b.supplier, 'ko');
+    });
+}
+// 등록된 품목들의 공급업체명을 모아 드롭다운 목록으로 제공 (자유 입력으로 인한 오타/표기 분산 방지)
+function getSupplierList() {
+  const set = new Set();
+  PRODUCTS.forEach(p => {
+    const v = (p.supplier || '').trim();
+    if (v) set.add(v);
+  });
+  return Array.from(set).sort((a, b) => a.localeCompare(b, 'ko'));
+}
+function supplierOptionsHtml(current) {
+  const cur = (current || '').trim();
+  let opts = `<option value=""${cur === '' ? ' selected' : ''}>—</option>`;
+  getSupplierList().forEach(s => {
+    const esc = s.replace(/"/g,'&quot;');
+    opts += `<option value="${esc}"${s === cur ? ' selected' : ''}>${s}</option>`;
+  });
+  opts += `<option value="__new__">+ 새 공급업체 추가...</option>`;
+  return opts;
 }
 let PRODUCT_FILTER = '';
 function matchesProductQuery(p, q) {
@@ -2751,7 +2784,7 @@ function renderManageTable() {
     <tr data-idx="${idx}" data-pid="${p.id}">
       <td class="check-cell"><input type="checkbox" class="row-check"${checked} aria-label="${(p.name||'').replace(/"/g,'&quot;')} 선택"></td>
       <td><input type="text" class="mg-name" value="${(p.name || '').replace(/"/g,'&quot;')}" placeholder="품목명" aria-label="품목명"></td>
-      <td><input type="text" class="mg-supplier" value="${(p.supplier || '').replace(/"/g,'&quot;')}" placeholder="—" aria-label="공급업체"></td>
+      <td><select class="mg-supplier" aria-label="공급업체">${supplierOptionsHtml(p.supplier)}</select></td>
       <td><input type="text" class="mg-desc" value="${(p.desc || '').replace(/"/g,'&quot;')}" placeholder="설명(선택)" aria-label="설명"></td>
       <td><select class="mg-cat" aria-label="카테고리">${catOptions(productCategory(p))}</select></td>
       <td><input type="text" inputmode="numeric" class="mg-cost num" value="${(p.cost || 0).toLocaleString('ko-KR')}" placeholder="0" aria-label="공급가"></td>
@@ -2838,7 +2871,20 @@ function renderManageTable() {
       flashSaved();
     };
     n.addEventListener('input',  commit);
-    sp.addEventListener('input', commit);
+    sp.addEventListener('change', () => {
+      if (sp.value === '__new__') {
+        const name = prompt('새 공급업체명을 입력하세요');
+        const trimmed = (name || '').trim();
+        if (!trimmed) { renderManageTable(); return; }
+        PRODUCTS[idx].supplier = trimmed;
+        saveProducts();
+        flashSaved();
+        renderManageTable();
+        return;
+      }
+      commit();
+      if (GROUP_BY_SUPPLIER) renderManageTable();
+    });
     d.addEventListener('input',  commit);
     ct.addEventListener('change', commit);
     [c, pr].forEach(el => {
@@ -3218,7 +3264,7 @@ function renderPromoTable() {
     <tr data-idx="${idx}" data-pid="${p.id}">
       <td class="check-cell"><input type="checkbox" class="row-check"${checked} aria-label="${(p.name||'').replace(/"/g,'&quot;')} 선택"></td>
       <td><input type="text" class="pm-name" value="${(p.name || '').replace(/"/g,'&quot;')}" placeholder="제품명" aria-label="제품명"></td>
-      <td><input type="text" class="pm-supplier" value="${(p.supplier || '').replace(/"/g,'&quot;')}" placeholder="—" aria-label="공급업체"></td>
+      <td><select class="pm-supplier" aria-label="공급업체">${supplierOptionsHtml(p.supplier)}</select></td>
       <td><input type="text" class="pm-desc" value="${(p.desc || '').replace(/"/g,'&quot;')}" placeholder="설명(선택)" aria-label="설명"></td>
       <td><input type="text" inputmode="numeric" class="pm-cost num" value="${((p.cost || 0) * q).toLocaleString('ko-KR')}" placeholder="0" aria-label="공급가 합계"></td>
       <td><input type="text" inputmode="numeric" class="pm-market num" value="${((p.marketPrice || 0) * q).toLocaleString('ko-KR')}" placeholder="0" aria-label="시장가 합계"></td>
@@ -3323,7 +3369,20 @@ function renderPromoTable() {
       flashPromoSaved();
     };
     n.addEventListener('input',  commitMeta);
-    s.addEventListener('input',  commitMeta);
+    s.addEventListener('change', () => {
+      if (s.value === '__new__') {
+        const name = prompt('새 공급업체명을 입력하세요');
+        const trimmed = (name || '').trim();
+        if (!trimmed) { renderPromoTable(); return; }
+        p.supplier = trimmed;
+        saveProducts();
+        flashPromoSaved();
+        renderPromoTable();
+        return;
+      }
+      commitMeta();
+      if (GROUP_BY_SUPPLIER) renderPromoTable();
+    });
     dc.addEventListener('input', commitMeta);
 
     [c, mk, pr, tf].forEach(el => {
