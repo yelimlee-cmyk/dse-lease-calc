@@ -1233,7 +1233,7 @@
     <div class="param-chip editable warn">
       <label for="feeRateInput" style="color:var(--orange);font-weight:700">선취수수료율</label>
       <span class="hint" tabindex="0" data-tip="리스사가 원금에서 먼저 공제하는 수수료율입니다. 기간/보증금을 변경하면 자동으로 권장값이 채워지며 직접 수정도 가능합니다.">?</span>
-      <input class="rate-input" id="feeRateInput" type="number" value="4.65" min="0" max="100" step="0.01" style="color:var(--orange);border-color:#fed7aa;width:78px" inputmode="decimal" aria-label="선취수수료율(%)">
+      <input class="rate-input" id="feeRateInput" type="number" value="4.60" min="0" max="100" step="0.01" style="color:var(--orange);border-color:#fed7aa;width:78px" inputmode="decimal" aria-label="선취수수료율(%)">
       <b style="color:var(--orange)">%</b>
     </div>
     <div class="param-chip editable">
@@ -1297,7 +1297,7 @@
   <div class="sec-collapse" id="intCollapse">
   <div class="table-wrap">
     <div class="table-header" id="intTableHeader">
-      <b>품목별 마진 분석</b> &nbsp;·&nbsp; <span id="intTableSub">패키지 할인가 기준 &nbsp;·&nbsp; 선취수수료 4.65% 적용</span>
+      <b>품목별 마진 분석</b> &nbsp;·&nbsp; <span id="intTableSub">패키지 할인가 기준 &nbsp;·&nbsp; 선취수수료 4.60% 적용</span>
     </div>
     <div class="table-scroll">
     <table aria-label="품목별 마진 분석">
@@ -2371,9 +2371,9 @@ function clearSelection() {
 
 // 무이자 리스 조건표
 const LEASE_FEE_TABLE = {
-  12: { 0: 0.0320, 10: 0.0265, 20: 0.0205 },
-  24: { 0: 0.0580, 10: 0.0465, 20: 0.0360 },
-  36: { 0: 0.0830, 10: 0.0675, 20: 0.0520 },
+  12: { 0: 0.0310, 10: 0.0250, 20: 0.0200 },
+  24: { 0: 0.0560, 10: 0.0460, 20: 0.0360 },
+  36: { 0: 0.0810, 10: 0.0665, 20: 0.0520 },
 };
 
 function getPeriod()  { return parseInt(document.getElementById('periodSelect').value)  || 24; }
