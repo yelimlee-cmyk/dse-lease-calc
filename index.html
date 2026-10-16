@@ -560,6 +560,22 @@
   .manage-table.cg-table .qty-input { width:44px; height:30px; min-height:0; border:0; border-radius:0; padding:0; text-align:center; font-weight:800; box-shadow:none; }
   #catalogBar { position:sticky; top:52px; z-index:15; }
 
+  /* 마진 대시보드 품목 바로 담기 (리스·할인 화면 드롭다운) */
+  .cg-picker { display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap; margin-bottom:12px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:10px 14px; }
+  .cg-picker .cgp-label { font-size:12px; font-weight:800; color:#0369a1; white-space:nowrap; }
+  .cg-picker .cgp-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:1; min-width:0; }
+  .cg-picker select, .cg-picker input[type=password] { min-height:38px; border:1px solid var(--border-2); border-radius:8px; padding:0 10px; font-family:inherit; font-size:12.5px; font-weight:600; background:var(--surface); color:var(--text); min-width:0; outline:none; }
+  .cg-picker select:focus, .cg-picker input[type=password]:focus { border-color:#0369a1; box-shadow:0 0 0 3px rgba(3,105,161,.15); }
+  .cg-picker #cgpSup  { flex:0 1 200px; }
+  .cg-picker #cgpItem { flex:1 1 340px; }
+  .cg-picker input[type=password] { flex:1 1 240px; }
+  .cg-picker .manage-btn { min-height:38px; padding:8px 14px; }
+  .cg-picker .cgp-err  { color:var(--red); font-size:12px; font-weight:700; }
+  .cg-picker .cgp-info { font-size:11px; color:var(--text-3); flex-basis:100%; }
+  @media (max-width:640px) {
+    .cg-picker .cgp-label, .cg-picker #cgpSup, .cg-picker #cgpItem { flex-basis:100%; }
+  }
+
   /* PROMO / PRICE MANAGEMENT TAB */
   .promo-section { display:none; }
   .promo-section.visible { display:block; }
@@ -1338,6 +1354,25 @@
   <div class="section-label" id="productSectionLabel">
     품목 선택 · 패키지 할인가 입력
     <span class="hint" tabindex="0" data-tip="품목을 클릭하면 선택됩니다. 카드 하단의 '패키지 할인가'는 원 단위로 입력(콤마 자동)되며, 비워두면 판매가가 사용됩니다.">?</span>
+  </div>
+  <div class="cg-picker" id="catalogPicker">
+    <span class="cgp-label">🗂️ 마진 대시보드 품목</span>
+    <form class="cgp-row" id="cgpLocked" onsubmit="unlockCatalogPicker(event)">
+      <input type="password" id="cgpPw" placeholder="비밀번호를 넣으면 목록에서 골라 담을 수 있어요" autocomplete="current-password" aria-label="품목 목록 비밀번호">
+      <button type="submit" class="manage-btn import" id="cgpUnlockBtn">열기</button>
+      <span class="cgp-err" id="cgpErr" role="alert"></span>
+    </form>
+    <div class="cgp-row" id="cgpOpen" style="display:none">
+      <select id="cgpSup" aria-label="공급처 선택" onchange="fillPickerItems()"></select>
+      <select id="cgpItem" aria-label="품목 선택" onchange="updatePickerInfo()"></select>
+      <div class="qty-stepper">
+        <button type="button" class="qty-btn" id="cgpMinus" aria-label="담을 수량 줄이기" disabled>−</button>
+        <input class="qty-input" id="cgpQty" type="text" inputmode="numeric" value="1" aria-label="담을 수량">
+        <button type="button" class="qty-btn" id="cgpPlus" aria-label="담을 수량 늘리기">+</button>
+      </div>
+      <button type="button" class="manage-btn import" onclick="addPickerItem()">+ 담기</button>
+      <span class="cgp-info" id="cgpInfo"></span>
+    </div>
   </div>
   <div class="product-search" id="productSearch" role="search">
     <span class="ps-icon" aria-hidden="true">🔍</span>
@@ -2315,6 +2350,7 @@ function setMode(m) {
   document.getElementById('manageSection').className = 'manage-section' + (mgMode    ? ' visible' : '');
   document.getElementById('promoSection').className  = 'promo-section'  + (promoMode ? ' visible' : '');
   document.getElementById('productSectionLabel').style.display = calcMode ? '' : 'none';
+  document.getElementById('catalogPicker').style.display = calcMode ? '' : 'none';
   document.getElementById('productGrid').style.display = calcMode ? '' : 'none';
   const ps = document.getElementById('productSearch');
   if (ps) ps.style.display = calcMode ? '' : 'none';
@@ -2350,6 +2386,7 @@ function matchesQuery(p, q) {
 }
 
 function renderGrid() {
+  if (CATALOG) fillPickerItems();
   const grid = document.getElementById('productGrid');
   grid.innerHTML = '';
 
@@ -3351,7 +3388,7 @@ async function downloadTemplate() {
 // catalog.enc.json 은 tools/build_catalog.py 로 생성 (Redash #7233 → 품목별 1대 단가, VAT 포함)
 const CATALOG_URL    = 'catalog.enc.json';
 const CATALOG_PW_KEY = 'dseCatalogPw';
-let CATALOG = null;
+var CATALOG = null;   // var: 앞쪽 renderGrid()에서 선언 전에 참조될 수 있음
 const catalogSel = new Map();   // 품목 id → 담을 수량
 
 function _b64bytes(s) { return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
@@ -3375,34 +3412,39 @@ function _showCatalog() {
   document.getElementById('catalogBody').style.display = CATALOG ? '' : 'none';
   if (CATALOG) renderCatalog();
 }
+// 품목 선택 탭과 리스·할인 화면 드롭다운이 같은 목록·비밀번호를 쓴다
+async function loadCatalog(pw) {
+  CATALOG = await decryptCatalog(pw);
+  try { sessionStorage.setItem(CATALOG_PW_KEY, pw); } catch(_) {}
+  initCatalogFilters();
+  initCatalogPicker();
+  _showCatalog();
+}
+async function restoreCatalogSession() {
+  if (CATALOG) return;
+  let saved = null;
+  try { saved = sessionStorage.getItem(CATALOG_PW_KEY); } catch(_) {}
+  if (!saved) return;
+  try { await loadCatalog(saved); }
+  catch(_) { try { sessionStorage.removeItem(CATALOG_PW_KEY); } catch(_) {} }
+}
 async function openCatalog() {
-  if (!CATALOG) {
-    let saved = null;
-    try { saved = sessionStorage.getItem(CATALOG_PW_KEY); } catch(_) {}
-    if (saved) {
-      try { CATALOG = await decryptCatalog(saved); initCatalogFilters(); }
-      catch(_) { try { sessionStorage.removeItem(CATALOG_PW_KEY); } catch(_) {} }
-    }
-  }
+  await restoreCatalogSession();
   _showCatalog();
   if (!CATALOG) setTimeout(() => document.getElementById('catalogPw').focus(), 0);
 }
-async function unlockCatalog(e) {
-  e.preventDefault();
-  const pwEl = document.getElementById('catalogPw');
-  const btn  = document.getElementById('catalogUnlockBtn');
-  const err  = document.getElementById('catalogErr');
+async function _unlockWith(pwId, btnId, errId) {
+  const pwEl = document.getElementById(pwId);
+  const btn  = document.getElementById(btnId);
+  const err  = document.getElementById(errId);
   const pw   = pwEl.value.trim();
   if (!pw) return;
   btn.disabled = true;
   btn.textContent = '여는 중…';
   err.textContent = '';
   try {
-    CATALOG = await decryptCatalog(pw);
-    try { sessionStorage.setItem(CATALOG_PW_KEY, pw); } catch(_) {}
+    await loadCatalog(pw);
     pwEl.value = '';
-    initCatalogFilters();
-    _showCatalog();
   } catch (ex) {
     err.textContent = ex.message;
   } finally {
@@ -3410,6 +3452,8 @@ async function unlockCatalog(e) {
     btn.textContent = '열기';
   }
 }
+function unlockCatalog(e)       { e.preventDefault(); _unlockWith('catalogPw', 'catalogUnlockBtn', 'catalogErr'); }
+function unlockCatalogPicker(e) { e.preventDefault(); _unlockWith('cgpPw', 'cgpUnlockBtn', 'cgpErr'); }
 function initCatalogFilters() {
   const sups = [...new Set(CATALOG.items.map(it => it.sup))].sort((a, b) => a.localeCompare(b, 'ko'));
   document.getElementById('catalogSup').innerHTML =
@@ -3480,24 +3524,26 @@ function setCatalogQty(tr, n, typing) {
   tr.querySelector('.qty-btn[data-d="-1"]').disabled = q <= 1;
 }
 function clearCatalogSel() { catalogSel.clear(); renderCatalog(); }
+// 목록 품목 하나를 계산기 품목으로 등록(이미 있으면 공급가·판매가·수량 갱신)하고 선택 — 갱신이면 true
+function putCatalogItem(it, qty) {
+  let p = PRODUCTS.find(x => x.id === it.id);
+  const existed = !!p;
+  if (p) {
+    Object.assign(p, { name: it.name, supplier: it.sup, cost: it.cost, price: it.price, qty });
+  } else {
+    p = _normalizeProduct({ id: it.id, name: it.name, category: it.cat, supplier: it.sup, cost: it.cost, price: it.price, qty });
+    PRODUCTS.push(p);
+  }
+  if (!manualByMode.lease.has(p.id))    promoByMode.lease[p.id]    = leaseSeed(p);
+  if (!manualByMode.discount.has(p.id)) promoByMode.discount[p.id] = discountSeed(p);
+  selected.add(p.id);
+  return existed;
+}
 function addCatalogToCalc() {
   const picks = CATALOG ? CATALOG.items.filter(it => catalogSel.has(it.id)) : [];
   if (!picks.length) return;
   let updated = 0;
-  picks.forEach(it => {
-    const qty = catalogSel.get(it.id);
-    let p = PRODUCTS.find(x => x.id === it.id);
-    if (p) {
-      Object.assign(p, { name: it.name, supplier: it.sup, cost: it.cost, price: it.price, qty });
-      updated++;
-    } else {
-      p = _normalizeProduct({ id: it.id, name: it.name, category: it.cat, supplier: it.sup, cost: it.cost, price: it.price, qty });
-      PRODUCTS.push(p);
-    }
-    if (!manualByMode.lease.has(p.id))    promoByMode.lease[p.id]    = leaseSeed(p);
-    if (!manualByMode.discount.has(p.id)) promoByMode.discount[p.id] = discountSeed(p);
-    selected.add(p.id);
-  });
+  picks.forEach(it => { if (putCatalogItem(it, catalogSel.get(it.id))) updated++; });
   saveProducts();
   catalogSel.clear();
   setMode('lease');
@@ -3526,6 +3572,80 @@ function addCatalogToCalc() {
     e.target.value = catalogSel.get(tr.dataset.id) || 1;
   });
 })();
+
+// 리스·할인 화면 드롭다운: 공급처 → 품목 → 수량 → 담기
+function initCatalogPicker() {
+  document.getElementById('cgpLocked').style.display = 'none';
+  document.getElementById('cgpOpen').style.display = '';
+  const bySup = {};
+  CATALOG.items.forEach(it => { (bySup[it.sup] = bySup[it.sup] || { type: it.type, n: 0 }).n++; });
+  const groups = ['피부미용', '총판', '비총판'].map(t => {
+    const sups = Object.keys(bySup).filter(sp => bySup[sp].type === t).sort((a, b) => a.localeCompare(b, 'ko'));
+    return sups.length
+      ? `<optgroup label="${t}">${sups.map(sp => `<option value="${_escHtml(sp)}">${_escHtml(sp)} (${bySup[sp].n})</option>`).join('')}</optgroup>`
+      : '';
+  }).join('');
+  document.getElementById('cgpSup').innerHTML = `<option value="">전체 공급처 (${CATALOG.items.length})</option>` + groups;
+  fillPickerItems();
+}
+function fillPickerItems() {
+  const supEl  = document.getElementById('cgpSup');
+  const itemEl = document.getElementById('cgpItem');
+  const sup    = supEl.value;
+  const prev   = itemEl.value;
+  const picked = new Set([...selected]);
+  const opt = it => `<option value="${_escHtml(it.id)}">${picked.has(it.id) ? '✓ ' : ''}${_escHtml(it.name)} — ${fmt(it.price)}</option>`;
+  let html;
+  if (sup) {
+    const list = CATALOG.items.filter(it => it.sup === sup);
+    html = `<option value="">품목 선택 (${list.length}개)</option>` + list.map(opt).join('');
+  } else {
+    const sups = [...new Set(CATALOG.items.map(it => it.sup))].sort((a, b) => a.localeCompare(b, 'ko'));
+    html = `<option value="">품목 선택 (${CATALOG.items.length}개)</option>` +
+      sups.map(sp => `<optgroup label="${_escHtml(sp)}">${CATALOG.items.filter(it => it.sup === sp).map(opt).join('')}</optgroup>`).join('');
+  }
+  itemEl.innerHTML = html;
+  if (prev && CATALOG.items.some(it => it.id === prev && (!sup || it.sup === sup))) itemEl.value = prev;
+  updatePickerInfo();
+}
+function updatePickerInfo() {
+  const id = document.getElementById('cgpItem').value;
+  const it = CATALOG && CATALOG.items.find(x => x.id === id);
+  const m  = it ? catalogMargin(it) : null;
+  document.getElementById('cgpInfo').textContent = it
+    ? `1대 판매가 ${fmt(it.price)} · 공급가 ${it.cost > 0 ? fmt(it.cost) : '없음'} · 마진 ${m == null ? '—' : (m * 100).toFixed(1) + '%'} · 최근 주문 ${it.last} (VAT 포함)`
+    : '공급처를 고르면 품목 목록이 좁혀집니다. 담은 품목은 아래 ⭐ 선택한 품목에 바로 추가됩니다.';
+}
+function setPickerQty(n) {
+  const q = Math.max(1, Math.min(999, parseInt(n) || 1));
+  document.getElementById('cgpQty').value = q;
+  document.getElementById('cgpMinus').disabled = q <= 1;
+  return q;
+}
+function addPickerItem() {
+  const it = CATALOG && CATALOG.items.find(x => x.id === document.getElementById('cgpItem').value);
+  if (!it) { toast('담을 품목을 골라 주세요', 'error'); return; }
+  const qty = setPickerQty(document.getElementById('cgpQty').value);
+  const updated = putCatalogItem(it, qty);
+  saveProducts();
+  renderGrid();
+  update();
+  setPickerQty(1);
+  toast(`✓ ${it.name} ${qty}개를 담았습니다` + (updated ? ' (가격 갱신)' : ''), 'success');
+}
+(function bindCatalogPicker() {
+  const qtyEl = document.getElementById('cgpQty');
+  document.getElementById('cgpMinus').addEventListener('click', () => setPickerQty((parseInt(qtyEl.value) || 1) - 1));
+  document.getElementById('cgpPlus').addEventListener('click',  () => setPickerQty((parseInt(qtyEl.value) || 1) + 1));
+  qtyEl.addEventListener('input', () => {
+    const digits = qtyEl.value.replace(/[^0-9]/g, '');
+    if (qtyEl.value !== digits) qtyEl.value = digits;
+    document.getElementById('cgpMinus').disabled = (parseInt(digits) || 1) <= 1;
+  });
+  qtyEl.addEventListener('blur', () => setPickerQty(qtyEl.value));
+  qtyEl.addEventListener('focus', () => qtyEl.select());
+})();
+restoreCatalogSession();   // 같은 탭에서 이미 비밀번호를 넣었으면 바로 열림
 
 // ── 가격/프로모션 관리 탭 ─────────────────────────────────────────────
 let PROMO_INPUT_MODE = 'amount'; // 'amount' | 'rate' | 'discount'
