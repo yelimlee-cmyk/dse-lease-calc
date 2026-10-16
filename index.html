@@ -274,6 +274,13 @@
   .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
   .table-header { padding:13px 20px; border-bottom:1px solid var(--border); font-size:11.5px; color:var(--text-2); }
   .table-header b { color:var(--text); }
+  /* 리스 구분 배지 (무이자/유이자) — 화면·PNG 공통 */
+  .lease-badge { display:inline-block; margin-left:8px; padding:2px 10px 2px 3px; border-radius:999px; font-size:11.5px; font-weight:800; line-height:20px; vertical-align:middle; white-space:nowrap; }
+  .lease-badge .lb-ic { display:inline-block; width:20px; height:20px; margin-right:5px; border-radius:50%; text-align:center; line-height:20px; font-size:9.5px; font-weight:900; color:#fff; vertical-align:top; }
+  .lease-badge.free     { background:#dcfce7; color:#047857; }
+  .lease-badge.free .lb-ic     { background:#059669; }
+  .lease-badge.interest { background:#ffedd5; color:#c2410c; }
+  .lease-badge.interest .lb-ic { background:#ea580c; }
   table { width:100%; border-collapse:collapse; }
   thead th {
     padding:10px 13px; font-size:10.5px; color:var(--text-3);
@@ -1370,7 +1377,7 @@
   <div id="extExportArea">
   <div class="table-wrap">
     <div class="table-header" id="extTableHeader">
-      <b id="extTableTitle">선택 품목 리스 견적</b> &nbsp;·&nbsp; <span id="extTableSub">패키지 할인가 기준 &nbsp;·&nbsp; 24개월 무이자 · 보증금 10%</span>
+      <b id="extTableTitle">선택 품목 리스 견적</b><span class="lease-badge free" id="extLeaseBadge"><span class="lb-ic">0%</span>무이자</span> &nbsp;·&nbsp; <span id="extTableSub">패키지 할인가 기준 &nbsp;·&nbsp; 24개월 무이자 · 보증금 10%</span>
     </div>
     <div class="table-scroll">
     <table aria-label="고객 견적표">
@@ -2573,6 +2580,7 @@ function update() {
 
   if (MODE === 'discount') {
     document.getElementById('extTableTitle').textContent = '선택 품목 할인 견적';
+    document.getElementById('extLeaseBadge').style.display = 'none';
     document.getElementById('extTableSub').textContent  = '패키지 할인가 기준 · 할인율 적용';
     document.getElementById('extHead').innerHTML = `<tr>
       <th>품목</th>
@@ -2650,6 +2658,11 @@ function update() {
     const rateNum  = getRate();
     const rateLbl  = rateNum === 0 ? '무이자' : `연 ${(rateNum*100).toFixed(2)}%`;
     document.getElementById('extTableTitle').textContent = '선택 품목 리스 견적';
+    const badge = document.getElementById('extLeaseBadge');
+    const isInterest = getLeaseType() === 'interest';
+    badge.style.display = '';
+    badge.className = 'lease-badge ' + (isInterest ? 'interest' : 'free');
+    badge.innerHTML = isInterest ? '<span class="lb-ic">%</span>유이자' : '<span class="lb-ic">0%</span>무이자';
     document.getElementById('extTableSub').innerHTML    =
       `패키지 할인가 기준 · ${period}개월 ${rateLbl} · 보증금 ${getDeposit()}% ` +
       `<span style="color:var(--green)">(만기 시 환급)</span>`;
