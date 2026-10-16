@@ -1213,13 +1213,20 @@
   <!-- PARAMS -->
   <div class="params" id="leaseParams" role="group" aria-label="리스 조건 입력">
     <div class="param-chip editable">
+      <label for="leaseTypeSelect">구분</label>
+      <span class="hint" tabindex="0" data-tip="무이자: 공급사가 선취수수료를 부담하고 고객은 이자 없이 분납합니다 (12·24·36개월). 유이자: 선취수수료 없이 고객이 이자를 부담합니다 (12~60개월).">?</span>
+      <select id="leaseTypeSelect" class="rate-input" style="width:auto;padding:3px 8px" aria-label="리스 구분 선택">
+        <option value="free" selected>무이자</option>
+        <option value="interest">유이자</option>
+      </select>
+    </div>
+    <div class="param-chip editable">
       <label for="periodSelect">기간</label>
-      <span class="hint" tabindex="0" data-tip="리스 계약 기간입니다. 기간이 길수록 월 납입금은 줄지만 선취수수료는 커집니다. 60개월은 유이자(고객 이자 부담) 조건으로 선취수수료 없이 적용금리가 자동 입력됩니다.">?</span>
+      <span class="hint" tabindex="0" data-tip="리스 계약 기간입니다. 무이자는 기간이 길수록 선취수수료가 커지고, 유이자는 보증금 비율에 따라 적용금리가 정해집니다.">?</span>
       <select id="periodSelect" class="rate-input" style="width:auto;padding:3px 8px" aria-label="리스 기간 선택">
         <option value="12">12개월</option>
         <option value="24" selected>24개월</option>
         <option value="36">36개월</option>
-        <option value="60">60개월 (유이자)</option>
       </select>
     </div>
     <div class="param-chip editable">
@@ -2378,9 +2385,14 @@ const LEASE_FEE_TABLE = {
 };
 // 유이자 리스 조건표 (고객 부담 적용금리 · 선취수수료 없음)
 const LEASE_INTEREST_TABLE = {
+  12: { 0: 0.0560, 10: 0.0460, 20: 0.0370 },
+  24: { 0: 0.0555, 10: 0.0455, 20: 0.0365 },
+  36: { 0: 0.0555, 10: 0.0455, 20: 0.0365 },
+  48: { 0: 0.0560, 10: 0.0460, 20: 0.0370 },
   60: { 0: 0.0560, 10: 0.0460, 20: 0.0370 },
 };
 
+function getLeaseType() { return document.getElementById('leaseTypeSelect').value === 'interest' ? 'interest' : 'free'; }
 function getPeriod()  { return parseInt(document.getElementById('periodSelect').value)  || 24; }
 function getDeposit() { return parseInt(document.getElementById('depositSelect').value) || 0;  }
 function getFeeRate() {
@@ -3528,17 +3540,23 @@ bindCommaInput(document.getElementById('targetTotalInput'), (target) => {
   _suppressTargetSync = false;
 });
 
-let _prevInterestPeriod = false;
+// 구분(무이자/유이자)에 맞춰 기간 목록을 다시 채움 — 선택 중인 기간이 없으면 24개월
+function syncPeriodOptions() {
+  const sel = document.getElementById('periodSelect');
+  const cur = getPeriod();
+  const table = getLeaseType() === 'interest' ? LEASE_INTEREST_TABLE : LEASE_FEE_TABLE;
+  const periods = Object.keys(table).map(Number);
+  sel.innerHTML = periods.map(m => `<option value="${m}">${m}개월</option>`).join('');
+  sel.value = periods.includes(cur) ? cur : 24;
+}
+// 무이자: 선취수수료 조건표 + 금리 0% / 유이자: 선취수수료 0% + 고객 부담 금리
 function autoFillFeeRate() {
   const period = getPeriod(), dep = getDeposit();
-  document.getElementById('feeRateInput').value = (lookupFeeRate(period, dep) * 100).toFixed(2);
-  // 유이자 기간이면 고객 부담 금리를 채우고, 무이자 기간으로 돌아오면 0%로 되돌림
-  const isInterest = period in LEASE_INTEREST_TABLE;
-  if (isInterest || _prevInterestPeriod) {
-    document.getElementById('rateInput').value = (lookupInterestRate(period, dep) * 100).toFixed(2);
-  }
-  _prevInterestPeriod = isInterest;
+  const isInterest = getLeaseType() === 'interest';
+  document.getElementById('feeRateInput').value = (isInterest ? 0 : lookupFeeRate(period, dep) * 100).toFixed(2);
+  document.getElementById('rateInput').value    = (isInterest ? lookupInterestRate(period, dep) * 100 : 0).toFixed(2);
 }
+document.getElementById('leaseTypeSelect').addEventListener('change', () => { syncPeriodOptions(); autoFillFeeRate(); update(); });
 document.getElementById('periodSelect').addEventListener('change', () => { autoFillFeeRate(); update(); });
 document.getElementById('depositSelect').addEventListener('change', () => { autoFillFeeRate(); update(); });
 document.getElementById('feeRateInput').addEventListener('input', () => { clampInputs(); update(); });
@@ -4149,7 +4167,7 @@ function openQuoteModal() {
   tag.className = 'qm-mode-tag ' + (isLease ? 'lease' : 'discount');
   const dRateEl = document.getElementById('discountInput');
   document.getElementById('qmModeNote').textContent = isLease
-    ? `${getPeriod()}개월 · 보증금 ${getDeposit()}% · 선취수수료 ${(getFeeRate()*100).toFixed(2)}%` +
+    ? `${getLeaseType() === 'interest' ? '유이자' : '무이자'} · ${getPeriod()}개월 · 보증금 ${getDeposit()}% · 선취수수료 ${(getFeeRate()*100).toFixed(2)}%` +
       (getRate() > 0 ? ` · 적용금리 연 ${(getRate()*100).toFixed(2)}%` : '')
     : `추가 할인율 ${parseFloat(dRateEl?.value)||0}%`;
   document.getElementById('qmDate').value = new Date().toISOString().slice(0,10);
