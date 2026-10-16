@@ -1214,11 +1214,12 @@
   <div class="params" id="leaseParams" role="group" aria-label="리스 조건 입력">
     <div class="param-chip editable">
       <label for="periodSelect">기간</label>
-      <span class="hint" tabindex="0" data-tip="리스 계약 기간입니다. 기간이 길수록 월 납입금은 줄지만 선취수수료는 커집니다.">?</span>
+      <span class="hint" tabindex="0" data-tip="리스 계약 기간입니다. 기간이 길수록 월 납입금은 줄지만 선취수수료는 커집니다. 60개월은 유이자(고객 이자 부담) 조건으로 선취수수료 없이 적용금리가 자동 입력됩니다.">?</span>
       <select id="periodSelect" class="rate-input" style="width:auto;padding:3px 8px" aria-label="리스 기간 선택">
         <option value="12">12개월</option>
         <option value="24" selected>24개월</option>
         <option value="36">36개월</option>
+        <option value="60">60개월 (유이자)</option>
       </select>
     </div>
     <div class="param-chip editable">
@@ -1239,7 +1240,7 @@
     <div class="param-chip editable">
       <label for="rateInput">적용금리</label>
       <span class="hint" tabindex="0" data-tip="리스 분납 시 적용되는 연이율입니다. 0%로 두면 무이자 분납으로 계산됩니다.">?</span>
-      <input class="rate-input" id="rateInput" type="number" value="0" min="0" max="30" step="0.1" style="width:68px" inputmode="decimal" aria-label="적용금리(%)">
+      <input class="rate-input" id="rateInput" type="number" value="0" min="0" max="30" step="0.01" style="width:68px" inputmode="decimal" aria-label="적용금리(%)">
       <b>% 연이율</b>
     </div>
   </div>
@@ -2369,11 +2370,15 @@ function clearSelection() {
   });
 })();
 
-// 무이자 리스 조건표
+// 무이자 리스 조건표 (공급사 부담 선취수수료율)
 const LEASE_FEE_TABLE = {
   12: { 0: 0.0310, 10: 0.0250, 20: 0.0200 },
   24: { 0: 0.0560, 10: 0.0460, 20: 0.0360 },
   36: { 0: 0.0810, 10: 0.0665, 20: 0.0520 },
+};
+// 유이자 리스 조건표 (고객 부담 적용금리 · 선취수수료 없음)
+const LEASE_INTEREST_TABLE = {
+  60: { 0: 0.0560, 10: 0.0460, 20: 0.0370 },
 };
 
 function getPeriod()  { return parseInt(document.getElementById('periodSelect').value)  || 24; }
@@ -2388,6 +2393,10 @@ function getRate() {
 }
 function lookupFeeRate(period, dep) {
   const tbl = LEASE_FEE_TABLE[period];
+  return tbl ? (tbl[dep] || 0) : 0;
+}
+function lookupInterestRate(period, dep) {
+  const tbl = LEASE_INTEREST_TABLE[period];
   return tbl ? (tbl[dep] || 0) : 0;
 }
 
@@ -2480,7 +2489,7 @@ function update() {
     const dep     = getDeposit();
     document.getElementById('iFeeCard').style.display   = '';
     document.getElementById('intSummary').style.gridTemplateColumns = 'repeat(4,1fr)';
-    document.getElementById('intTableSub').innerHTML = `패키지 할인가 기준 &nbsp;·&nbsp; ${period}개월 / 보증금 ${dep}% &nbsp;·&nbsp; 선취수수료 <b style="color:var(--orange)">${(feeRate*100).toFixed(2)}%</b> 적용`;
+    document.getElementById('intTableSub').innerHTML = `패키지 할인가 기준 &nbsp;·&nbsp; ${period}개월 / 보증금 ${dep}% &nbsp;·&nbsp; 선취수수료 <b style="color:var(--orange)">${(feeRate*100).toFixed(2)}%</b> 적용${getRate() > 0 ? ` &nbsp;·&nbsp; 고객 부담 금리 연 ${(getRate()*100).toFixed(2)}%` : ''}`;
     document.getElementById('intHead').innerHTML = `<tr>
       <th>품목</th><th>공급가</th><th>판매가</th><th>패키지 할인가</th>
       <th>선취수수료</th><th>실수금</th><th>기존 마진율</th><th>리스 마진율</th><th>변화</th>
@@ -2660,7 +2669,7 @@ function update() {
       const lp      = getPromo(p.id);
       const deposit = Math.round(lp * depRate);
       const monthly = calcMonthly(lp);
-      const totalPay= lp;
+      const totalPay= rateNum === 0 ? lp : monthly * period;
       etTotal += lp;
       return `<tr>
         <td class="ec-name">${p.name}${p.desc ? `<span class="p-desc">${p.desc}</span>` : ''}</td>
@@ -2672,7 +2681,7 @@ function update() {
     }).join('');
     const etDeposit  = Math.round(etTotal * depRate);
     const etMonthly  = calcMonthly(etTotal);
-    const etTotalPay = etTotal;
+    const etTotalPay = rateNum === 0 ? etTotal : etMonthly * period;
     extFoot.innerHTML = `<tr>
       <td class="ec-sale">합계 (${items.length}종)</td>
       <td class="ec-sale">${fmt(etTotal)}</td>
@@ -3519,9 +3528,16 @@ bindCommaInput(document.getElementById('targetTotalInput'), (target) => {
   _suppressTargetSync = false;
 });
 
+let _prevInterestPeriod = false;
 function autoFillFeeRate() {
-  const v = lookupFeeRate(getPeriod(), getDeposit());
-  document.getElementById('feeRateInput').value = (v * 100).toFixed(2);
+  const period = getPeriod(), dep = getDeposit();
+  document.getElementById('feeRateInput').value = (lookupFeeRate(period, dep) * 100).toFixed(2);
+  // 유이자 기간이면 고객 부담 금리를 채우고, 무이자 기간으로 돌아오면 0%로 되돌림
+  const isInterest = period in LEASE_INTEREST_TABLE;
+  if (isInterest || _prevInterestPeriod) {
+    document.getElementById('rateInput').value = (lookupInterestRate(period, dep) * 100).toFixed(2);
+  }
+  _prevInterestPeriod = isInterest;
 }
 document.getElementById('periodSelect').addEventListener('change', () => { autoFillFeeRate(); update(); });
 document.getElementById('depositSelect').addEventListener('change', () => { autoFillFeeRate(); update(); });
@@ -4133,7 +4149,8 @@ function openQuoteModal() {
   tag.className = 'qm-mode-tag ' + (isLease ? 'lease' : 'discount');
   const dRateEl = document.getElementById('discountInput');
   document.getElementById('qmModeNote').textContent = isLease
-    ? `${getPeriod()}개월 · 보증금 ${getDeposit()}% · 선취수수료 ${(getFeeRate()*100).toFixed(2)}%`
+    ? `${getPeriod()}개월 · 보증금 ${getDeposit()}% · 선취수수료 ${(getFeeRate()*100).toFixed(2)}%` +
+      (getRate() > 0 ? ` · 적용금리 연 ${(getRate()*100).toFixed(2)}%` : '')
     : `추가 할인율 ${parseFloat(dRateEl?.value)||0}%`;
   document.getElementById('qmDate').value = new Date().toISOString().slice(0,10);
 
@@ -4287,11 +4304,12 @@ async function buildQuoteWorkbook(info) {
     const months      = getPeriod();
     const depositRate = getDeposit();
     const feeRate     = getFeeRate() * 100;
-    const monthly     = Math.round(subtotal / Math.max(1, months));
+    const rate        = getRate();
+    const monthly     = calcMonthly(subtotal);
     const deposit     = Math.round(subtotal * (depositRate / 100));
     const upfront     = Math.round(subtotal * (feeRate / 100));
     const totalPaid   = monthly * months + deposit;
-    leaseInfo = { months, depositRate, feeRate, monthly, deposit, upfront, totalPaid };
+    leaseInfo = { months, depositRate, feeRate, rate, monthly, deposit, upfront, totalPaid };
   }
 
   const wb = new ExcelJS.Workbook();
@@ -4494,8 +4512,8 @@ async function buildQuoteWorkbook(info) {
     nextRow++;
 
     const rows = [
-      ['리스 기간',                          `${leaseInfo.months}개월`, '무이자 분납'],
-      ['월 납입금',                          leaseInfo.monthly,         '패키지 금액 ÷ 기간'],
+      ['리스 기간',                          `${leaseInfo.months}개월`, leaseInfo.rate === 0 ? '무이자 분납' : `연 ${(leaseInfo.rate*100).toFixed(2)}% 분납`],
+      ['월 납입금',                          leaseInfo.monthly,         leaseInfo.rate === 0 ? '패키지 금액 ÷ 기간' : '원리금 균등 분납'],
       [`보증금 (${leaseInfo.depositRate}%)`, leaseInfo.deposit,         '만기 시 환급'],
       ['총 납부액',                          leaseInfo.totalPaid,       '월납 × 기간 + 보증금'],
     ];
