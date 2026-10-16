@@ -1214,7 +1214,7 @@
   <div class="params" id="leaseParams" role="group" aria-label="리스 조건 입력">
     <div class="param-chip editable">
       <label for="leaseTypeSelect">구분</label>
-      <span class="hint" tabindex="0" data-tip="무이자: 공급사가 선취수수료를 부담하고 고객은 이자 없이 분납합니다 (12·24·36개월). 유이자: 선취수수료 없이 고객이 이자를 부담합니다 (12~60개월).">?</span>
+      <span class="hint" tabindex="0" data-tip="무이자: 공급사가 선취수수료를 부담하고 고객은 이자 없이 분납합니다 (12·24·36·60개월). 유이자: 선취수수료 없이 고객이 이자를 부담합니다 (12~60개월).">?</span>
       <select id="leaseTypeSelect" class="rate-input" style="width:auto;padding:3px 8px" aria-label="리스 구분 선택">
         <option value="free" selected>무이자</option>
         <option value="interest">유이자</option>
@@ -2382,6 +2382,7 @@ const LEASE_FEE_TABLE = {
   12: { 0: 0.0310, 10: 0.0250, 20: 0.0200 },
   24: { 0: 0.0560, 10: 0.0460, 20: 0.0360 },
   36: { 0: 0.0810, 10: 0.0665, 20: 0.0520 },
+  60: { 0: 0.2000, 10: 0.2000, 20: 0.2000 }, // 임시값 — 조건표에 없어 대략 20%로 설정
 };
 // 유이자 리스 조건표 (고객 부담 적용금리 · 선취수수료 없음)
 const LEASE_INTEREST_TABLE = {
@@ -3561,6 +3562,7 @@ document.getElementById('periodSelect').addEventListener('change', () => { autoF
 document.getElementById('depositSelect').addEventListener('change', () => { autoFillFeeRate(); update(); });
 document.getElementById('feeRateInput').addEventListener('input', () => { clampInputs(); update(); });
 document.getElementById('rateInput').addEventListener('input', () => { clampInputs(); update(); });
+syncPeriodOptions();
 autoFillFeeRate();
 
 function parseRoiInput(id) {
