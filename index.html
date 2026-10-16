@@ -246,6 +246,14 @@
   }
   .promo-input:focus { border-color:var(--primary); box-shadow: var(--focus); }
   .product-card:not(.selected) .promo-row { opacity:.45; pointer-events:none; }
+  /* 수량 (선택한 품목 카드) */
+  .qty-row { display:flex; align-items:center; gap:8px; margin-top:6px; }
+  .qty-stepper { display:inline-flex; align-items:center; border:1px solid var(--border-2); border-radius:7px; overflow:hidden; background:#fff; }
+  .qty-btn { width:28px; height:30px; border:0; background:var(--primary-soft); color:var(--primary); font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; line-height:1; }
+  .qty-btn:disabled { opacity:.35; cursor:not-allowed; }
+  .qty-input { width:44px; height:30px; border:0; text-align:center; font-size:12px; font-weight:800; color:var(--text); font-family:inherit; outline:none; background:#fff; }
+  .qty-total { margin-left:auto; font-size:11px; font-weight:700; color:var(--text-3); white-space:nowrap; }
+  .qty-tag { display:inline-block; margin-left:6px; padding:1px 7px; border-radius:999px; background:var(--primary-soft); color:var(--primary); font-size:11px; font-weight:800; vertical-align:middle; }
 
   /* SECTION DIVIDER */
   .sec-divider {
@@ -2152,6 +2160,27 @@ function getPromo(id) {
   return cur === 'discount' ? discountSeed(p) : leaseSeed(p);
 }
 function setPromo(id, v){ promoByMode[curPriceMode()][id] = v; manualByMode[curPriceMode()].add(id); }
+// 품목 한 줄 = 단가 × 수량 (패키지 할인가·공급가·판매가 모두)
+function lineOf(p) {
+  const q = getQty(p);
+  return { q, lp: getPromo(p.id) * q, cost: (p.cost || 0) * q, price: (p.price || 0) * q };
+}
+function qtyTag(q) { return q > 1 ? `<span class="qty-tag">×${q}</span>` : ''; }
+function wonShort(n) { return n >= 1e8 ? `${parseFloat((n / 1e8).toFixed(2))}억` : wan(n); }
+function qtyTotalLabel(p) { const q = getQty(p); return q > 1 ? `합계 ${wonShort(getPromo(p.id) * q)}` : ''; }
+// 수량 변경 → 저장, 같은 품목 카드(선택 섹션·카테고리)끼리 표시 동기화, 계산 갱신
+function refreshQtyUi(p) {
+  const q = getQty(p);
+  document.querySelectorAll(`.qty-input[data-id="${p.id}"]`).forEach(el => { if (document.activeElement !== el) el.value = q; });
+  document.querySelectorAll(`.qty-total[data-id="${p.id}"]`).forEach(el => { el.textContent = qtyTotalLabel(p); });
+  document.querySelectorAll(`.qty-btn[data-d="-1"][data-id="${p.id}"]`).forEach(el => { el.disabled = q <= 1; });
+}
+function setQty(p, n) {
+  p.qty = Math.max(1, Math.min(999, parseInt(n) || 1));
+  saveProducts();
+  refreshQtyUi(p);
+  update();
+}
 
 let MODE = 'lease';
 let _suppressTargetSync = false;
@@ -2249,17 +2278,26 @@ function renderGrid() {
                value="${manualByMode[curPriceMode()].has(p.id) ? getPromo(p.id).toLocaleString('ko-KR') : ''}"
                placeholder="판매가와 동일"
                aria-label="${p.name} 패키지 할인가 (원)">
-      </div>`;
+      </div>${isSel ? `
+      <div class="qty-row">
+        <span class="promo-label">수량</span>
+        <div class="qty-stepper">
+          <button type="button" class="qty-btn" data-d="-1" data-id="${p.id}" aria-label="${p.name} 수량 줄이기"${getQty(p) <= 1 ? ' disabled' : ''}>−</button>
+          <input class="qty-input" data-id="${p.id}" type="text" inputmode="numeric" value="${getQty(p)}" aria-label="${p.name} 수량">
+          <button type="button" class="qty-btn" data-d="1" data-id="${p.id}" aria-label="${p.name} 수량 늘리기">+</button>
+        </div>
+        <span class="qty-total" data-id="${p.id}">${qtyTotalLabel(p)}</span>
+      </div>` : ''}`;
     const toggleSel = () => {
       selected.has(p.id) ? selected.delete(p.id) : selected.add(p.id);
       renderGrid(); update();
     };
     card.addEventListener('click', e => {
-      if (e.target.classList.contains('promo-input')) return;
+      if (e.target.closest('.promo-input, .qty-row')) return;
       toggleSel();
     });
     card.addEventListener('keydown', e => {
-      if (e.target.classList.contains('promo-input')) return;
+      if (e.target.closest('.promo-input, .qty-row')) return;
       if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleSel(); }
     });
     const input = card.querySelector('.promo-input');
@@ -2271,7 +2309,21 @@ function renderGrid() {
         if (other !== input) other.value = formatted;
       });
       update();
+      refreshQtyUi(p);
     });
+    card.querySelectorAll('.qty-btn').forEach(btn => {
+      btn.addEventListener('click', () => setQty(p, getQty(p) + parseInt(btn.dataset.d)));
+    });
+    const qtyInput = card.querySelector('.qty-input');
+    if (qtyInput) {
+      qtyInput.addEventListener('input', () => {
+        const digits = qtyInput.value.replace(/[^0-9]/g, '');
+        if (qtyInput.value !== digits) qtyInput.value = digits;
+        if (digits) setQty(p, digits);
+      });
+      qtyInput.addEventListener('blur', () => { qtyInput.value = getQty(p); });
+      qtyInput.addEventListener('focus', () => qtyInput.select());
+    }
     input.addEventListener('focus', () => { if (!selected.has(p.id)) { selected.add(p.id); renderGrid(); } });
     return card;
   };
@@ -2467,16 +2519,16 @@ function update() {
     } else {
       let tCost=0, tSale=0, tLease=0, tFinal=0;
       intBody.innerHTML = items.map(p => {
-        const lp     = getPromo(p.id);
+        const { q, lp, cost, price } = lineOf(p);
         const fin    = Math.round(lp * (1 - dRate));
-        const mOrig  = (p.price - p.cost) / p.price;
-        const mDisc  = fin > 0 ? (fin - p.cost) / fin : 0;
+        const mOrig  = (price - cost) / price;
+        const mDisc  = fin > 0 ? (fin - cost) / fin : 0;
         const diff   = mDisc - mOrig;
-        tCost += p.cost; tSale += p.price; tLease += lp; tFinal += fin;
+        tCost += cost; tSale += price; tLease += lp; tFinal += fin;
         return `<tr>
-          <td>${p.name}</td>
-          <td class="tc-cost">${fmt(p.cost)}</td>
-          <td class="tc-sale">${fmt(p.price)}</td>
+          <td>${p.name}${qtyTag(q)}</td>
+          <td class="tc-cost">${fmt(cost)}</td>
+          <td class="tc-sale">${fmt(price)}</td>
           <td class="tc-promo">${fmt(lp)}</td>
           <td class="tc-mlease">${fmt(fin)}</td>
           <td class="tc-margin">${pct(mOrig)}</td>
@@ -2531,17 +2583,17 @@ function update() {
     } else {
       let tCost=0, tSale=0, tLease=0, tFee=0, tNet=0;
       intBody.innerHTML = items.map(p => {
-        const lp     = getPromo(p.id);
+        const { q, lp, cost, price } = lineOf(p);
         const fee    = Math.round(lp * feeRate);
         const net    = lp - fee;
-        const mOrig  = (p.price - p.cost) / p.price;
-        const mLease = net > 0 ? (net - p.cost) / net : 0;
+        const mOrig  = (price - cost) / price;
+        const mLease = net > 0 ? (net - cost) / net : 0;
         const diff   = mLease - mOrig;
-        tCost += p.cost; tSale += p.price; tLease += lp; tFee += fee; tNet += net;
+        tCost += cost; tSale += price; tLease += lp; tFee += fee; tNet += net;
         return `<tr>
-          <td>${p.name}</td>
-          <td class="tc-cost">${fmt(p.cost)}</td>
-          <td class="tc-sale">${fmt(p.price)}</td>
+          <td>${p.name}${qtyTag(q)}</td>
+          <td class="tc-cost">${fmt(cost)}</td>
+          <td class="tc-sale">${fmt(price)}</td>
           <td class="tc-promo">${fmt(lp)}</td>
           <td class="tc-fee">-${fmt(fee)}</td>
           <td class="tc-net">${fmt(net)}</td>
@@ -2614,15 +2666,15 @@ function update() {
     let etTotal = 0;
     let etList  = 0;
     extBody.innerHTML = items.map(p => {
-      const lp       = getPromo(p.id);
+      const { q, lp, price } = lineOf(p);
       const itemDisc = Math.round(lp * discRate);
       const itemFinal= lp - itemDisc;
-      const pkgRate  = p.price > 0 ? (p.price - lp) / p.price : 0;
+      const pkgRate  = price > 0 ? (price - lp) / price : 0;
       etTotal += lp;
-      etList  += p.price;
+      etList  += price;
       return `<tr>
-        <td class="ec-name">${p.name}${p.desc ? `<span class="p-desc">${p.desc}</span>` : ''}</td>
-        <td class="ec-sale">${fmt(lp)}${pkgRate > 0 ? `<span class="p-desc" style="display:block;font-size:10.5px;color:var(--green);font-weight:500;margin-top:2px">정가 ${fmt(p.price)} · -${(pkgRate*100).toFixed(1)}%</span>` : ''}</td>
+        <td class="ec-name">${p.name}${qtyTag(q)}${p.desc ? `<span class="p-desc">${p.desc}</span>` : ''}</td>
+        <td class="ec-sale">${fmt(lp)}${pkgRate > 0 ? `<span class="p-desc" style="display:block;font-size:10.5px;color:var(--green);font-weight:500;margin-top:2px">정가 ${fmt(price)} · -${(pkgRate*100).toFixed(1)}%</span>` : ''}</td>
         <td class="tc-fee">-${fmt(itemDisc)}</td>
         <td class="tc-mlease">${fmt(itemFinal)}</td>
       </tr>`;
@@ -2692,13 +2744,13 @@ function update() {
     }
     let etTotal = 0;
     extBody.innerHTML = items.map(p => {
-      const lp      = getPromo(p.id);
+      const { q, lp } = lineOf(p);
       const deposit = Math.round(lp * depRate);
       const monthly = calcMonthly(lp);
       const totalPay= rateNum === 0 ? lp : monthly * period;
       etTotal += lp;
       return `<tr>
-        <td class="ec-name">${p.name}${p.desc ? `<span class="p-desc">${p.desc}</span>` : ''}</td>
+        <td class="ec-name">${p.name}${qtyTag(q)}${p.desc ? `<span class="p-desc">${p.desc}</span>` : ''}</td>
         <td class="ec-sale">${fmt(lp)}</td>
         <td class="ec-deposit">${fmt(deposit)}</td>
         <td class="ec-monthly">${fmt(monthly)}/월</td>
@@ -3530,8 +3582,8 @@ function applyTargetMargin() {
 }
 function updateMarginSummary() {
   const items   = PRODUCTS.filter(p => selected.has(p.id));
-  const saleSum = items.reduce((s, p) => s + (getPromo(p.id) || 0), 0);
-  const costSum = items.reduce((s, p) => s + (p.cost || 0), 0);
+  const saleSum = items.reduce((s, p) => s + (lineOf(p).lp || 0), 0);
+  const costSum = items.reduce((s, p) => s + lineOf(p).cost, 0);
   const saleEl  = document.getElementById('marginSaleSum');
   const discEl  = document.getElementById('marginDiscSum');
   if (saleEl) saleEl.textContent = fmt(saleSum);
@@ -3541,7 +3593,7 @@ document.getElementById('marginRateInput').addEventListener('input', applyTarget
 
 bindCommaInput(document.getElementById('targetTotalInput'), (target) => {
   const items = PRODUCTS.filter(p => selected.has(p.id));
-  const currentSum = items.reduce((s, p) => s + getPromo(p.id), 0);
+  const currentSum = items.reduce((s, p) => s + lineOf(p).lp, 0);
   let rate = 0;
   if (currentSum > 0) {
     rate = ((currentSum - target) / currentSum) * 100;
