@@ -382,6 +382,7 @@
   .mode-tab.active.roi      { background:var(--orange-soft);  color:var(--orange);  border-bottom:2px solid var(--orange); }
   .mode-tab.active.manage   { background:var(--pink-soft);    color:var(--pink);    border-bottom:2px solid var(--pink); }
   .mode-tab.active.promo    { background:#ede9fe;             color:#6d28d9;       border-bottom:2px solid #6d28d9; }
+  .mode-tab.active.catalog  { background:#e0f2fe;             color:#0369a1;       border-bottom:2px solid #0369a1; }
 
   /* MANAGE TAB */
   .manage-section { display:none; }
@@ -523,6 +524,40 @@
   .supplier-row input[type="checkbox"] {
     margin-right:8px; accent-color:#6d28d9;
   }
+
+  /* CATALOG TAB (마진 대시보드 품목 선택) */
+  .catalog-section { display:none; }
+  .catalog-section.visible { display:block; }
+  .cg-lock { max-width:440px; margin:40px auto; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; box-shadow:var(--shadow); text-align:center; }
+  .cg-lock h3 { font-size:16px; margin:0 0 8px; color:var(--text); }
+  .cg-lock p { font-size:12.5px; color:var(--text-3); margin:0 0 16px; line-height:1.6; }
+  .cg-lock form { display:flex; gap:8px; }
+  .cg-lock input { flex:1; min-width:0; min-height:40px; border:1px solid var(--border-2); border-radius:10px; padding:0 12px; font-size:14px; font-family:inherit; outline:none; }
+  .cg-lock input:focus { border-color:#0369a1; box-shadow:0 0 0 3px rgba(3,105,161,.15); }
+  .cg-lock .cg-err { color:var(--red); font-size:12px; margin-top:10px; min-height:16px; }
+  .cg-filters { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .cg-filters select { min-height:38px; border:1px solid var(--border-2); border-radius:8px; padding:0 8px; font-family:inherit; font-size:12.5px; font-weight:600; background:var(--surface); color:var(--text); }
+  .cg-meta { font-size:11.5px; color:var(--text-3); margin:-4px 0 10px; }
+  .cg-table { min-width:960px; }
+  .cg-table td { font-size:12.5px; vertical-align:middle; text-align:left; white-space:normal; }
+  .cg-table td.cg-name-cell { min-width:240px; }
+  .cg-table th.num, .cg-table td.num { text-align:right; white-space:nowrap; }
+  .cg-table td.check-cell { text-align:center; }
+  .cg-table tbody tr { cursor:pointer; }
+  .cg-table tbody tr:hover td { background:var(--surface-2); }
+  .cg-table tbody tr.sel td { background:#f0f9ff; }
+  .cg-table .cg-name { font-weight:700; color:var(--text); }
+  .cg-table .cg-sub { display:block; font-size:10.5px; color:var(--text-3); font-weight:500; margin-top:2px; }
+  .cg-type { display:inline-block; margin-left:6px; padding:1px 7px; border-radius:999px; font-size:10.5px; font-weight:800; background:var(--surface-2); color:var(--text-3); white-space:nowrap; }
+  .cg-type.skin  { background:var(--pink-soft); color:var(--pink); }
+  .cg-type.total { background:var(--blue-soft); color:var(--blue); }
+  .cg-in { display:inline-block; margin-left:6px; padding:1px 7px; border-radius:999px; font-size:10.5px; font-weight:800; background:var(--green-soft); color:var(--green); white-space:nowrap; }
+  .cg-m-good { color:var(--green); font-weight:800; }
+  .cg-m-warn { color:var(--orange); font-weight:800; }
+  .cg-m-bad  { color:var(--red); font-weight:800; }
+  .manage-table.cg-table input.cg-check { width:14px; height:14px; min-height:0; padding:0; }
+  .manage-table.cg-table .qty-input { width:44px; height:30px; min-height:0; border:0; border-radius:0; padding:0; text-align:center; font-weight:800; box-shadow:none; }
+  #catalogBar { position:sticky; top:52px; z-index:15; }
 
   /* PROMO / PRICE MANAGEMENT TAB */
   .promo-section { display:none; }
@@ -1221,6 +1256,7 @@
     <div class="mode-tab active lease"  id="tabLease"    role="tab" tabindex="0" aria-selected="true"  aria-controls="calcArea" onclick="setMode('lease')"    onkeydown="tabKey(event,'lease')">💳 리스 적용</div>
     <div class="mode-tab discount"      id="tabDiscount" role="tab" tabindex="0" aria-selected="false" aria-controls="calcArea" onclick="setMode('discount')" onkeydown="tabKey(event,'discount')">🏷️ 할인 적용</div>
     <div class="mode-tab roi"           id="tabRoi"      role="tab" tabindex="0" aria-selected="false" aria-controls="roiSection" onclick="setMode('roi')"     onkeydown="tabKey(event,'roi')">📊 ROI 계산</div>
+    <div class="mode-tab catalog"       id="tabCatalog"  role="tab" tabindex="0" aria-selected="false" aria-controls="catalogSection" onclick="setMode('catalog')" onkeydown="tabKey(event,'catalog')">🗂️ 품목 선택</div>
     <div class="mode-tab manage"        id="tabManage"   role="tab" tabindex="0" aria-selected="false" aria-controls="manageSection" onclick="setMode('manage')" onkeydown="tabKey(event,'manage')">📦 품목 관리</div>
     <div class="mode-tab promo"         id="tabPromo"    role="tab" tabindex="0" aria-selected="false" aria-controls="promoSection" onclick="setMode('promo')"   onkeydown="tabKey(event,'promo')">💰 가격/프로모션</div>
   </div>
@@ -1738,6 +1774,68 @@
   </div>
 
   <!-- ═══ 품목 관리 ═══ -->
+  <!-- ═══ 품목 선택 (마진 대시보드 품목 · 비밀번호로 잠근 catalog.enc.json) ═══ -->
+  <div class="catalog-section" id="catalogSection" role="tabpanel" aria-labelledby="tabCatalog">
+    <div class="cg-lock" id="catalogLock">
+      <h3>🔒 마진 대시보드 품목</h3>
+      <p>MD 마진 대시보드(Redash #7233)의 품목·공급가 목록입니다.<br>공급가가 들어 있어 비밀번호로 보호됩니다.</p>
+      <form onsubmit="unlockCatalog(event)">
+        <input type="password" id="catalogPw" placeholder="비밀번호" autocomplete="current-password" aria-label="품목 목록 비밀번호">
+        <button type="submit" class="manage-btn import" id="catalogUnlockBtn">열기</button>
+      </form>
+      <div class="cg-err" id="catalogErr" role="alert"></div>
+    </div>
+    <div id="catalogBody" style="display:none">
+      <div class="manage-bar">
+        <div class="mb-title">품목 선택 · <span class="mb-count" id="catalogCount">0</span>종</div>
+        <div class="mb-search">
+          <input type="search" id="catalogSearch" placeholder="🔍 품목명·공급처 검색" oninput="renderCatalog()" autocomplete="off">
+          <button type="button" class="mb-search-clear" onclick="clearCatalogSearch()" aria-label="검색어 지우기" title="지우기">✕</button>
+        </div>
+        <div class="cg-filters">
+          <select id="catalogType" onchange="renderCatalog()" aria-label="공급처 유형">
+            <option value="">전체 유형</option><option>피부미용</option><option>총판</option><option>비총판</option>
+          </select>
+          <select id="catalogSup" onchange="renderCatalog()" aria-label="공급처"></select>
+          <select id="catalogSort" onchange="renderCatalog()" aria-label="정렬">
+            <option value="sales">매출 큰 순</option><option value="recent">최근 주문 순</option><option value="margin">마진율 높은 순</option><option value="name">이름 순</option>
+          </select>
+        </div>
+      </div>
+      <div class="cg-meta" id="catalogMeta"></div>
+      <div class="bulk-bar" id="catalogBar" style="display:none">
+        <span><b class="bulk-count" id="catalogSelCount">0</b>개 선택됨</span>
+        <div class="bulk-actions">
+          <button class="manage-btn reset"  type="button" onclick="clearCatalogSel()">선택 해제</button>
+          <button class="manage-btn import" type="button" onclick="addCatalogToCalc()">💳 계산기에 담기</button>
+        </div>
+      </div>
+      <div class="manage-table-wrap">
+        <table class="manage-table cg-table" aria-label="마진 대시보드 품목 목록">
+          <thead>
+            <tr>
+              <th style="width:4%;text-align:center">선택</th>
+              <th>품목명</th>
+              <th>공급처</th>
+              <th class="num">1대 판매가</th>
+              <th class="num">1대 공급가</th>
+              <th class="num">마진율</th>
+              <th class="num">판매수량</th>
+              <th class="num">최근 주문</th>
+              <th class="num" style="width:120px">담을 수량</th>
+            </tr>
+          </thead>
+          <tbody id="catalogTbody"></tbody>
+        </table>
+      </div>
+      <div class="manage-note">
+        💡 1대 단가는 <b>최근 주문일 기준</b>이고, 대시보드 금액(VAT 제외)을 <b>VAT 포함(×1.1)</b>으로 바꿨습니다. 작은 글씨는 전체 기간 평균입니다.<br>
+        💳 <b>계산기에 담기</b>를 누르면 품목 리스트에 추가되고(이미 있으면 공급가·판매가 갱신) 리스 적용 탭에서 바로 선택됩니다.<br>
+        🗂️ 카테고리는 품목명으로 자동 분류되며 <b>품목 관리</b> 탭에서 바꿀 수 있습니다.
+      </div>
+    </div>
+  </div>
+
   <div class="manage-section" id="manageSection" role="tabpanel" aria-labelledby="tabManage">
     <div class="manage-bar">
       <div class="mb-title">품목 리스트 · <span class="mb-count" id="manageCount">0</span>종
@@ -2192,8 +2290,9 @@ function setMode(m) {
   const tr = document.getElementById('tabRoi');
   const tm = document.getElementById('tabManage');
   const tp = document.getElementById('tabPromo');
-  const tabs = {lease:tl, discount:td, roi:tr, manage:tm, promo:tp};
-  ['lease','discount','roi','manage','promo'].forEach(k => {
+  const tc = document.getElementById('tabCatalog');
+  const tabs = {lease:tl, discount:td, roi:tr, catalog:tc, manage:tm, promo:tp};
+  ['lease','discount','roi','catalog','manage','promo'].forEach(k => {
     tabs[k].className = 'mode-tab ' + k + (m === k ? ' active' : '');
     tabs[k].setAttribute('aria-selected', m === k ? 'true' : 'false');
   });
@@ -2205,7 +2304,9 @@ function setMode(m) {
   const roiMode   = m === 'roi';
   const mgMode    = m === 'manage';
   const promoMode = m === 'promo';
+  const catMode   = m === 'catalog';
   document.getElementById('roiSection').className    = 'roi-section'    + (roiMode   ? ' visible' : '');
+  document.getElementById('catalogSection').className = 'catalog-section' + (catMode ? ' visible' : '');
   document.getElementById('manageSection').className = 'manage-section' + (mgMode    ? ' visible' : '');
   document.getElementById('promoSection').className  = 'promo-section'  + (promoMode ? ' visible' : '');
   document.getElementById('productSectionLabel').style.display = calcMode ? '' : 'none';
@@ -2219,11 +2320,12 @@ function setMode(m) {
   if (roiMode)         { updateRoi(); }
   else if (mgMode)     { renderManageTable(); }
   else if (promoMode)  { renderPromoTable(); }
+  else if (catMode)    { openCatalog(); }
   else                 { renderGrid(); update(); }
 }
 
 function tabKey(e, current) {
-  const order = ['lease','discount','roi','manage','promo'];
+  const order = ['lease','discount','roi','catalog','manage','promo'];
   const idx = order.indexOf(current);
   if (e.key === 'ArrowRight') { e.preventDefault(); setMode(order[(idx+1)%order.length]); document.getElementById('tab'+cap(order[(idx+1)%order.length])).focus(); }
   else if (e.key === 'ArrowLeft') { e.preventDefault(); setMode(order[(idx-1+order.length)%order.length]); document.getElementById('tab'+cap(order[(idx-1+order.length)%order.length])).focus(); }
@@ -3225,6 +3327,186 @@ async function downloadTemplate() {
   URL.revokeObjectURL(a.href);
   toast('업로드 양식이 다운로드되었습니다', 'success');
 }
+
+// ── 품목 선택 탭 (마진 대시보드 품목 · 비밀번호로 잠근 catalog.enc.json) ─────
+// catalog.enc.json 은 tools/build_catalog.py 로 생성 (Redash #7233 → 품목별 1대 단가, VAT 포함)
+const CATALOG_URL    = 'catalog.enc.json';
+const CATALOG_PW_KEY = 'dseCatalogPw';
+let CATALOG = null;
+const catalogSel = new Map();   // 품목 id → 담을 수량
+
+function _b64bytes(s) { return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
+function _escHtml(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+async function decryptCatalog(pw) {
+  if (!window.crypto || !crypto.subtle) throw new Error('이 브라우저에서는 열 수 없습니다 (https 주소로 접속해 주세요)');
+  const res = await fetch(CATALOG_URL + '?t=' + Date.now(), { cache: 'no-store' });
+  if (!res.ok) throw new Error('품목 목록 파일을 불러오지 못했습니다 (HTTP ' + res.status + ')');
+  const box  = await res.json();
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+  const key  = await crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt:_b64bytes(box.salt), iterations:box.iter, hash:'SHA-256' },
+    base, { name:'AES-GCM', length:256 }, false, ['decrypt']);
+  let plain;
+  try { plain = await crypto.subtle.decrypt({ name:'AES-GCM', iv:_b64bytes(box.iv) }, key, _b64bytes(box.ct)); }
+  catch (_) { throw new Error('비밀번호가 맞지 않습니다'); }
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+function _showCatalog() {
+  document.getElementById('catalogLock').style.display = CATALOG ? 'none' : '';
+  document.getElementById('catalogBody').style.display = CATALOG ? '' : 'none';
+  if (CATALOG) renderCatalog();
+}
+async function openCatalog() {
+  if (!CATALOG) {
+    let saved = null;
+    try { saved = sessionStorage.getItem(CATALOG_PW_KEY); } catch(_) {}
+    if (saved) {
+      try { CATALOG = await decryptCatalog(saved); initCatalogFilters(); }
+      catch(_) { try { sessionStorage.removeItem(CATALOG_PW_KEY); } catch(_) {} }
+    }
+  }
+  _showCatalog();
+  if (!CATALOG) setTimeout(() => document.getElementById('catalogPw').focus(), 0);
+}
+async function unlockCatalog(e) {
+  e.preventDefault();
+  const pwEl = document.getElementById('catalogPw');
+  const btn  = document.getElementById('catalogUnlockBtn');
+  const err  = document.getElementById('catalogErr');
+  const pw   = pwEl.value.trim();
+  if (!pw) return;
+  btn.disabled = true;
+  btn.textContent = '여는 중…';
+  err.textContent = '';
+  try {
+    CATALOG = await decryptCatalog(pw);
+    try { sessionStorage.setItem(CATALOG_PW_KEY, pw); } catch(_) {}
+    pwEl.value = '';
+    initCatalogFilters();
+    _showCatalog();
+  } catch (ex) {
+    err.textContent = ex.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '열기';
+  }
+}
+function initCatalogFilters() {
+  const sups = [...new Set(CATALOG.items.map(it => it.sup))].sort((a, b) => a.localeCompare(b, 'ko'));
+  document.getElementById('catalogSup').innerHTML =
+    '<option value="">전체 공급처</option>' + sups.map(s => `<option>${_escHtml(s)}</option>`).join('');
+  const at = CATALOG.retrieved_at ? new Date(CATALOG.retrieved_at).toLocaleDateString('ko-KR', { timeZone:'Asia/Seoul' }) : '—';
+  document.getElementById('catalogMeta').textContent =
+    `데이터: Redash #7233 (MD 스쿼드 매출 내역) · ${at} 기준 · 1대 단가 = 최근 주문일 기준, VAT 포함`;
+}
+function catalogMargin(it) { return it.cost > 0 && it.price > 0 ? (it.price - it.cost) / it.price : null; }
+function catalogMarginCls(m) { return m == null ? '' : m >= 0.30 ? 'cg-m-good' : m >= 0.10 ? 'cg-m-warn' : 'cg-m-bad'; }
+function clearCatalogSearch() { document.getElementById('catalogSearch').value = ''; renderCatalog(); }
+function renderCatalog() {
+  if (!CATALOG) return;
+  const q    = (document.getElementById('catalogSearch').value || '').trim().toLowerCase();
+  const type = document.getElementById('catalogType').value;
+  const sup  = document.getElementById('catalogSup').value;
+  const sort = document.getElementById('catalogSort').value;
+  const inCalc = new Set(PRODUCTS.map(p => p.id));
+  const list = CATALOG.items.filter(it =>
+    (!type || it.type === type) && (!sup || it.sup === sup) &&
+    (!q || (it.name + ' ' + it.sup).toLowerCase().includes(q)));
+  // 'sales' = 파일 순서 (매출 큰 순)
+  if (sort === 'recent')      list.sort((a, b) => b.last.localeCompare(a.last));
+  else if (sort === 'name')   list.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  else if (sort === 'margin') list.sort((a, b) => (catalogMargin(b) ?? -9) - (catalogMargin(a) ?? -9));
+  document.getElementById('catalogCount').textContent = list.length;
+  document.getElementById('catalogTbody').innerHTML = list.length ? list.map(it => {
+    const m   = catalogMargin(it);
+    const sel = catalogSel.has(it.id);
+    const qty = catalogSel.get(it.id) || 1;
+    const typeCls = it.type === '피부미용' ? 'skin' : it.type === '총판' ? 'total' : '';
+    const nm  = _escHtml(it.name);
+    return `<tr data-id="${_escHtml(it.id)}"${sel ? ' class="sel"' : ''}>
+      <td class="check-cell"><input type="checkbox" class="cg-check"${sel ? ' checked' : ''} aria-label="${nm} 선택"></td>
+      <td class="cg-name-cell"><span class="cg-name">${nm}</span>${inCalc.has(it.id) ? '<span class="cg-in">계산기에 있음</span>' : ''}<span class="cg-sub">${_escHtml(it.cat)}</span></td>
+      <td style="white-space:nowrap">${_escHtml(it.sup)}<span class="cg-type ${typeCls}">${_escHtml(it.type)}</span></td>
+      <td class="num">${fmt(it.price)}<span class="cg-sub">평균 ${fmt(it.avgPrice)}</span></td>
+      <td class="num">${it.cost > 0 ? `${fmt(it.cost)}<span class="cg-sub">평균 ${fmt(it.avgCost)}</span>` : '<span class="cg-sub">공급가 없음</span>'}</td>
+      <td class="num ${catalogMarginCls(m)}">${m == null ? '—' : (m * 100).toFixed(1) + '%'}</td>
+      <td class="num">${it.qty.toLocaleString('ko-KR')}</td>
+      <td class="num">${it.last}</td>
+      <td class="num"><div class="qty-stepper">
+        <button type="button" class="qty-btn" data-d="-1" aria-label="${nm} 수량 줄이기"${qty <= 1 ? ' disabled' : ''}>−</button>
+        <input class="qty-input" type="text" inputmode="numeric" value="${qty}" aria-label="${nm} 담을 수량">
+        <button type="button" class="qty-btn" data-d="1" aria-label="${nm} 수량 늘리기">+</button>
+      </div></td>
+    </tr>`;
+  }).join('') : '<tr><td class="empty-td" colspan="9">조건에 맞는 품목이 없습니다</td></tr>';
+  updateCatalogBar();
+}
+function updateCatalogBar() {
+  const n = catalogSel.size;
+  document.getElementById('catalogBar').style.display = n ? '' : 'none';
+  document.getElementById('catalogSelCount').textContent = n;
+}
+function setCatalogRow(tr, on, qty) {
+  const id = tr.dataset.id;
+  if (on) catalogSel.set(id, qty || catalogSel.get(id) || parseInt(tr.querySelector('.qty-input').value) || 1);
+  else    catalogSel.delete(id);
+  tr.classList.toggle('sel', on);
+  tr.querySelector('.cg-check').checked = on;
+  updateCatalogBar();
+}
+function setCatalogQty(tr, n, typing) {
+  const q = Math.max(1, Math.min(999, parseInt(n) || 1));
+  setCatalogRow(tr, true, q);   // 수량을 바꾸면 그 품목은 자동 선택
+  if (!typing) tr.querySelector('.qty-input').value = q;
+  tr.querySelector('.qty-btn[data-d="-1"]').disabled = q <= 1;
+}
+function clearCatalogSel() { catalogSel.clear(); renderCatalog(); }
+function addCatalogToCalc() {
+  const picks = CATALOG ? CATALOG.items.filter(it => catalogSel.has(it.id)) : [];
+  if (!picks.length) return;
+  let updated = 0;
+  picks.forEach(it => {
+    const qty = catalogSel.get(it.id);
+    let p = PRODUCTS.find(x => x.id === it.id);
+    if (p) {
+      Object.assign(p, { name: it.name, supplier: it.sup, cost: it.cost, price: it.price, qty });
+      updated++;
+    } else {
+      p = _normalizeProduct({ id: it.id, name: it.name, category: it.cat, supplier: it.sup, cost: it.cost, price: it.price, qty });
+      PRODUCTS.push(p);
+    }
+    if (!manualByMode.lease.has(p.id))    promoByMode.lease[p.id]    = leaseSeed(p);
+    if (!manualByMode.discount.has(p.id)) promoByMode.discount[p.id] = discountSeed(p);
+    selected.add(p.id);
+  });
+  saveProducts();
+  catalogSel.clear();
+  setMode('lease');
+  toast(`✓ ${picks.length}개 품목을 계산기에 담았습니다` + (updated ? ` (기존 ${updated}개는 가격 갱신)` : ''), 'success');
+}
+(function bindCatalogTable() {
+  const tbody = document.getElementById('catalogTbody');
+  tbody.addEventListener('click', e => {
+    const tr = e.target.closest('tr[data-id]');
+    if (!tr) return;
+    const btn = e.target.closest('.qty-btn');
+    if (btn) { setCatalogQty(tr, (catalogSel.get(tr.dataset.id) || 1) + parseInt(btn.dataset.d)); return; }
+    if (e.target.closest('.qty-stepper')) return;
+    if (e.target.classList.contains('cg-check')) { setCatalogRow(tr, e.target.checked); return; }
+    setCatalogRow(tr, !catalogSel.has(tr.dataset.id));
+  });
+  tbody.addEventListener('input', e => {
+    if (!e.target.classList.contains('qty-input')) return;
+    const digits = e.target.value.replace(/[^0-9]/g, '');
+    if (e.target.value !== digits) e.target.value = digits;
+    if (digits) setCatalogQty(e.target.closest('tr'), digits, true);
+  });
+  tbody.addEventListener('focusout', e => {
+    if (!e.target.classList.contains('qty-input')) return;
+    const tr = e.target.closest('tr');
+    e.target.value = catalogSel.get(tr.dataset.id) || 1;
+  });
+})();
 
 // ── 가격/프로모션 관리 탭 ─────────────────────────────────────────────
 let PROMO_INPUT_MODE = 'amount'; // 'amount' | 'rate' | 'discount'
