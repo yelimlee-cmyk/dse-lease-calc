@@ -165,6 +165,7 @@
   .rt-tag { display:inline-block; font-size:10px; font-weight:700; border-radius:4px; padding:0 5px; margin-left:4px; }
   .rt-tag.gone { background:#eef0f4; color:var(--text-3); }
   .rt-tag.new  { background:var(--orange-soft); color:#c2410c; }
+  .rt-table tbody th .rt-tag { display:table; margin:3px 0 0; }
   .rt-foot { font-size:11px; color:var(--muted); margin-top:10px; }
 
   /* 검색 바 */
@@ -2633,15 +2634,20 @@ function clearSelection() {
 // 롯데캐피탈 리스 조건표 — 시행일별 보관 (최신이 맨 위). 새 조건표가 오면 맨 위에 추가하고 직전 항목의 to를 채운다.
 //   fee      : 무이자 — 공급사 부담 선취수수료율
 //   interest : 유이자 — 고객 부담 적용금리 (선취수수료 없음)
+//   carried  : 새 조건표에 없어 직전 요율을 그대로 쓰는 기간 (요율표에 '이전 요율 유지'로 표시)
 // 거치 포함 무이자 상품은 계산기에서 다루지 않는다.
 const LEASE_SCHEDULES = [
   {
     from: '2026-11-23', to: null,
-    note: '무이자는 12·24·36개월만 제시됨 (30·48·60개월 없음) · 거치 포함 무이자 상품은 제외',
+    note: '무이자 30·48·60개월은 이번 조건표에 없어 이전 요율을 그대로 씀 · 거치 포함 무이자 상품은 제외',
+    carried: { fee: [30, 48, 60] },
     fee: {
       12: { 0: 0.0320, 10: 0.0260, 20: 0.0205 },
       24: { 0: 0.0585, 10: 0.0475, 20: 0.0370 },
+      30: { 0: 0.0690, 10: 0.0560, 20: 0.0435 },   // 이전 요율 유지
       36: { 0: 0.0850, 10: 0.0690, 20: 0.0535 },
+      48: { 0: 0.1100, 10: 0.0900, 20: 0.0700 },   // 이전 요율 유지
+      60: { 0: 0.1350, 10: 0.1100, 20: 0.0850 },   // 이전 요율 유지
     },
     interest: {
       12: { 0: 0.0585, 10: 0.0480, 20: 0.0390 },
@@ -4183,10 +4189,13 @@ function renderRateTable() {
           deps.map(d => `<td>${pct(prow[d])}<span class="rt-d">이전 요율</span></td>`).join('') + `</tr>`;
       }
       const isNew = ptbl && !prow;
-      return `<tr><th>${m}개월${isNew ? '<span class="rt-tag new">신규</span>' : ''}</th>` + deps.map(d => {
+      const carried = ((s.carried || {})[key] || []).includes(m);
+      return `<tr><th>${m}개월${isNew ? '<span class="rt-tag new">신규</span>' : ''}${carried ? '<span class="rt-tag gone">이전 요율 유지</span>' : ''}</th>` + deps.map(d => {
         const v = row[d];
         let delta = '';
-        if (prow && prow[d] != null) {
+        if (carried) {
+          delta = `<span class="rt-d">조건표에 없음</span>`;
+        } else if (prow && prow[d] != null) {
           const diff = Math.round((v - prow[d]) * 10000) / 100;
           delta = diff === 0 ? `<span class="rt-d">변동 없음</span>`
                 : `<span class="rt-d ${diff > 0 ? 'up' : 'down'}">${diff > 0 ? '▲' : '▼'}${Math.abs(diff).toFixed(2)}%p</span>`;
