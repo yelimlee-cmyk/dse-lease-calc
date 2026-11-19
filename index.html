@@ -124,6 +124,49 @@
   .rate-input:hover { border-color:var(--primary-2); }
   .rate-input:focus { border-color:var(--primary); box-shadow: var(--focus); }
 
+  /* 리스 요율 기준일 · 날짜별 요율표 */
+  .rt-toggle {
+    background:var(--surface); border:1px solid var(--border-2); border-radius:10px;
+    padding:8px 12px; font-size:12px; font-weight:700; color:var(--text-2);
+    cursor:pointer; box-shadow:var(--shadow); display:flex; align-items:center; gap:6px;
+  }
+  .rt-toggle:hover, .rt-toggle[aria-expanded="true"] { border-color:var(--primary); color:var(--primary); }
+  .rt-flag { background:var(--orange-soft); color:#c2410c; border-radius:999px; padding:1px 8px; font-size:11px; font-weight:700; }
+  .rt-panel {
+    flex-basis:100%; min-width:0; background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; padding:14px 16px; box-shadow:var(--shadow);
+  }
+  .rt-panel[hidden] { display:none; }
+  .rt-dates { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .rt-dates button {
+    background:var(--surface-2); border:1px solid var(--border); border-radius:999px;
+    padding:5px 12px; font-size:12px; font-weight:700; color:var(--text-2); cursor:pointer;
+  }
+  .rt-dates button[aria-pressed="true"] { background:var(--primary); border-color:var(--primary); color:#fff; }
+  .rt-state { font-size:10.5px; font-weight:700; padding:1px 7px; border-radius:999px; margin-left:4px; }
+  .rt-state.now    { background:var(--green-soft);  color:#047857; }
+  .rt-state.future { background:var(--orange-soft); color:#c2410c; }
+  .rt-state.past   { background:#eef0f4; color:var(--text-3); }
+  .rt-dates button[aria-pressed="true"] .rt-state { background:rgba(255,255,255,.22); color:#fff; }
+  .rt-note { font-size:11.5px; color:var(--text-3); margin:-4px 0 12px; line-height:1.6; }
+  .rt-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px; }
+  @media (max-width:760px) { .rt-grid { grid-template-columns:1fr; } }
+  .rt-table { width:100%; border-collapse:collapse; font-size:12px; font-variant-numeric:tabular-nums; }
+  .rt-table caption { text-align:left; font-weight:800; font-size:12px; color:var(--text); padding-bottom:6px; }
+  .rt-table caption small { font-weight:600; color:var(--text-3); margin-left:4px; }
+  .rt-table th, .rt-table td { border:1px solid var(--border); padding:6px 8px; text-align:right; vertical-align:top; }
+  .rt-table thead th { background:var(--surface-2); text-align:center; font-weight:700; color:var(--text-2); }
+  .rt-table tbody th { text-align:left; background:var(--surface-2); font-weight:700; color:var(--text); white-space:nowrap; }
+  .rt-table td.cur { background:var(--primary-soft); box-shadow:inset 0 0 0 2px var(--primary); font-weight:800; color:var(--primary-2); }
+  .rt-d { display:block; font-size:10.5px; font-weight:700; color:var(--muted); }
+  .rt-d.up   { color:#dc2626; }
+  .rt-d.down { color:#047857; }
+  .rt-table tr.gone th, .rt-table tr.gone td { color:var(--muted); background:#fafbfc; font-weight:600; }
+  .rt-tag { display:inline-block; font-size:10px; font-weight:700; border-radius:4px; padding:0 5px; margin-left:4px; }
+  .rt-tag.gone { background:#eef0f4; color:var(--text-3); }
+  .rt-tag.new  { background:var(--orange-soft); color:#c2410c; }
+  .rt-foot { font-size:11px; color:var(--muted); margin-top:10px; }
+
   /* 검색 바 */
   .product-search {
     display:flex; align-items:center; gap:10px; margin-bottom:12px;
@@ -1281,8 +1324,13 @@
   <!-- PARAMS -->
   <div class="params" id="leaseParams" role="group" aria-label="리스 조건 입력">
     <div class="param-chip editable">
+      <label for="scheduleSelect">요율 기준</label>
+      <span class="hint" tabindex="0" data-tip="롯데캐피탈 조건표의 시행일입니다. 오늘 날짜에 맞는 조건표가 자동으로 선택되며, 다른 날짜의 요율로 바꿔 볼 수도 있습니다.">?</span>
+      <select id="scheduleSelect" class="rate-input" style="width:auto;padding:3px 8px" aria-label="리스 요율 기준일 선택"></select>
+    </div>
+    <div class="param-chip editable">
       <label for="leaseTypeSelect">구분</label>
-      <span class="hint" tabindex="0" data-tip="무이자: 공급사가 선취수수료를 부담하고 고객은 이자 없이 분납합니다 (12·24·30·36·48·60개월). 유이자: 선취수수료 없이 고객이 이자를 부담합니다 (12~60개월).">?</span>
+      <span class="hint" tabindex="0" data-tip="무이자: 공급사가 선취수수료를 부담하고 고객은 이자 없이 분납합니다. 유이자: 선취수수료 없이 고객이 이자를 부담합니다. 고를 수 있는 기간은 요율 기준일의 조건표를 따릅니다.">?</span>
       <select id="leaseTypeSelect" class="rate-input" style="width:auto;padding:3px 8px" aria-label="리스 구분 선택">
         <option value="free" selected>무이자</option>
         <option value="interest">유이자</option>
@@ -1318,6 +1366,8 @@
       <input class="rate-input" id="rateInput" type="number" value="0" min="0" max="30" step="0.01" style="width:68px" inputmode="decimal" aria-label="적용금리(%)">
       <b>% 연이율</b>
     </div>
+    <button type="button" class="rt-toggle" id="rateTableToggle" aria-expanded="false" aria-controls="rateTablePanel">📋 날짜별 요율표<span class="rt-flag" id="rateTableFlag" hidden></span></button>
+    <div class="rt-panel" id="rateTablePanel" hidden></div>
   </div>
   <div class="params" id="discountParams" style="display:none" role="group" aria-label="할인 조건 입력">
     <div class="param-chip editable">
@@ -2580,23 +2630,75 @@ function clearSelection() {
   });
 })();
 
-// 무이자 리스 조건표 (공급사 부담 선취수수료율)
-const LEASE_FEE_TABLE = {
-  12: { 0: 0.0310, 10: 0.0250, 20: 0.0200 },
-  24: { 0: 0.0560, 10: 0.0460, 20: 0.0360 },
-  30: { 0: 0.0690, 10: 0.0560, 20: 0.0435 },
-  36: { 0: 0.0810, 10: 0.0665, 20: 0.0520 },
-  48: { 0: 0.1100, 10: 0.0900, 20: 0.0700 },
-  60: { 0: 0.1350, 10: 0.1100, 20: 0.0850 },
-};
-// 유이자 리스 조건표 (고객 부담 적용금리 · 선취수수료 없음)
-const LEASE_INTEREST_TABLE = {
-  12: { 0: 0.0560, 10: 0.0460, 20: 0.0370 },
-  24: { 0: 0.0555, 10: 0.0455, 20: 0.0365 },
-  36: { 0: 0.0555, 10: 0.0455, 20: 0.0365 },
-  48: { 0: 0.0560, 10: 0.0460, 20: 0.0370 },
-  60: { 0: 0.0560, 10: 0.0460, 20: 0.0370 },
-};
+// 롯데캐피탈 리스 조건표 — 시행일별 보관 (최신이 맨 위). 새 조건표가 오면 맨 위에 추가하고 직전 항목의 to를 채운다.
+//   fee      : 무이자 — 공급사 부담 선취수수료율
+//   interest : 유이자 — 고객 부담 적용금리 (선취수수료 없음)
+// 거치 포함 무이자 상품은 계산기에서 다루지 않는다.
+const LEASE_SCHEDULES = [
+  {
+    from: '2026-11-23', to: null,
+    note: '무이자는 12·24·36개월만 제시됨 (30·48·60개월 없음) · 거치 포함 무이자 상품은 제외',
+    fee: {
+      12: { 0: 0.0320, 10: 0.0260, 20: 0.0205 },
+      24: { 0: 0.0585, 10: 0.0475, 20: 0.0370 },
+      36: { 0: 0.0850, 10: 0.0690, 20: 0.0535 },
+    },
+    interest: {
+      12: { 0: 0.0585, 10: 0.0480, 20: 0.0390 },
+      24: { 0: 0.0580, 10: 0.0475, 20: 0.0385 },
+      36: { 0: 0.0580, 10: 0.0475, 20: 0.0385 },
+      48: { 0: 0.0585, 10: 0.0480, 20: 0.0390 },
+      60: { 0: 0.0585, 10: 0.0480, 20: 0.0390 },
+    },
+  },
+  {
+    from: '2026-09-28', to: '2026-11-22',
+    note: '',
+    fee: {
+      12: { 0: 0.0310, 10: 0.0250, 20: 0.0200 },
+      24: { 0: 0.0560, 10: 0.0460, 20: 0.0360 },
+      30: { 0: 0.0690, 10: 0.0560, 20: 0.0435 },
+      36: { 0: 0.0810, 10: 0.0665, 20: 0.0520 },
+      48: { 0: 0.1100, 10: 0.0900, 20: 0.0700 },
+      60: { 0: 0.1350, 10: 0.1100, 20: 0.0850 },
+    },
+    interest: {
+      12: { 0: 0.0560, 10: 0.0460, 20: 0.0370 },
+      24: { 0: 0.0555, 10: 0.0455, 20: 0.0365 },
+      36: { 0: 0.0555, 10: 0.0455, 20: 0.0365 },
+      48: { 0: 0.0560, 10: 0.0460, 20: 0.0370 },
+      60: { 0: 0.0560, 10: 0.0460, 20: 0.0370 },
+    },
+  },
+];
+
+function localDateStr(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+// 해당 날짜에 시행 중인 조건표 (첫 시행일보다 이르면 가장 오래된 것)
+function scheduleForDate(ds) {
+  return LEASE_SCHEDULES.find(s => s.from <= ds && (!s.to || ds <= s.to)) || LEASE_SCHEDULES[LEASE_SCHEDULES.length - 1];
+}
+function getSchedule() {
+  const v = document.getElementById('scheduleSelect').value;
+  return LEASE_SCHEDULES.find(s => s.from === v) || scheduleForDate(localDateStr());
+}
+function prevScheduleOf(s) { return LEASE_SCHEDULES[LEASE_SCHEDULES.indexOf(s) + 1] || null; }
+// 'now' | 'future' | 'past' — 오늘 기준
+function scheduleState(s) {
+  const today = localDateStr();
+  if (s.from > today) return 'future';
+  if (s.to && s.to < today) return 'past';
+  return 'now';
+}
+const SCHEDULE_STATE_LABEL = { now: '적용 중', future: '시행 예정', past: '지난 요율' };
+function fmtDot(ds)   { return ds.replace(/-/g, '.'); }
+function fmtMonthDay(ds) { return `${+ds.slice(5,7)}/${+ds.slice(8,10)}`; }
+function scheduleRange(s) {
+  return `${fmtDot(s.from)} ~ ${s.to ? (s.to.slice(0,4) === s.from.slice(0,4) ? fmtDot(s.to).slice(5) : fmtDot(s.to)) : '공지 전까지'}`;
+}
+function feeTable()      { return getSchedule().fee; }
+function interestTable() { return getSchedule().interest; }
 
 function getLeaseType() { return document.getElementById('leaseTypeSelect').value === 'interest' ? 'interest' : 'free'; }
 function getPeriod()  { return parseInt(document.getElementById('periodSelect').value)  || 24; }
@@ -2610,11 +2712,11 @@ function getRate() {
   return (isNaN(v) || v < 0) ? 0 : v / 100;
 }
 function lookupFeeRate(period, dep) {
-  const tbl = LEASE_FEE_TABLE[period];
+  const tbl = feeTable()[period];
   return tbl ? (tbl[dep] || 0) : 0;
 }
 function lookupInterestRate(period, dep) {
-  const tbl = LEASE_INTEREST_TABLE[period];
+  const tbl = interestTable()[period];
   return tbl ? (tbl[dep] || 0) : 0;
 }
 
@@ -2709,7 +2811,7 @@ function update() {
     const dep     = getDeposit();
     document.getElementById('iFeeCard').style.display   = '';
     document.getElementById('intSummary').style.gridTemplateColumns = 'repeat(4,1fr)';
-    document.getElementById('intTableSub').innerHTML = `패키지 할인가 기준 &nbsp;·&nbsp; ${period}개월 / 보증금 ${dep}% &nbsp;·&nbsp; 선취수수료 <b style="color:var(--orange)">${(feeRate*100).toFixed(2)}%</b> 적용${getRate() > 0 ? ` &nbsp;·&nbsp; 고객 부담 금리 연 ${(getRate()*100).toFixed(2)}%` : ''}`;
+    document.getElementById('intTableSub').innerHTML = `패키지 할인가 기준 &nbsp;·&nbsp; ${period}개월 / 보증금 ${dep}% &nbsp;·&nbsp; 선취수수료 <b style="color:var(--orange)">${(feeRate*100).toFixed(2)}%</b> 적용${getRate() > 0 ? ` &nbsp;·&nbsp; 고객 부담 금리 연 ${(getRate()*100).toFixed(2)}%` : ''} &nbsp;·&nbsp; 요율 기준 ${scheduleRange(getSchedule())}`;
     document.getElementById('intHead').innerHTML = `<tr>
       <th>품목</th><th class="qty-col">수량</th><th>공급가</th><th>판매가</th><th>패키지 할인가</th>
       <th>선취수수료</th><th>실수금</th><th>기존 마진율</th><th>리스 마진율</th><th>변화</th>
@@ -4029,14 +4131,22 @@ bindCommaInput(document.getElementById('targetTotalInput'), (target) => {
   _suppressTargetSync = false;
 });
 
-// 구분(무이자/유이자)에 맞춰 기간 목록을 다시 채움 — 선택 중인 기간이 없으면 24개월
+// 요율 기준일 드롭다운 — 오늘 시행 중인 조건표를 기본 선택
+function buildScheduleOptions() {
+  const sel = document.getElementById('scheduleSelect');
+  sel.innerHTML = LEASE_SCHEDULES.map(s =>
+    `<option value="${s.from}">${scheduleRange(s)} (${SCHEDULE_STATE_LABEL[scheduleState(s)]})</option>`).join('');
+  sel.value = scheduleForDate(localDateStr()).from;
+}
+// 구분(무이자/유이자)·요율 기준에 맞춰 기간 목록을 다시 채움 — 선택 중인 기간이 없으면 24개월
 function syncPeriodOptions() {
   const sel = document.getElementById('periodSelect');
   const cur = getPeriod();
-  const table = getLeaseType() === 'interest' ? LEASE_INTEREST_TABLE : LEASE_FEE_TABLE;
+  const table = getLeaseType() === 'interest' ? interestTable() : feeTable();
   const periods = Object.keys(table).map(Number);
   sel.innerHTML = periods.map(m => `<option value="${m}">${m}개월</option>`).join('');
   sel.value = periods.includes(cur) ? cur : 24;
+  return periods.includes(cur) ? null : cur;   // 없어져서 바뀐 기간
 }
 // 무이자: 선취수수료 조건표 + 금리 0% / 유이자: 선취수수료 0% + 고객 부담 금리
 function autoFillFeeRate() {
@@ -4044,12 +4154,91 @@ function autoFillFeeRate() {
   const isInterest = getLeaseType() === 'interest';
   document.getElementById('feeRateInput').value = (isInterest ? 0 : lookupFeeRate(period, dep) * 100).toFixed(2);
   document.getElementById('rateInput').value    = (isInterest ? lookupInterestRate(period, dep) * 100 : 0).toFixed(2);
+  renderRateTable();
 }
+
+// 날짜별 요율표 — 선택한 조건표와 직전 조건표의 차이를 함께 표시
+function renderRateTable() {
+  const panel = document.getElementById('rateTablePanel');
+  const flag  = document.getElementById('rateTableFlag');
+  const s = getSchedule(), prev = prevScheduleOf(s);
+
+  // 아직 시행 전인 조건표가 있으면 버튼에 예고 표시
+  const upcoming = LEASE_SCHEDULES.filter(x => scheduleState(x) === 'future').pop();
+  flag.hidden = !upcoming;
+  if (upcoming) flag.textContent = `${fmtMonthDay(upcoming.from)}부터 변경`;
+  if (panel.hidden) return;
+
+  const pct  = v => (v * 100).toFixed(2) + '%';
+  const deps = [0, 10, 20];
+  const curType = getLeaseType(), curP = getPeriod(), curD = getDeposit();
+  const block = (key, title, sub) => {
+    const tbl = s[key], ptbl = prev ? prev[key] : null;
+    const periods = [...new Set([...Object.keys(tbl), ...Object.keys(ptbl || {})])].map(Number).sort((a, b) => a - b);
+    const typeKey = key === 'fee' ? 'free' : 'interest';
+    const rows = periods.map(m => {
+      const row = tbl[m], prow = ptbl ? ptbl[m] : null;
+      if (!row) {
+        return `<tr class="gone"><th>${m}개월<span class="rt-tag gone">없음</span></th>` +
+          deps.map(d => `<td>${pct(prow[d])}<span class="rt-d">이전 요율</span></td>`).join('') + `</tr>`;
+      }
+      const isNew = ptbl && !prow;
+      return `<tr><th>${m}개월${isNew ? '<span class="rt-tag new">신규</span>' : ''}</th>` + deps.map(d => {
+        const v = row[d];
+        let delta = '';
+        if (prow && prow[d] != null) {
+          const diff = Math.round((v - prow[d]) * 10000) / 100;
+          delta = diff === 0 ? `<span class="rt-d">변동 없음</span>`
+                : `<span class="rt-d ${diff > 0 ? 'up' : 'down'}">${diff > 0 ? '▲' : '▼'}${Math.abs(diff).toFixed(2)}%p</span>`;
+        }
+        const cur = curType === typeKey && m === curP && d === curD;
+        return `<td class="${cur ? 'cur' : ''}"${cur ? ' aria-current="true"' : ''}>${pct(v)}${delta}</td>`;
+      }).join('') + `</tr>`;
+    }).join('');
+    return `<table class="rt-table"><caption>${title}<small>${sub}</small></caption>
+      <thead><tr><th scope="col">기간 \\ 보증금</th>${deps.map(d => `<th scope="col">${d}%</th>`).join('')}</tr></thead>
+      <tbody>${rows}</tbody></table>`;
+  };
+
+  panel.innerHTML = `
+    <div class="rt-dates" role="group" aria-label="요율 기준일 선택">${LEASE_SCHEDULES.map(x => {
+      const st = scheduleState(x);
+      return `<button type="button" data-from="${x.from}" aria-pressed="${x === s}">${scheduleRange(x)}<span class="rt-state ${st}">${SCHEDULE_STATE_LABEL[st]}</span></button>`;
+    }).join('')}</div>
+    ${s.note || prev ? `<div class="rt-note">롯데캐피탈 조건표${s.note ? ' · ' + s.note : ''}${prev ? `<br>작은 글씨는 직전 조건표(${scheduleRange(prev)}) 대비 변동폭입니다.` : ''}</div>` : ''}
+    <div class="rt-grid">
+      ${block('fee', '무이자', '공급사 부담 선취수수료율')}
+      ${block('interest', '유이자', '고객 부담 적용금리 · 선취수수료 없음')}
+    </div>
+    <div class="rt-foot">파란 칸이 지금 계산에 쓰는 요율입니다. 요율은 금융시장 환경에 따라 바뀔 수 있습니다.</div>`;
+}
+
+function changeSchedule(from) {
+  const sel = document.getElementById('scheduleSelect');
+  if (sel.value !== from) sel.value = from;
+  const dropped = syncPeriodOptions();
+  autoFillFeeRate();
+  update();
+  if (dropped) toast(`${scheduleRange(getSchedule())} 조건표에는 ${getLeaseType() === 'interest' ? '유이자' : '무이자'} ${dropped}개월이 없어 24개월로 바꿨습니다`, 'info');
+}
+
+document.getElementById('scheduleSelect').addEventListener('change', e => changeSchedule(e.target.value));
+document.getElementById('rateTablePanel').addEventListener('click', e => {
+  const b = e.target.closest('.rt-dates button');
+  if (b) changeSchedule(b.dataset.from);
+});
+document.getElementById('rateTableToggle').addEventListener('click', e => {
+  const panel = document.getElementById('rateTablePanel');
+  panel.hidden = !panel.hidden;
+  e.currentTarget.setAttribute('aria-expanded', String(!panel.hidden));
+  renderRateTable();
+});
 document.getElementById('leaseTypeSelect').addEventListener('change', () => { syncPeriodOptions(); autoFillFeeRate(); update(); });
 document.getElementById('periodSelect').addEventListener('change', () => { autoFillFeeRate(); update(); });
 document.getElementById('depositSelect').addEventListener('change', () => { autoFillFeeRate(); update(); });
 document.getElementById('feeRateInput').addEventListener('input', () => { clampInputs(); update(); });
 document.getElementById('rateInput').addEventListener('input', () => { clampInputs(); update(); });
+buildScheduleOptions();
 syncPeriodOptions();
 autoFillFeeRate();
 
@@ -4658,7 +4847,8 @@ function openQuoteModal() {
   const dRateEl = document.getElementById('discountInput');
   document.getElementById('qmModeNote').textContent = isLease
     ? `${getLeaseType() === 'interest' ? '유이자' : '무이자'} · ${getPeriod()}개월 · 보증금 ${getDeposit()}% · 선취수수료 ${(getFeeRate()*100).toFixed(2)}%` +
-      (getRate() > 0 ? ` · 적용금리 연 ${(getRate()*100).toFixed(2)}%` : '')
+      (getRate() > 0 ? ` · 적용금리 연 ${(getRate()*100).toFixed(2)}%` : '') +
+      ` · 요율 기준 ${scheduleRange(getSchedule())}`
     : `추가 할인율 ${parseFloat(dRateEl?.value)||0}%`;
   document.getElementById('qmDate').value = new Date().toISOString().slice(0,10);
 
