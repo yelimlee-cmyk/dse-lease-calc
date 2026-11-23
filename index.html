@@ -1866,7 +1866,7 @@
   <div class="catalog-section" id="catalogSection" role="tabpanel" aria-labelledby="tabCatalog">
     <div class="cg-lock" id="catalogLock">
       <h3>🔒 마진 대시보드 품목</h3>
-      <p>MD 마진 대시보드(Redash #7233)의 품목·공급가 목록입니다.<br>공급가가 들어 있어 비밀번호로 보호됩니다.</p>
+      <p>MD 마진 대시보드(Redash #7233)의 품목·공급가 목록입니다(VAT 포함).<br>공급가가 들어 있어 비밀번호를 받은 사람만 열 수 있습니다.</p>
       <form onsubmit="unlockCatalog(event)">
         <input type="password" id="catalogPw" placeholder="비밀번호" autocomplete="current-password" aria-label="품목 목록 비밀번호">
         <button type="submit" class="manage-btn import" id="catalogUnlockBtn">열기</button>
@@ -1905,8 +1905,8 @@
               <th style="width:4%;text-align:center">선택</th>
               <th>품목명</th>
               <th>공급처</th>
-              <th class="num">1대 판매가</th>
-              <th class="num">1대 공급가</th>
+              <th class="num">1대 판매가<span class="cg-sub">VAT 포함</span></th>
+              <th class="num">1대 공급가<span class="cg-sub">VAT 포함</span></th>
               <th class="num">마진율</th>
               <th class="num">판매수량</th>
               <th class="num">최근 주문</th>
@@ -3509,9 +3509,19 @@ async function decryptCatalog(pw) {
   if (!res.ok) throw new Error('품목 목록 파일을 불러오지 못했습니다 (HTTP ' + res.status + ')');
   const box  = await res.json();
   const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
-  const key  = await crypto.subtle.deriveKey(
+  let key    = await crypto.subtle.deriveKey(
     { name:'PBKDF2', salt:_b64bytes(box.salt), iterations:box.iter, hash:'SHA-256' },
     base, { name:'AES-GCM', length:256 }, false, ['decrypt']);
+  // v2: 목록은 데이터 키 하나로 잠그고, 그 키를 열람자 비밀번호마다 따로 잠가 둠 → 맞는 칸을 찾아 데이터 키를 꺼냄
+  if (box.v >= 2) {
+    let dk = null;
+    for (const k of box.keys || []) {
+      try { dk = await crypto.subtle.decrypt({ name:'AES-GCM', iv:_b64bytes(k.iv) }, key, _b64bytes(k.wk)); break; }
+      catch (_) {}
+    }
+    if (!dk) throw new Error('비밀번호가 맞지 않습니다');
+    key = await crypto.subtle.importKey('raw', dk, 'AES-GCM', false, ['decrypt']);
+  }
   let plain;
   try { plain = await crypto.subtle.decrypt({ name:'AES-GCM', iv:_b64bytes(box.iv) }, key, _b64bytes(box.ct)); }
   catch (_) { throw new Error('비밀번호가 맞지 않습니다'); }
@@ -3570,7 +3580,7 @@ function initCatalogFilters() {
     '<option value="">전체 공급처</option>' + sups.map(s => `<option>${_escHtml(s)}</option>`).join('');
   const at = CATALOG.retrieved_at ? new Date(CATALOG.retrieved_at).toLocaleDateString('ko-KR', { timeZone:'Asia/Seoul' }) : '—';
   document.getElementById('catalogMeta').textContent =
-    `데이터: Redash #7233 (MD 스쿼드 매출 내역) · ${at} 기준 · 1대 단가 = 최근 주문일 기준, VAT 포함`;
+    `데이터: Redash #7233 (MD 스쿼드 매출 내역) · ${at} 기준 · 판매가·공급가 모두 VAT 포함 · 1대 단가 = 최근 주문일 기준`;
 }
 function catalogMargin(it) { return it.cost > 0 && it.price > 0 ? (it.price - it.cost) / it.price : null; }
 function catalogMarginCls(m) { return m == null ? '' : m >= 0.30 ? 'cg-m-good' : m >= 0.10 ? 'cg-m-warn' : 'cg-m-bad'; }

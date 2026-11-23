@@ -4,7 +4,10 @@
     python tools/build_catalog.py                 # redash_master 스킬로 #7233 최신 결과를 받아 생성
     python tools/build_catalog.py --input r.json  # 미리 받아 둔 결과(JSON: columns/rows)로 생성
 
-- 비밀번호는 저장소 루트의 .catalog-password(git 제외)에서 읽는다. 바꾸려면 파일 내용을 고치고 다시 실행.
+- 비밀번호는 저장소 루트의 .catalog-password(본인, git 제외)와 .catalog-viewers(열람자, git 제외)에서 읽는다.
+  .catalog-viewers 형식: 한 줄에 '이름<탭>비밀번호'. 사람을 빼거나 비밀번호를 바꾸려면 파일을 고치고 다시 실행.
+- 목록은 임의의 데이터 키 하나로 암호화하고, 그 키를 비밀번호마다 따로 잠가 둔다(payload v2).
+  공개 파일에는 이름을 남기지 않는다.
 - 고객 정보(주문번호·한의원명·cid)는 담지 않고 품목 단위 단가·판매수량만 담는다.
 - 금액은 #7233(VAT 제외)을 계산기 기준(VAT 포함)에 맞춰 ×1.1 한다.
 """
@@ -29,7 +32,7 @@ PBKDF2_ITER = 310000
 VAT = 1.1
 
 # 마진 대시보드(/margin)와 같은 공급처 유형 구분 — 피부미용 > 총판 > 비총판
-SKIN = {'클래시스', '웰코멧코리아', '디에스이아이엔씨', 'DSE', '메디케네시스', '파이주식회사',
+SKIN = {'클래시스', '웰코멧코리아', '디에스이아이엔씨', 'DSE', '메디케네시스', '파이주식회사', '파이',
         '큐어멕', '큐어맥', '메딕콘', '더마팜', '은성', '라메디텍', '휴메디컬', '에이메디'}
 TOTAL = {'다이나믹솔루션', '동아참메드', '메가메디칼', '메디뷰랩', '메디코아', '바이오시그널랩', '삼성메디슨',
          '오스테오시스', '오스테오시', '옴니씨앤에스', '웰코멧코리아', '은성', '클래시스', '팀엘리시움', '프리시젼바이오', '피아크'}
@@ -112,12 +115,44 @@ def build_items(rows):
     return items
 
 
-def encrypt(payload, password):
-    salt, iv = secrets.token_bytes(16), secrets.token_bytes(12)
-    key = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=PBKDF2_ITER).derive(password.encode())
-    ct = AESGCM(key).encrypt(iv, json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode(), None)
+def _kek(password, salt):
+    return PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=PBKDF2_ITER).derive(password.encode())
+
+
+def encrypt(payload, passwords):
+    """데이터 키 하나로 목록을 암호화하고, 데이터 키를 비밀번호마다 AES-GCM으로 잠근다."""
     b64 = lambda b: base64.b64encode(b).decode()
-    return {'v': 1, 'kdf': 'PBKDF2-SHA256', 'iter': PBKDF2_ITER, 'salt': b64(salt), 'iv': b64(iv), 'ct': b64(ct)}
+    dk, iv, salt = secrets.token_bytes(32), secrets.token_bytes(12), secrets.token_bytes(16)
+    ct = AESGCM(dk).encrypt(iv, json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode(), None)
+    keys = []
+    for pw in passwords:
+        kiv = secrets.token_bytes(12)
+        keys.append({'iv': b64(kiv), 'wk': b64(AESGCM(_kek(pw, salt)).encrypt(kiv, dk, None))})
+    secrets.SystemRandom().shuffle(keys)   # 순서로 누구 것인지 드러나지 않게
+    return {'v': 2, 'kdf': 'PBKDF2-SHA256', 'iter': PBKDF2_ITER, 'salt': b64(salt), 'keys': keys,
+            'iv': b64(iv), 'ct': b64(ct)}
+
+
+def read_passwords():
+    pw_path = os.path.join(ROOT, '.catalog-password')
+    if not os.path.exists(pw_path):
+        sys.exit('.catalog-password 파일이 없습니다 (저장소 루트에 비밀번호 한 줄)')
+    owner = open(pw_path, encoding='utf-8').read().strip()
+    viewers = []
+    vpath = os.path.join(ROOT, '.catalog-viewers')
+    if os.path.exists(vpath):
+        for line in open(vpath, encoding='utf-8'):
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            name, _, pw = line.partition('\t')
+            if not pw.strip():
+                sys.exit(f'.catalog-viewers 형식 오류: {line!r} (이름<탭>비밀번호)')
+            viewers.append((name.strip(), pw.strip()))
+    pws = [owner] + [pw for _, pw in viewers]
+    if len(set(pws)) != len(pws):
+        sys.exit('비밀번호가 겹칩니다 — 사람마다 다르게 정해 주세요')
+    return pws, [n for n, _ in viewers]
 
 
 def main():
@@ -126,10 +161,7 @@ def main():
     ap.add_argument('--out', default=os.path.join(ROOT, 'catalog.enc.json'))
     args = ap.parse_args()
 
-    pw_path = os.path.join(ROOT, '.catalog-password')
-    if not os.path.exists(pw_path):
-        sys.exit('.catalog-password 파일이 없습니다 (저장소 루트에 비밀번호 한 줄)')
-    password = open(pw_path, encoding='utf-8').read().strip()
+    passwords, viewer_names = read_passwords()
 
     data = json.load(open(args.input, encoding='utf-8')) if args.input else fetch_from_redash()
     items = build_items(data['rows'])
@@ -140,8 +172,8 @@ def main():
         'built_at': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),
         'items': items,
     }
-    json.dump(encrypt(payload, password), open(args.out, 'w', encoding='utf-8'))
-    print(f'{len(items)}개 품목 → {args.out}')
+    json.dump(encrypt(payload, passwords), open(args.out, 'w', encoding='utf-8'))
+    print(f'{len(items)}개 품목 → {args.out} (열람: 본인' + ''.join(f', {n}' for n in viewer_names) + ')')
 
 
 if __name__ == '__main__':
